@@ -43,3 +43,8 @@ dist/
 # IDE
 .vscode/
 .idea/
+
+# Database
+recruitment_tracking_system/db.sqlite3
+*.sqlite3
+
