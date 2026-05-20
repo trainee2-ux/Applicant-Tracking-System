@@ -1,0 +1,318 @@
+:root {
+  --pipeline-col-w: 320px;
+  --pipeline-gap: 18px;
+}
+
+html[data-theme="light"] {
+  --pipeline-col-bg: color-mix(in oklab, var(--bg-hover) 55%, var(--bg-card));
+  --pipeline-card-bg: var(--bg-card);
+}
+
+html:not([data-theme="light"]) {
+  --pipeline-col-bg: color-mix(in oklab, var(--bg-hover) 60%, var(--bg-card));
+  --pipeline-card-bg: color-mix(in oklab, var(--bg-card) 70%, #0b1220);
+}
+
+.pipeline-wrap {
+  max-width: 100%;
+}
+
+.pipeline-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pipeline-job-filter {
+  display: inline-flex;
+}
+
+.pipeline-select {
+  width: 220px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.pipeline-select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0.2rem var(--accent-bg);
+}
+
+.pipeline-board {
+  display: flex;
+  gap: var(--pipeline-gap);
+  overflow-x: auto;
+  padding: 14px 2px 24px;
+  scroll-snap-type: x mandatory;
+}
+
+.pipeline-column {
+  width: var(--pipeline-col-w);
+  min-width: var(--pipeline-col-w);
+  background: var(--pipeline-col-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  scroll-snap-align: start;
+  position: relative;
+}
+
+.pipeline-column::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--stage-accent, var(--accent));
+}
+
+.pipeline-column[data-stage="Applied"] { --stage-accent: var(--accent); }
+.pipeline-column[data-stage="Screening"] { --stage-accent: var(--blue, #60a5fa); }
+.pipeline-column[data-stage="Screened"] { --stage-accent: var(--blue, #60a5fa); }
+.pipeline-column[data-stage="Interview"] { --stage-accent: var(--amber, #f59e0b); }
+.pipeline-column[data-stage="Offer"] { --stage-accent: var(--green, #10B981); }
+.pipeline-column[data-stage="Hired"] { --stage-accent: var(--green, #10B981); }
+.pipeline-column[data-stage="Rejected"] { --stage-accent: var(--red, #EF4444); }
+
+.pipeline-column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pipeline-column-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--text-label);
+}
+
+.pipeline-column-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pipeline-count {
+  min-width: 38px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--bg-hover) 75%, var(--bg-card));
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.btn-delete-stage {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-label);
+  cursor: pointer;
+  transition: var(--motion);
+}
+.btn-delete-stage:hover {
+  background: var(--bg-hover);
+  border-color: var(--border);
+  color: var(--text-main);
+}
+
+.pipeline-cards {
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+  min-height: 110px;
+}
+
+.pipeline-column.drop-target {
+  box-shadow: 0 0 0 2px var(--accent-border);
+}
+
+.pipeline-empty {
+  border: 1px dashed color-mix(in oklab, var(--border) 75%, transparent);
+  border-radius: 14px;
+  padding: 18px 14px;
+  text-align: center;
+  color: var(--text-label);
+  font-size: 13px;
+  background: color-mix(in oklab, var(--bg-hover) 55%, var(--bg-card));
+}
+
+.pipeline-card {
+  background: var(--pipeline-card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: grab;
+  transition: var(--motion);
+}
+
+.pipeline-card:hover {
+  border-color: color-mix(in oklab, var(--accent) 35%, var(--border));
+  transform: translateY(-1px);
+}
+
+.pipeline-card:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.pipeline-card.dragging {
+  opacity: 0.6;
+  transform: rotate(1deg);
+}
+
+.pipeline-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.pipeline-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in oklab, var(--accent) 65%, #a78bfa) 100%);
+  border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+  flex-shrink: 0;
+}
+
+.pipeline-card-person {
+  min-width: 0;
+}
+.pipeline-card-name {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pipeline-card-id {
+  font-size: 12px;
+  color: var(--text-label);
+  font-family: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  margin-top: 2px;
+}
+.pipeline-card-role {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pipeline-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+
+.pipeline-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pipeline-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  font-size: 12px;
+  color: var(--text-label);
+}
+
+/* Modal */
+.pipeline-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1000;
+}
+
+.pipeline-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 1001;
+}
+
+.pipeline-modal-card {
+  width: 420px;
+  max-width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+}
+
+.pipeline-modal-close {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.pipeline-modal-close:hover {
+  color: var(--text-main);
+  border-color: color-mix(in oklab, var(--accent) 25%, var(--border));
+}
+
+.pipeline-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+@media (max-width: 900px) {
+  :root { --pipeline-col-w: 290px; }
+  .pipeline-select { width: 160px; }
+}

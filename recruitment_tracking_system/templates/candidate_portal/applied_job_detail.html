@@ -1,0 +1,71 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Applied Job Detail{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block header %}Candidate Portal &gt; Applied Job Detail{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/candidate_portal.css?v=2">{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2 cp-alert">
+      <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div class="cp-hero">
+  <div>
+    <div class="cp-title">Applied Job</div>
+    <div class="cp-subtitle">Job details and your current application stage.</div>
+  </div>
+  <div class="cp-hero-actions">
+    <a href="{% url 'candidate_portal:index' %}" class="btn btn-ghost btn-sm">
+      <i class="bi bi-arrow-left me-1"></i> Back to Portal
+    </a>
+    <a href="{% url 'candidate_portal:application_pipeline' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-kanban me-1"></i> My Applications
+    </a>
+  </div>
+</div>
+
+<div class="cp-card">
+  <div class="cp-card-head cp-jobdetail-head">
+    <div>
+      <div class="cp-jobdetail-title">{{ job.title }}</div>
+      <div class="cp-jobdetail-sub">
+        <span class="cp-jobdetail-id"><i class="bi bi-hash me-1"></i>{{ job.job_id }}</span>
+        <span class="cp-dot">•</span>
+        <span class="cp-jobdetail-applied"><i class="bi bi-calendar3 me-1"></i>{{ application.applied_on }}</span>
+      </div>
+    </div>
+    <span class="status-pill pill-blue cp-pill-small"><span class="dot"></span>{{ current_stage }}</span>
+  </div>
+
+  <div class="cp-card-body">
+    <div class="cp-meta-grid">
+      <div class="cp-meta-item"><span>Department</span><strong>{{ job.department|default:"-" }}</strong></div>
+      <div class="cp-meta-item"><span>Location</span><strong>{{ job.location|default:"-" }}</strong></div>
+      <div class="cp-meta-item"><span>Experience</span><strong>{{ job.experience_range|default:"-" }}</strong></div>
+      <div class="cp-meta-item"><span>Openings</span><strong>{{ job.openings }}</strong></div>
+      <div class="cp-meta-item"><span>Hiring Manager</span><strong>{{ job.hiring_manager|default:"-" }}</strong></div>
+      <div class="cp-meta-item"><span>Skills Required</span><strong>{{ job.skills_required|default:"-" }}</strong></div>
+    </div>
+
+    <div class="cp-jobdetail-sections">
+      <div class="cp-jobdetail-section">
+        <div class="cp-jobdetail-label">Description</div>
+        <div class="cp-jobdetail-text">{{ job.job_description|default:"-" }}</div>
+      </div>
+      <div class="cp-jobdetail-section">
+        <div class="cp-jobdetail-label">Requirements</div>
+        <div class="cp-jobdetail-text">{{ job.requirements|default:"-"|linebreaksbr }}</div>
+      </div>
+      <div class="cp-jobdetail-section">
+        <div class="cp-jobdetail-label">Benefits</div>
+        <div class="cp-jobdetail-text">{{ job.benefits|default:"-"|linebreaksbr }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

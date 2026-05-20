@@ -1,0 +1,158 @@
+.candidate-profile-screen {
+  background: #F9FAFB;
+}
+
+.profile-title {
+  margin: 0 0 0.9rem;
+  font-size: 1.15rem;
+  color: #4B5563;
+}
+
+.profile-breadcrumb-link {
+  color: #6a3fe2;
+  text-decoration: none;
+}
+
+.profile-breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 0.95rem;
+}
+
+.profile-avatar-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.profile-avatar-top {
+  grid-column: 3 / 4;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+}
+
+.profile-avatar {
+  width: 128px;
+  height: 128px;
+  aspect-ratio: 1 / 1;
+  border-radius: 9999px !important;
+  clip-path: circle(50%);
+  border: 2px solid #E5E7EB;
+  color: #4B5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F9FAFB;
+  overflow: hidden !important;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 9999px;
+  clip-path: circle(50%);
+  position: relative;
+  z-index: 1;
+}
+
+.profile-avatar-icon {
+  font-size: 1rem;
+  line-height: 1;
+  position: relative;
+  z-index: 2;
+  color: #777;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(120, 120, 120, 0.35);
+}
+
+.profile-avatar.has-photo .profile-avatar-icon {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 24px;
+  height: 24px;
+  font-size: 0.72rem;
+  color: #fff;
+  background: rgba(70, 70, 70, 0.78);
+  border: 0;
+}
+
+.profile-history {
+  grid-row: span 2;
+}
+
+.profile-history-input {
+  min-height: 112px;
+  resize: none;
+}
+
+.profile-actions {
+  grid-column: 3 / 4;
+  display: flex;
+  justify-content: flex-end;
+  align-items: end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.profile-save-btn {
+  min-width: 145px;
+  height: 42px;
+  border-radius: 999px;
+  font-size: 0.96rem;
+}
+
+.profile-secondary-btn {
+  min-width: 190px;
+}
+
+.candidate-profile-screen .topbar-search {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-avatar-top {
+    grid-column: auto;
+    justify-content: center;
+  }
+
+  .profile-avatar {
+    width: 104px;
+    height: 104px;
+  }
+
+  .profile-history {
+    grid-row: auto;
+  }
+
+  .profile-actions {
+    grid-column: auto;
+    justify-content: flex-start;
+  }
+}
+
+/* === NEW DESIGN TOKEN OVERRIDES === */
+[class*="bgv-"],[class*="eval-"],[class*="recording-"],[class*="team-"],[class*="task-"],[class*="portal-"],[class*="profile-"] {
+  color: inherit;
+}
+.profile-form-card,.registration-box { background:var(--surface)!important; border:1px solid var(--border)!important; border-radius:var(--radius)!important; }
+.profile-form-title { color:var(--accent2)!important; }
+.profile-form-subtitle { color:var(--text3)!important; }

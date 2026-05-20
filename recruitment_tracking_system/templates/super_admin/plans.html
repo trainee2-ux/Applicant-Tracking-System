@@ -1,0 +1,121 @@
+{% extends "super_admin/base.html" %}
+{% block title %}Super Admin - Plans{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/super_admin.css?v=2">{% endblock %}
+{% block header %}Super Admin &gt; Plans{% endblock %}
+{% block nav_super_admin_plans %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2 superadmin-page">
+  <div class="sa-head">
+    <div>
+      <p class="sa-subtitle">Create and manage subscription plans.</p>
+      <h2 class="sa-title">Plans</h2>
+    </div>
+    <div class="sa-actions">
+      <a class="btn btn-sm btn-primary" href="/super-admin/subscriptions/">
+        <i class="bi bi-stars me-1"></i> Assign Subscription
+      </a>
+    </div>
+  </div>
+
+  <div class="sa-card p-3 mb-3">
+    <div class="sa-card-head">
+      <h3 class="sa-card-title">Create Plan</h3>
+    </div>
+    <form method="post" class="row g-2 align-items-end">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <div class="col-md-4">
+        <label class="form-label">Name</label>
+        <input class="form-control" name="name" placeholder="Standard">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Duration (days)</label>
+        <input class="form-control" id="planDurationDays" name="duration_days" value="30">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Billing Cycle</label>
+        <select class="form-select" id="planBillingCycle" name="billing_cycle">
+          <option value="monthly">monthly</option>
+          <option value="yearly">yearly</option>
+          <option value="custom">custom</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Amount</label>
+        <input class="form-control" name="amount" value="0">
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-plus-lg me-1"></i> Create
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="sa-card p-0">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Duration</th>
+            <th>Cycle</th>
+            <th>Amount</th>
+            <th>Active</th>
+            <th style="width: 120px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in plans %}
+          <tr>
+            <td>{{ p.name }}</td>
+            <td>{{ p.duration_days }} days</td>
+            <td>{{ p.billing_cycle }}</td>
+            <td>{{ p.amount }}</td>
+            <td>{{ p.is_active }}</td>
+            <td>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="toggle">
+                <input type="hidden" name="plan_id" value="{{ p.id }}">
+                <button class="btn btn-sm btn-outline-primary" type="submit">
+                  {% if p.is_active %}<i class="bi bi-pause-circle me-1"></i>Disable{% else %}<i class="bi bi-play-circle me-1"></i>Enable{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No plans yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  (function () {
+    const cycle = document.getElementById("planBillingCycle");
+    const duration = document.getElementById("planDurationDays");
+    if (!cycle || !duration) return;
+
+    const apply = function () {
+      const value = (cycle.value || "").toLowerCase();
+      if (value === "monthly") {
+        duration.value = "30";
+        duration.setAttribute("readonly", "readonly");
+      } else if (value === "yearly") {
+        duration.value = "365";
+        duration.setAttribute("readonly", "readonly");
+      } else {
+        duration.removeAttribute("readonly");
+      }
+    };
+    cycle.addEventListener("change", apply);
+    apply();
+  })();
+</script>
+{% endblock %}

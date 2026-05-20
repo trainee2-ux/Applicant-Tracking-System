@@ -1,0 +1,93 @@
+.portal-access-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portal-access-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-access-search {
+  width: min(320px, 100%);
+}
+
+.portal-access-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.portal-stat-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.portal-stat-label {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-bottom: 3px;
+}
+
+.portal-stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.portal-access-table-card {
+  overflow: hidden;
+}
+
+.portal-access-table thead th {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.portal-access-table tbody td {
+  font-size: 0.8rem;
+  vertical-align: top;
+}
+
+.portal-job-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.portal-job-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.69rem;
+  color: #334155;
+}
+
+@media (max-width: 1100px) {
+  .portal-access-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .portal-access-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .portal-access-search {
+    width: 100%;
+  }
+  .portal-access-stats {
+    grid-template-columns: 1fr;
+  }
+}

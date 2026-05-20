@@ -1,0 +1,67 @@
+/* Candidate management screen specific styles */
+.candidate-screen {
+  min-height: 0;
+  margin-bottom: 0.25rem;
+}
+
+.candidate-tile {
+  width: 168px;
+  height: 128px;
+}
+
+.candidate-eval-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.candidate-eval-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.candidate-span-all {
+  grid-column: 1 / -1;
+}
+
+.candidate-score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding: 0.6rem;
+  border: 1px solid rgba(229, 231, 235, 0.22);
+  border-radius: 12px;
+  background: #F3F4F6;
+}
+
+.eval-metric-card {
+  border: 1px solid rgba(229, 231, 235, 0.25);
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.eval-metric-label {
+  white-space: normal;
+  line-height: 1.2;
+}
+
+@media (max-width: 900px) {
+  .candidate-eval-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .candidate-score-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* === NEW DESIGN TOKEN OVERRIDES === */
+.registration-box{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:var(--radius)!important;}
+.registration-section-title{color:var(--text)!important;}
+.reg-input{background:var(--surface2)!important;border:1px solid var(--border2)!important;color:var(--text)!important;border-radius:var(--radius-sm)!important;}
+.reg-input:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(108,99,255,.1)!important;}
+.reg-submit{background:var(--accent)!important;color:#fff!important;border-radius:var(--radius-sm)!important;}

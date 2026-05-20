@@ -1,0 +1,207 @@
+.candidate-db-wrap {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.candidate-db-panel {
+  border: 1px solid rgba(229, 231, 235, 0.35);
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.candidate-db-head {
+  padding: 0.75rem 0.9rem;
+  background: #F3F4F6;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.2);
+}
+
+.candidate-db-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.candidate-db-head-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.candidate-db-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.candidate-db-action-panel {
+  border: 1px solid rgba(229, 231, 235, 0.2);
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.65rem;
+}
+
+.candidate-db-title {
+  margin: 0;
+  color: #1D4ED8;
+  font-size: 0.96rem;
+}
+
+.candidate-db-hint {
+  font-size: 0.76rem;
+  color: #4B5563;
+}
+
+.candidate-db-head-search {
+  display: grid;
+  grid-template-columns: 160px minmax(180px, 1fr) auto;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.candidate-db-head-search .form-control,
+.candidate-db-head-search .form-select {
+  font-size: 0.8rem;
+  min-width: 0;
+  min-height: 36px;
+}
+
+.candidate-db-apply-btn {
+  min-width: 70px;
+  min-height: 36px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.candidate-db-export-tools {
+  display: grid;
+  grid-template-columns: auto 110px auto;
+  gap: 0.45rem;
+}
+
+.candidate-db-export-inline {
+  display: grid;
+  grid-template-columns: 1fr 120px auto;
+  gap: 0.45rem;
+}
+
+.candidate-db-export-fields {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(229, 231, 235, 0.2);
+  border-radius: 10px;
+  background: #F3F4F6;
+  padding: 0.65rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+.candidate-db-grid {
+  padding: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.candidate-db-grid .form-control,
+.candidate-db-grid .form-select,
+.candidate-db-export .form-control,
+.candidate-db-export .form-select {
+  font-size: 0.82rem;
+}
+
+.candidate-db-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.candidate-db-table thead th {
+  font-size: 0.74rem;
+  background: #F9FAFB;
+  white-space: nowrap;
+}
+
+.candidate-id-select-all-btn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.candidate-db-table tbody td {
+  font-size: 0.8rem;
+}
+
+.candidate-db-export {
+  padding: 0.9rem;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr auto;
+  gap: 0.7rem;
+}
+
+.candidate-db-export-filters {
+  border: 1px solid rgba(229, 231, 235, 0.2);
+  border-radius: 10px;
+  background: #F3F4F6;
+  padding: 0.65rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+.candidate-db-filter-title {
+  grid-column: 1 / -1;
+  font-weight: 600;
+  color: #1D4ED8;
+  margin-bottom: 0.1rem;
+}
+
+.candidate-db-filter-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem 0.6rem;
+}
+
+.candidate-db-filter-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+@media (max-width: 900px) {
+  .candidate-db-head-row,
+  .candidate-db-head-tools,
+  .candidate-db-action-buttons,
+  .candidate-db-head-search,
+  .candidate-db-grid,
+  .candidate-db-export-tools,
+  .candidate-db-export-inline {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-db-export-filters,
+  .candidate-db-export-fields,
+  .candidate-db-filter-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* === NEW DESIGN TOKEN OVERRIDES === */
+[class*="bgv-"],[class*="eval-"],[class*="recording-"],[class*="team-"],[class*="task-"],[class*="portal-"],[class*="profile-"] {
+  color: inherit;
+}
+.profile-form-card,.registration-box { background:var(--surface)!important; border:1px solid var(--border)!important; border-radius:var(--radius)!important; }
+.profile-form-title { color:var(--accent2)!important; }
+.profile-form-subtitle { color:var(--text3)!important; }

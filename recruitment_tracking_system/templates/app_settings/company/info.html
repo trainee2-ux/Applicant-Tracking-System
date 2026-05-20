@@ -1,0 +1,236 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Company Info{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=25">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Company Master &gt; Company Info{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  <div class="settings-main">
+
+    {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+      <div class="ci-alert"><i class="bi bi-info-circle-fill"></i> {{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Page Header -->
+    <div class="ci-page-header">
+      <div>
+        <a href="{% url 'app_settings:company' %}" class="ci-back-link"><i class="bi bi-arrow-left"></i> Company Master</a>
+        <h2 class="ci-title">Company Info</h2>
+        <p class="ci-subtitle">Your organization's profile and public identity</p>
+      </div>
+      <button id="openCompanyCreateBtn" type="button" class="ci-btn-primary">
+        <i class="bi bi-{% if selected_company %}pencil{% else %}plus-lg{% endif %}"></i>
+        {% if selected_company %}Edit Company{% else %}Create Company{% endif %}
+      </button>
+    </div>
+
+    <!-- Company Form -->
+    <div id="companyFormWrap" class="{% if not selected_company %}d-none{% endif %} ci-form-card mb-4">
+      <div class="ci-form-title">
+        <i class="bi bi-building"></i>
+        {% if selected_company %}Update Company Profile{% else %}New Company Profile{% endif %}
+      </div>
+      <form id="companyInfoForm" method="post" enctype="multipart/form-data" class="ci-form-grid">
+        {% csrf_token %}
+        <input type="hidden" name="company_id" value="{{ selected_company.id|default:'' }}">
+        <div>
+          <label class="ci-label">Company Name <span class="ci-req">*</span></label>
+          <input class="ci-input" type="text" name="company_name" value="{{ selected_company.company_name|default:'' }}" required placeholder="Acme Corporation">
+        </div>
+        <div>
+          <label class="ci-label">Domain</label>
+          <input class="ci-input" type="text" name="domain" value="{{ selected_company.domain|default:'' }}" placeholder="acme.com">
+        </div>
+        <div>
+          <label class="ci-label">Website</label>
+          <input class="ci-input" type="text" name="website" value="{{ selected_company.website|default:'' }}" placeholder="https://acme.com">
+        </div>
+        <div>
+          <label class="ci-label">Location</label>
+          <input class="ci-input" type="text" name="location" value="{{ selected_company.location|default:'' }}" placeholder="Mumbai, India">
+        </div>
+        <div>
+          <label class="ci-label">Headcount</label>
+          <input class="ci-input" type="text" name="strength" value="{{ selected_company.strength|default:'' }}" placeholder="e.g. 500+">
+        </div>
+        <div>
+          <label class="ci-label">Industry</label>
+          <input class="ci-input" type="text" name="industry" value="{{ selected_company.industry|default:'' }}" placeholder="Technology">
+        </div>
+        <div>
+          <label class="ci-label">Social Link</label>
+          <input class="ci-input" type="text" name="social_link" value="{{ selected_company.social_link|default:'' }}" placeholder="https://linkedin.com/company/...">
+        </div>
+        <div>
+          <label class="ci-label">Company Logo</label>
+          <input class="ci-input" type="file" name="logo" accept="image/*">
+        </div>
+        <div class="ci-span-all">
+          <label class="ci-label">Company Description</label>
+          <textarea class="ci-input" name="company_description" rows="3" placeholder="Brief description of your company...">{{ selected_company.company_description|default:'' }}</textarea>
+        </div>
+        <div class="ci-form-actions ci-span-all">
+          <button type="submit" name="action" value="save" class="ci-btn-save"><i class="bi bi-check-lg"></i> Save</button>
+          <button type="submit" name="action" value="preview" class="ci-btn-secondary"><i class="bi bi-eye"></i> Preview</button>
+          <button type="submit" name="action" value="share" class="ci-btn-secondary"><i class="bi bi-share"></i> Share</button>
+          {% if selected_company %}
+          <a href="{% url 'app_settings:company_info' %}" class="ci-btn-cancel">Cancel</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <!-- Preview Panel -->
+    {% if preview_data %}
+    <div class="ci-preview-card mb-4">
+      <div class="ci-form-title"><i class="bi bi-eye"></i> Preview</div>
+      <div class="ci-preview-grid">
+        <div class="ci-preview-row"><span class="ci-preview-key">Company Name</span><span class="ci-preview-val">{{ preview_data.company_name }}</span></div>
+        <div class="ci-preview-row"><span class="ci-preview-key">Domain</span><span class="ci-preview-val">{{ preview_data.domain }}</span></div>
+        <div class="ci-preview-row"><span class="ci-preview-key">Website</span><span class="ci-preview-val">{{ preview_data.website }}</span></div>
+        <div class="ci-preview-row"><span class="ci-preview-key">Location</span><span class="ci-preview-val">{{ preview_data.location }}</span></div>
+        <div class="ci-preview-row"><span class="ci-preview-key">Headcount</span><span class="ci-preview-val">{{ preview_data.strength }}</span></div>
+        <div class="ci-preview-row"><span class="ci-preview-key">Industry</span><span class="ci-preview-val">{{ preview_data.industry }}</span></div>
+        <div class="ci-preview-row"><span class="ci-preview-key">Social</span><span class="ci-preview-val">{{ preview_data.social_link }}</span></div>
+        <div class="ci-preview-row ci-span-all"><span class="ci-preview-key">Description</span><span class="ci-preview-val">{{ preview_data.company_description }}</span></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Records Table -->
+    <div class="ci-table-card">
+      <div class="ci-table-header">
+        <span class="ci-table-title"><i class="bi bi-buildings"></i> Registered Companies</span>
+        <span class="ci-count">{{ records|length }} record{% if records|length != 1 %}s{% endif %}</span>
+      </div>
+      <div class="ci-table-wrap">
+        <table class="ci-table">
+          <thead>
+            <tr>
+              <th>COMPANY</th>
+              <th>DOMAIN / WEBSITE</th>
+              <th>LOCATION</th>
+              <th>INDUSTRY</th>
+              <th>SIZE</th>
+              <th class="text-end">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in records %}
+            <tr class="ci-row">
+              <td>
+                <div class="ci-company-cell">
+                  <div class="ci-company-avatar">{{ item.company_name|slice:":1"|upper }}</div>
+                  <div>
+                    <div class="ci-company-name">{{ item.company_name }}</div>
+                    {% if item.social_link %}<div class="ci-company-sub">{{ item.social_link|truncatechars:30 }}</div>{% endif %}
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="ci-company-name" style="font-size:13px">{{ item.domain|default:"—" }}</div>
+                <div class="ci-company-sub">{{ item.website|default:"" }}</div>
+              </td>
+              <td class="ci-company-sub">{{ item.location|default:"—" }}</td>
+              <td><span class="ci-tag">{{ item.industry|default:"—" }}</span></td>
+              <td class="ci-company-sub">{{ item.strength|default:"—" }}</td>
+              <td class="text-end">
+                <div class="ci-actions">
+                  <a href="/settings/company/info/?edit={{ item.id }}" class="ci-act-btn edit" title="Edit"><i class="bi bi-pencil"></i></a>
+                  <form method="post" class="d-inline" onsubmit="return confirm('Delete {{ item.company_name }}?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="company_id" value="{{ item.id }}">
+                    <button type="submit" name="action" value="delete" class="ci-act-btn del" title="Delete"><i class="bi bi-trash3"></i></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="ci-empty">
+                <i class="bi bi-building-slash"></i>
+                <p>No company records yet</p>
+                <span>Click "Create Company" to add your organization</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .ci-alert{padding:10px 16px;border-radius:10px;margin-bottom:8px;font-size:13px;font-weight:600;background:var(--accentbg);color:var(--accent);border-left:4px solid var(--accent);display:flex;align-items:center;gap:8px}
+  .ci-page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;gap:12px;flex-wrap:wrap}
+  .ci-back-link{display:block;font-size:12px;font-weight:600;color:var(--text3);text-decoration:none;margin-bottom:4px;transition:color .15s}
+  .ci-back-link:hover{color:var(--accent)}
+  .ci-title{font-size:22px;font-weight:800;color:var(--text);margin:0 0 3px}
+  .ci-subtitle{font-size:13px;color:var(--text3);margin:0}
+  .ci-btn-primary{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(108,99,255,.3);transition:all .15s;cursor:pointer}
+  .ci-btn-primary:hover{transform:translateY(-2px)}
+  .ci-form-card,.ci-preview-card{background:var(--surface);border:1px solid var(--accent);border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(108,99,255,.1)}
+  .ci-form-title{padding:16px 24px;border-bottom:1px solid var(--border);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);display:flex;align-items:center;gap:8px}
+  .ci-form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:24px}
+  .ci-span-all{grid-column:1/-1}
+  .ci-label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:6px}
+  .ci-req{color:var(--red)}
+  .ci-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;transition:border-color .2s;resize:vertical}
+  .ci-input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accentbg)}
+  .ci-form-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .ci-btn-save{background:var(--accent);color:#fff;border:none;padding:9px 20px;border-radius:10px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .ci-btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:9px 18px;border-radius:10px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .ci-btn-cancel{background:transparent;color:var(--text3);text-decoration:none;padding:9px 16px;border-radius:10px;font-weight:600;font-size:13px;border:1px solid var(--border)}
+  .ci-preview-grid{padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ci-preview-row{display:flex;flex-direction:column;gap:3px}
+  .ci-preview-key{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)}
+  .ci-preview-val{font-size:13px;font-weight:600;color:var(--text)}
+  .ci-table-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.05)}
+  .ci-table-header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--border)}
+  .ci-table-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);display:flex;align-items:center;gap:8px}
+  .ci-count{font-size:12px;font-weight:600;color:var(--text3);background:var(--surface2);padding:3px 10px;border-radius:20px;border:1px solid var(--border)}
+  .ci-table-wrap{overflow-x:auto}
+  .ci-table{width:100%;border-collapse:collapse}
+  .ci-table thead th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);padding:12px 20px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}
+  .ci-row:hover{background:var(--surface2)}
+  .ci-row td{padding:14px 20px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .ci-row:last-child td{border-bottom:none}
+  .ci-company-cell{display:flex;align-items:center;gap:12px}
+  .ci-company-avatar{width:38px;height:38px;border-radius:10px;background:var(--accentbg);color:var(--accent);font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .ci-company-name{font-size:14px;font-weight:700;color:var(--text)}
+  .ci-company-sub{font-size:11px;color:var(--text3)}
+  .ci-tag{background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:3px 10px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap}
+  .ci-actions{display:flex;justify-content:flex-end;gap:6px}
+  .ci-act-btn{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;transition:all .15s;border:none;cursor:pointer}
+  .ci-act-btn.edit{background:var(--bluebg);color:var(--blue)}
+  .ci-act-btn.del{background:var(--redbg);color:var(--red)}
+  .ci-act-btn:hover{transform:scale(1.1)}
+  .ci-empty{text-align:center;padding:60px 20px;color:var(--text3)}
+  .ci-empty i{font-size:40px;opacity:.2;display:block;margin-bottom:12px}
+  .ci-empty p{font-size:15px;font-weight:700;color:var(--text2);margin:0 0 4px}
+  .ci-empty span{font-size:12px}
+  @media(max-width:900px){.ci-form-grid{grid-template-columns:1fr 1fr}.ci-preview-grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block page_js %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("openCompanyCreateBtn");
+  const wrap = document.getElementById("companyFormWrap");
+  if (btn && wrap) {
+    btn.addEventListener("click", () => { wrap.classList.toggle("d-none"); });
+  }
+});
+</script>
+{% endblock %}

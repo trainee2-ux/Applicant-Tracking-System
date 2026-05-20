@@ -1,0 +1,1249 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Task Management{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/task_management.css?v=3">
+<style>
+  /* Custom Toggle Switch for Checkboxes */
+  .premium-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+  }
+  .premium-switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border); transition: .4s; border-radius: 24px;
+  }
+  .slider:before {
+    position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background-color: white; transition: .4s; border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  input:checked + .slider { background-color: var(--accent); }
+  input:checked + .slider:before { transform: translateX(20px); }
+  
+  .switch-row {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+    padding: 12px 16px; background: var(--bg); border-radius: 12px; border: 1px solid var(--border);
+  }
+  .switch-label { font-weight: 700; color: var(--text); font-size: 0.95rem; margin: 0; }
+  .done-toggle { display:flex; align-items:center; gap: 8px; justify-content:flex-start; }
+  .done-toggle .done-text { font-weight: 850; font-size: 0.78rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; }
+  
+  .subsection-panel {
+    background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px dashed var(--border);
+    margin-bottom: 1rem; margin-top: -8px;
+  }
+  
+  .radio-group { display: flex; gap: 16px; align-items: center; height: 46px; }
+  .custom-radio { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: var(--text2); }
+  .custom-radio input { accent-color: var(--accent); width: 16px; height: 16px; }
+  
+  .inline-select-form select {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .inline-select-form select:hover { border-color: var(--accent); }
+  
+  .badge-premium { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-approved { background: rgba(22, 163, 74, 0.1); color: #16a34a; }
+  .badge-submitted { background: rgba(217, 119, 6, 0.1); color: #d97706; }
+  .badge-rejected { background: rgba(220, 38, 38, 0.1); color: #dc2626; }
+  .badge-draft { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+
+  tr.subtask-row td { background: rgba(99, 102, 241, 0.04); }
+  tr.subtask-row td:first-child { border-left: 4px solid rgba(99, 102, 241, 0.35); }
+
+  .task-search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    width: min(420px, 100%);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .task-search-bar input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 650;
+  }
+  .task-search-bar:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accentbg);
+  }
+
+  .task-tree-toggle {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .task-tree-toggle:hover { background: var(--surface3); border-color: var(--text3); }
+  .task-tree-toggle[aria-expanded="false"] i { transform: rotate(-90deg); }
+  .task-tree-toggle i { transition: transform 0.15s ease; font-size: 0.9rem; }
+  .task-subject-wrap { display:flex; flex-direction: column; gap: 3px; min-width: 260px; }
+  .task-subject-line { display:flex; align-items:center; gap: 10px; }
+  .task-subject-text {
+    font-weight: 900;
+    color: var(--text);
+    line-height: 1.15;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .task-subject-sub { font-size: 0.78rem; color: var(--text3); font-weight: 650; }
+  .task-row-hidden { display: none !important; }
+  .premium-table { table-layout: fixed; width: 100%; }
+  .premium-table th, .premium-table td { overflow: hidden; text-overflow: ellipsis; }
+  .premium-table td { white-space: nowrap; }
+  .premium-table td:nth-child(2) { white-space: normal; } /* Owner info */
+  .premium-table td:nth-child(3) { white-space: normal; } /* Job/Subject */
+  tr.subtask-row td { padding-top: 12px; padding-bottom: 12px; }
+  tr.subtask-row .task-subject-text { font-weight: 800; font-size: 0.93rem; -webkit-line-clamp: 3; }
+  tr.subtask-row .task-subject-sub { font-size: 0.75rem; }
+  .subtask-group-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    font-weight: 900;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    width: max-content;
+  }
+  tr.group-header-row td {
+    background: rgba(99, 102, 241, 0.07);
+    border-top: 1px solid rgba(99, 102, 241, 0.15);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+    padding: 10px 18px;
+  }
+  .group-header-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+    font-weight: 950;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+  }
+</style>
+{% endblock %}
+{% block nav_task_management %}active{% endblock %}
+
+{% block content %}
+<div class="premium-dashboard fade-in">
+  
+  <!-- Premium Header -->
+  <div class="premium-header mb-5">
+    <div class="header-content">
+      <h1 class="page-title">Task Orchestration</h1>
+      <p class="page-subtitle">Coordinate recruitment activities, set deadlines, and track individual or team performance.</p>
+    </div>
+    <div class="header-actions" style="display: flex; gap: 12px;">
+      <a href="{% url 'task_management:timesheet_report' %}" class="btn-secondary-pro">
+        <i class="bi bi-clock-history"></i> Timesheets
+      </a>
+      <button id="openTaskCreateBtn" class="btn-premium">
+        <span class="btn-icon"><i class="bi bi-plus-lg"></i></span>
+        <span>Create Task</span>
+      </button>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="alert-container mb-4">
+    {% for message in messages %}
+    <div class="premium-alert alert-{{ message.tags|default:'info' }}" style="background: var(--accentbg); border-left: 4px solid var(--accent); padding: 12px 20px; border-radius: 0 12px 12px 0; display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--text); margin-bottom: 8px;">
+      <i class="bi bi-info-circle-fill"></i>
+      <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Task Creation Form -->
+  <div id="taskCreateFormWrap" class="form-wrapper glass-panel mb-5 {% if not selected_task and not initial_parent_task %}d-none{% endif %}">
+    <div class="form-header">
+      <div class="form-icon">{% if selected_task %}<i class="bi bi-pencil-square"></i>{% else %}<i class="bi bi-check2-square"></i>{% endif %}</div>
+      <h3 class="form-title">{% if selected_task %}Modify Assignment{% else %}Define New Assignment{% endif %}</h3>
+    </div>
+    
+    <form id="taskCreateForm" method="post" action="{% url 'task_management:index' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_task">
+      <input type="hidden" name="task_id" value="{{ selected_task.id|default:'' }}">
+
+      <h5 class="mb-3" style="font-weight: 700; color: var(--text); font-size: 1.05rem;">Core Details</h5>
+      
+      <div class="form-grid grid-cols-3 mb-4">
+        <div class="input-field">
+          <label>Task ID</label>
+          <div class="input-wrapper disabled">
+            <i class="bi bi-hash input-icon"></i>
+            <input id="taskIdDisplay" type="text"
+                   value="{% if selected_task and selected_task.task_id %}{{ selected_task.task_id }}{% elif initial_parent_task and next_subtask_id_preview %}{{ next_subtask_id_preview }}{% else %}{{ next_task_id_preview|default:'—' }}{% endif %}"
+                   readonly style="background: rgba(0,0,0,0.02); color: var(--text3);">
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Assignment Type <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-diagram-3 input-icon"></i>
+            <select id="taskAssignType">
+              <option value="person" {% if not selected_task.team %}selected{% endif %}>Person</option>
+              <option value="team" {% if selected_task.team %}selected{% endif %}>Team</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field {% if selected_task.team %}d-none{% endif %}" id="taskOwnerWrap">
+          <label>Assigned To <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-person input-icon"></i>
+            <select name="task_owner">
+              <option value="">Select Staff Member</option>
+              {% for owner in task_owners %}
+              <option value="{{ owner.value }}"
+                      {% if selected_task.owner == owner.value %}selected{% elif not selected_task and request.session.login_user_name|lower == owner.value|lower %}selected{% endif %}>
+                {{ owner.label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field {% if not selected_task.team %}d-none{% endif %}" id="taskTeamWrap">
+          <label>Team <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-people input-icon"></i>
+            <select name="team_id" id="taskTeamSelect">
+              <option value="">Select Team</option>
+              {% for team in team_options %}
+              <option value="{{ team.id }}" {% if selected_task.team and selected_task.team.id == team.id %}selected{% endif %} data-members="{{ team.team_members|default:'' }}" data-lead="{{ team.team_lead|default:'' }}">
+                {{ team.team_name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Job ID</label>
+          <div class="input-wrapper">
+            <i class="bi bi-briefcase input-icon"></i>
+            <select name="job_id">
+              <option value="">Unlinked Task</option>
+              {% for job in job_options %}
+              <option value="{{ job.job_id }}" {% if selected_task.job_id == job.job_id %}selected{% endif %}>
+                {{ job.job_id }}{% if job.title %} - {{ job.title }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field col-span-2">
+          <label>Subject <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-card-text input-icon"></i>
+            <input type="text" name="subject" value="{{ selected_task.subject|default:'' }}" required placeholder="e.g. Conduct technical screening">
+          </div>
+        </div>
+      </div>
+
+      <h5 class="mb-3 mt-4" style="font-weight: 700; color: var(--text); font-size: 1.05rem;">Target & Scheduling</h5>
+
+      <div class="form-grid grid-cols-3 mb-4">
+        <div class="input-field">
+          <label>Select Target Type</label>
+          <div class="input-wrapper">
+            <i class="bi bi-bullseye input-icon"></i>
+            <select id="taskTargetType" name="target_type">
+              <option value="">Select Target</option>
+              <option value="contact" {% if selected_task and selected_task.target_type == 'contact' %}selected{% elif not selected_task and initial_parent_task and not initial_parent_task.candidate %}selected{% endif %}>Contact</option>
+              <option value="candidate" {% if selected_task and selected_task.target_type == 'candidate' %}selected{% elif not selected_task and initial_parent_task and initial_parent_task.candidate %}selected{% endif %}>Candidate</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field d-none" id="taskContactWrap">
+          <label>Contact Name</label>
+          <div class="input-wrapper">
+            <i class="bi bi-person-badge input-icon"></i>
+            <input type="text" name="contact_name" value="{{ selected_task.contact_name|default:'' }}" placeholder="Enter contact name">
+          </div>
+        </div>
+
+        <div class="input-field d-none" id="taskCandidateWrap">
+          <label>Candidate</label>
+          <div class="input-wrapper">
+            <i class="bi bi-person-lines-fill input-icon"></i>
+            <select name="candidate" id="taskCandidateSelect">
+              <option value="">Select Candidate</option>
+              {% for candidate in candidates %}
+              <option value="{{ candidate.id }}" {% if selected_task.candidate and selected_task.candidate.candidate_id == candidate.id %}selected{% elif not selected_task and initial_parent_task and initial_parent_task.candidate and initial_parent_task.candidate.candidate_id == candidate.id %}selected{% endif %}>{{ candidate.id }} - {{ candidate.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Subtask</label>
+          <div class="switch-row" style="margin-bottom:0;">
+            <label class="premium-switch" style="margin:0;">
+              <input type="checkbox" id="subtaskToggle" {% if selected_task.parent_task or initial_parent_task %}checked{% endif %}>
+              <span class="slider"></span>
+            </label>
+            <p class="switch-label" style="margin:0;">Create as subtask</p>
+          </div>
+        </div>
+
+        <div class="input-field d-none" id="parentTaskWrap">
+          <label>Parent Task</label>
+          <div class="input-wrapper">
+            <i class="bi bi-diagram-3 input-icon"></i>
+            <select name="parent_task_id" id="parentTaskSelect">
+              <option value="">Select Parent Task</option>
+              {% for opt in parent_task_options %}
+              <option value="{{ opt.id }}"
+                      data-candidate="{{ opt.candidate_id|default:'' }}"
+                      {% if selected_task.parent_task and selected_task.parent_task.id == opt.id %}selected{% elif not selected_task and initial_parent_task and initial_parent_task.id == opt.id %}selected{% endif %}>
+                {{ opt.task_id }} - {{ opt.subject }}{% if opt.candidate_name %} ({{ opt.candidate_name }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Start Date</label>
+          <div class="input-wrapper">
+            <i class="bi bi-calendar2-week input-icon"></i>
+            <input type="date" name="start_date" value="{{ selected_task.start_date|date:'Y-m-d'|default:'' }}">
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Deadline</label>
+          <div class="input-wrapper">
+            <i class="bi bi-calendar-event input-icon"></i>
+            <input type="date" name="due_date" value="{{ selected_task.due_date|date:'Y-m-d'|default:'' }}">
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Status <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-flag input-icon"></i>
+            <select name="status" required>
+              {% for status in statuses %}
+              <option {% if selected_task.status == status %}selected{% endif %}>{{ status }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Priority <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-exclamation-triangle input-icon"></i>
+            <select name="priority" required>
+              {% for priority in priorities %}
+              <option {% if selected_task.priority == priority %}selected{% endif %}>{{ priority }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <h5 class="mb-3 mt-4" style="font-weight: 700; color: var(--text); font-size: 1.05rem;">Configurations</h5>
+
+      <div class="switch-row">
+        <label class="premium-switch">
+          <input type="checkbox" name="sla_enabled" id="slaToggle" {% if selected_task.sla_enabled or not selected_task %}checked{% endif %}>
+          <span class="slider"></span>
+        </label>
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          <p class="switch-label" style="margin:0;">Apply SLA for Response/Resolution</p>
+          <div style="font-size:0.82rem; color: var(--text3); font-weight:650;">
+            First Response: <span id="slaRespPreview">-</span> &nbsp; | &nbsp; Resolution: <span id="slaResPreview">-</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="switch-row">
+        <label class="premium-switch">
+          <input type="checkbox" name="send_notification_email" {% if selected_task.send_notification_email %}checked{% endif %}>
+          <span class="slider"></span>
+        </label>
+        <p class="switch-label">Send Notification Email on Assignment</p>
+      </div>
+
+      <div class="switch-row">
+        <label class="premium-switch">
+          <input id="repeatToggle" type="checkbox" name="repeat_enabled" {% if selected_task.repeat_enabled %}checked{% endif %}>
+          <span class="slider"></span>
+        </label>
+        <p class="switch-label">Enable Recurring Task (Repeat)</p>
+      </div>
+
+      <div id="repeatFields" class="subsection-panel d-none">
+        <div class="form-grid grid-cols-3">
+          <div class="input-field">
+            <label>Start Date</label>
+            <div class="input-wrapper"><input type="date" name="repeat_start_date" value="{{ selected_task.repeat_start_date|date:'Y-m-d'|default:'' }}" style="padding-left:16px;"></div>
+          </div>
+          <div class="input-field">
+            <label>End Date</label>
+            <div class="input-wrapper"><input type="date" name="repeat_end_date" value="{{ selected_task.repeat_end_date|date:'Y-m-d'|default:'' }}" style="padding-left:16px;"></div>
+          </div>
+          <div class="input-field">
+            <label>Repeat Type</label>
+            <div class="input-wrapper">
+              <select name="repeat_type" style="padding-left:16px;">
+                {% for repeat_type in repeat_types %}
+                <option value="{{ repeat_type|lower }}" {% if selected_task.repeat_type|lower == repeat_type|lower %}selected{% endif %}>{{ repeat_type }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="switch-row">
+        <label class="premium-switch">
+          <input id="reminderToggle" type="checkbox" name="reminder_enabled" {% if selected_task.reminder_enabled %}checked{% endif %}>
+          <span class="slider"></span>
+        </label>
+        <p class="switch-label">Enable Reminders</p>
+      </div>
+
+      <div id="reminderFields" class="subsection-panel d-none">
+        <div class="form-grid grid-cols-3">
+          <div class="input-field">
+            <label>Start Date</label>
+            <div class="input-wrapper"><input type="date" name="reminder_start_date" value="{{ selected_task.reminder_start_date|date:'Y-m-d'|default:'' }}" style="padding-left:16px;"></div>
+          </div>
+          <div class="input-field">
+            <label>Reminder Type</label>
+            <div class="input-wrapper">
+              <select name="reminder_type" style="padding-left:16px;">
+                {% for repeat_type in repeat_types %}
+                <option value="{{ repeat_type|lower }}" {% if selected_task.reminder_type|lower == repeat_type|lower %}selected{% endif %}>{{ repeat_type }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="input-field">
+            <label>Notify Mode</label>
+            <div class="radio-group">
+              <label class="custom-radio"><input type="radio" name="reminder_notify_mode" value="email" {% if selected_task.reminder_notify_mode == "email" %}checked{% endif %}> Email</label>
+              <label class="custom-radio"><input type="radio" name="reminder_notify_mode" value="popup" {% if not selected_task.reminder_notify_mode or selected_task.reminder_notify_mode == "popup" %}checked{% endif %}> Pop up</label>
+              <label class="custom-radio"><input type="radio" name="reminder_notify_mode" value="both" {% if selected_task.reminder_notify_mode == "both" %}checked{% endif %}> Both</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid grid-cols-1 mb-4 mt-4">
+        <div class="input-field">
+          <label>Task Description</label>
+          <div class="input-wrapper">
+            <i class="bi bi-chat-left-text input-icon" style="top: 14px;"></i>
+            <textarea name="description" rows="4" class="with-icon" placeholder="Provide detailed instructions...">{{ selected_task.description|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div id="subtasksPanel" class="subsection-panel d-none">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap: 12px;">
+          <div>
+            <h5 class="mb-1" style="font-weight: 800; color: var(--text); font-size: 1.0rem;">Subtasks</h5>
+            <div style="font-size: 0.85rem; color: var(--text3); font-weight: 600;">Add multiple subtasks under this parent task.</div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button type="button" id="loadOnboardingTemplateBtn" class="btn-secondary-pro" style="padding: 8px 12px;">
+              <i class="bi bi-list-check"></i> Load Onboarding
+            </button>
+            <button type="button" id="addSubtaskRowBtn" class="btn-secondary-pro" style="padding: 8px 12px;">
+              <i class="bi bi-plus-lg"></i> Add Subtask
+            </button>
+          </div>
+        </div>
+        <div class="mt-3" style="overflow-x:auto;">
+          <table class="premium-table" style="min-width: 760px;">
+            <thead>
+              <tr>
+                <th style="width: 12%;">Task ID</th>
+                <th style="width: 60%;">Subtask Subject</th>
+                <th style="width: 18%;">Target</th>
+                <th style="width: 25%;">Assignee</th>
+                <th style="width: 30%;">Due Date</th>
+                <th style="width: 16%;">Status</th>
+                <th style="width: 16%;">Priority</th>
+              </tr>
+            </thead>
+            <tbody id="subtasksTbody"></tbody>
+          </table>
+        </div>
+      </div>
+       
+      <div class="form-actions mt-4" style="display: flex; justify-content: flex-end; gap: 12px; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+        <button type="button" id="cancelTaskCreateBtn" class="btn-ghost">Cancel</button>
+        <button type="button" class="btn-secondary-pro">Save & New</button>
+        <button type="submit" class="btn-premium">
+          <span>{% if selected_task %}Update Task{% else %}Save Task{% endif %}</span>
+          <i class="bi bi-check2-circle"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Tasks Inventory -->
+  <div class="section-title-wrapper mb-3 d-flex justify-content-between align-items-end">
+    <h3 class="section-title"><i class="bi bi-list-task text-accent"></i> Task Directory</h3>
+    <div class="task-search-bar">
+      <i class="bi bi-search" style="color: var(--text3);"></i>
+      <input type="text" id="taskSearch" placeholder="Filter tasks...">
+    </div>
+  </div>
+
+  <div class="table-container glass-panel">
+    <table class="premium-table" style="min-width: 1200px;">
+      <colgroup>
+        <col style="width: 120px;">
+        <col style="width: 190px;">
+        <col style="width: 380px;">
+        <col style="width: 170px;">
+        <col style="width: 130px;">
+        <col style="width: 140px;">
+        <col style="width: 140px;">
+        <col style="width: 120px;">
+        <col style="width: 120px;">
+        <col style="width: 130px;">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Owner Info</th>
+          <th>Job / Subject</th>
+          <th>Target</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th>Priority</th>
+          <th>Duration</th>
+          <th>Approval</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="taskTableBody">
+        {% for row in tasks %}
+        {% if row.is_group_header %}
+        <tr class="table-row group-header-row task-child"
+            data-task-id="{{ row.id }}"
+            {% if row.parent_id %}data-parent-id="{{ row.parent_id }}"{% endif %}
+            data-root-id="{{ row.root_id }}"
+            data-level="{{ row.level }}">
+          <td colspan="10">
+            <div style="margin-left: {{ row.indent|default:0 }}px;">
+              <span class="group-header-pill"><i class="bi bi-layers"></i> {{ row.group_title }}</span>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr class="table-row {% if row.level > 0 %}subtask-row{% endif %}"
+            data-task-id="{{ row.id }}"
+            {% if row.parent_id %}data-parent-id="{{ row.parent_id }}"{% endif %}
+            data-root-id="{{ row.root_id }}"
+            data-level="{{ row.level }}">
+          <td>
+            <span style="font-family: var(--mono, monospace); font-size: 0.8rem; font-weight: 700; color: var(--text2);">{{ row.task_id|default:"-" }}</span>
+          </td>
+          <td>
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-weight: 700; color: var(--text); font-size: 0.95rem;">{{ row.owner }}</span>
+              <span style="font-size: 0.8rem; color: var(--text3);">Role: {{ row.owner_role }}</span>
+              {% if row.team %}<span style="font-size: 0.8rem; font-weight: 600; color: var(--accent);">Team: {{ row.team }}</span>{% endif %}
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div class="task-subject-wrap" style="margin-left: {{ row.indent|default:0 }}px;">
+                <div class="task-subject-line">
+                  {% if row.has_children %}
+                    <button type="button" class="task-tree-toggle" aria-expanded="false" title="Expand/Collapse">
+                      <i class="bi bi-caret-down-fill"></i>
+                    </button>
+                  {% else %}
+                    {% if row.level > 0 %}
+                      <span style="width:26px; display:inline-flex; justify-content:center; color: var(--text3);"><i class="bi bi-dot"></i></span>
+                    {% else %}
+                      <span style="width:26px;"></span>
+                    {% endif %}
+                  {% endif %}
+                  <span class="task-subject-text" title="{{ row.subject }}">{{ row.subject }}</span>
+                </div>
+                {% if row.level > 0 and row.parent_task %}
+                  <div class="task-subject-sub">Subtask of {{ row.parent_task }}</div>
+                {% endif %}
+              </div>
+              {% if row.job_id %}<span class="job-pill" style="font-size: 0.75rem; display: inline-block; width: max-content;"><i class="bi bi-briefcase"></i> {{ row.job_id }}</span>{% endif %}
+            </div>
+          </td>
+          <td>
+            <span style="font-size: 0.85rem; color: var(--text2); font-weight: 600;">{{ row.candidate|default:"-" }}</span>
+          </td>
+          <td>
+            <div class="due-date">
+              <i class="bi bi-calendar" style="color: var(--text3);"></i>
+              {% if row.due_date %}{{ row.due_date|date:"d-M-Y" }}{% else %}-{% endif %}
+            </div>
+          </td>
+          <td>
+            <form method="post" class="mb-0 inline-select-form">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_task_dropdown">
+              <input type="hidden" name="task_id" value="{{ row.id }}">
+              <input type="hidden" name="field_name" value="status">
+              <select name="field_value" style="width: 100%; max-width: 160px;">
+                {% for status in statuses %}
+                <option value="{{ status }}" {% if row.status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+              </select>
+            </form>
+            <form method="post" class="mb-0 mt-2">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="toggle_task_done">
+              <input type="hidden" name="task_id" value="{{ row.id }}">
+              <div class="done-toggle">
+                <label class="premium-switch" style="margin:0;">
+                  <input type="checkbox" name="done" value="1" {% if row.status|lower == "completed" %}checked{% endif %} onchange="this.form.submit()">
+                  <span class="slider"></span>
+                </label>
+                <span class="done-text">{% if row.status|lower == "completed" %}Yes{% else %}No{% endif %}</span>
+              </div>
+            </form>
+          </td>
+          <td>
+            <form method="post" class="mb-0 inline-select-form">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_task_dropdown">
+              <input type="hidden" name="task_id" value="{{ row.id }}">
+              <input type="hidden" name="field_name" value="priority">
+              <select name="field_value" style="width: 100%; max-width: 140px;">
+                {% for priority in priorities %}
+                <option value="{{ priority }}" {% if row.priority == priority %}selected{% endif %}>{{ priority }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text2);">{{ row.duration }}</span>
+          </td>
+          <td>
+            {% if row.submission_status == "approved" %}
+              <span class="badge-premium badge-approved">Approved</span>
+            {% elif row.submission_status == "submitted" %}
+              <span class="badge-premium badge-submitted" title="Submitted {% if row.submitted_to %} to {{ row.submitted_to }}{% endif %}">Submitted</span>
+            {% elif row.submission_status == "rejected" %}
+              <span class="badge-premium badge-rejected">Rejected</span>
+            {% else %}
+              <span class="badge-premium badge-draft">Draft</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="action-cell">
+              {% if row.status|lower == "completed" and row.submission_status == "draft" %}
+              <form method="post" class="mb-0" title="Submit to Manager">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="submit_to_manager">
+                <input type="hidden" name="task_id" value="{{ row.id }}">
+                <button type="submit" class="btn-icon-action" style="color: #16a34a;"><i class="bi bi-send-fill"></i></button>
+              </form>
+              {% endif %}
+              
+              {% if row.submission_status == "submitted" and request.session.login_user_name|lower == row.submitted_to|lower %}
+              <form method="post" class="mb-0" title="Approve">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="approve_task">
+                <input type="hidden" name="task_id" value="{{ row.id }}">
+                <button type="submit" class="btn-icon-action" style="color: #16a34a;"><i class="bi bi-check-circle-fill"></i></button>
+              </form>
+              <form method="post" class="mb-0" title="Reject">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reject_task">
+                <input type="hidden" name="task_id" value="{{ row.id }}">
+                <input type="hidden" name="rejection_reason" value="Rejected by manager">
+                <button type="submit" class="btn-icon-action" style="color: #dc2626;"><i class="bi bi-x-circle-fill"></i></button>
+              </form>
+              {% endif %}
+              
+              {% if row.level == 0 %}
+              <a href="?parent={{ row.id }}" class="btn-icon-action" title="Add Subtask" style="color: var(--accent);">
+                <i class="bi bi-node-plus-fill"></i>
+              </a>
+              {% endif %}
+              <a href="?edit={{ row.id }}" class="btn-icon-action edit" title="Edit Task">
+                <i class="bi bi-pencil-fill"></i>
+              </a>
+              <form method="post" class="mb-0" onsubmit="return confirm('Archive this task?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_task">
+                <input type="hidden" name="task_id" value="{{ row.id }}">
+                <button type="submit" class="btn-icon-action delete" title="Archive">
+                  <i class="bi bi-trash3-fill"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+        {% empty %}
+        <tr>
+          <td colspan="10">
+            <div class="empty-state">
+              <div class="empty-illustration">
+                <i class="bi bi-clipboard-check"></i>
+              </div>
+              <h4>All caught up!</h4>
+              <p>No active tasks in your feed. Create a new assignment to begin tracking activities.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/task_management.js?v=2"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Reveal animation
+    setTimeout(() => document.querySelector('.premium-dashboard').classList.add('visible'), 10);
+
+    const openBtn = document.getElementById("openTaskCreateBtn");
+    const closeBtn = document.getElementById("cancelTaskCreateBtn");
+    const formWrap = document.getElementById("taskCreateFormWrap");
+    
+    if (openBtn && formWrap) {
+      openBtn.addEventListener("click", () => {
+        formWrap.classList.remove("d-none");
+        setTimeout(() => {
+          formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          formWrap.classList.add('highlight-pulse');
+          setTimeout(() => formWrap.classList.remove('highlight-pulse'), 1000);
+        }, 50);
+      });
+    }
+
+    if (closeBtn && formWrap) {
+      closeBtn.addEventListener("click", () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.has('edit')) {
+          window.location.href = "{% url 'task_management:index' %}";
+        } else {
+          formWrap.classList.add("d-none");
+        }
+      });
+    }
+
+    // Toggle logic for Repeat/Reminder Checkboxes
+    const repeatToggle = document.getElementById('repeatToggle');
+    const repeatFields = document.getElementById('repeatFields');
+    if(repeatToggle && repeatFields) {
+      const updateRepeat = () => { repeatToggle.checked ? repeatFields.classList.remove('d-none') : repeatFields.classList.add('d-none'); };
+      repeatToggle.addEventListener('change', updateRepeat);
+      updateRepeat();
+    }
+
+    const reminderToggle = document.getElementById('reminderToggle');
+    const reminderFields = document.getElementById('reminderFields');
+    if(reminderToggle && reminderFields) {
+      const updateReminder = () => { reminderToggle.checked ? reminderFields.classList.remove('d-none') : reminderFields.classList.add('d-none'); };
+      reminderToggle.addEventListener('change', updateReminder);
+      updateReminder();
+    }
+
+    // Target Type Logic
+    const targetTypeSelect = document.getElementById('taskTargetType');
+    const contactWrap = document.getElementById('taskContactWrap');
+    const candidateWrap = document.getElementById('taskCandidateWrap');
+    
+    if(targetTypeSelect) {
+      const updateTarget = () => {
+        contactWrap.classList.add('d-none');
+        candidateWrap.classList.add('d-none');
+        if(targetTypeSelect.value === 'contact') contactWrap.classList.remove('d-none');
+        if(targetTypeSelect.value === 'candidate') candidateWrap.classList.remove('d-none');
+        
+        // Also call global function if defined
+        if(window.toggleTaskTargetType) window.toggleTaskTargetType(targetTypeSelect.value);
+      };
+      targetTypeSelect.addEventListener('change', updateTarget);
+      updateTarget();
+    }
+
+    // SLA Preview Logic
+    const slaToggle = document.getElementById("slaToggle");
+    const slaRespPreview = document.getElementById("slaRespPreview");
+    const slaResPreview = document.getElementById("slaResPreview");
+    const prioritySelectMain = document.querySelector("select[name='priority']");
+    const slaMap = {
+      urgent: { resp: {{ sla_priority_map.urgent.resp|default:1 }}, res: {{ sla_priority_map.urgent.res|default:4 }} },
+      high: { resp: {{ sla_priority_map.high.resp|default:2 }}, res: {{ sla_priority_map.high.res|default:10 }} },
+      medium: { resp: {{ sla_priority_map.medium.resp|default:6 }}, res: {{ sla_priority_map.medium.res|default:20 }} },
+      low: { resp: {{ sla_priority_map.low.resp|default:8 }}, res: {{ sla_priority_map.low.res|default:30 }} },
+    };
+    const updateSlaPreview = function () {
+      if (!slaRespPreview || !slaResPreview) return;
+      if (slaToggle && !slaToggle.checked) {
+        slaRespPreview.textContent = "-";
+        slaResPreview.textContent = "-";
+        return;
+      }
+      const key = (prioritySelectMain && prioritySelectMain.value ? prioritySelectMain.value : "Medium").toLowerCase();
+      const cfg = slaMap[key] || slaMap["medium"];
+      slaRespPreview.textContent = `${cfg.resp}h`;
+      slaResPreview.textContent = `${cfg.res}h`;
+    };
+    if (prioritySelectMain) prioritySelectMain.addEventListener("change", updateSlaPreview);
+    if (slaToggle) slaToggle.addEventListener("change", updateSlaPreview);
+    updateSlaPreview();
+
+    // Subtask Logic
+    const subtaskToggle = document.getElementById('subtaskToggle');
+    const parentTaskWrap = document.getElementById('parentTaskWrap');
+    const parentTaskSelect = document.getElementById('parentTaskSelect');
+    const candidateSelect = document.getElementById('taskCandidateSelect');
+    const subtasksPanel = document.getElementById('subtasksPanel');
+    const subtasksTbody = document.getElementById('subtasksTbody');
+    const addSubtaskRowBtn = document.getElementById('addSubtaskRowBtn');
+
+    const filterParentTasksForCandidate = function () {
+      if (!parentTaskSelect) return;
+      const selectedCandidate = (candidateSelect && candidateSelect.value) ? candidateSelect.value : "";
+      Array.from(parentTaskSelect.options).forEach(function (opt, idx) {
+        if (idx === 0) return;
+        const optCandidate = (opt.getAttribute("data-candidate") || "").trim();
+        if (!selectedCandidate) {
+          opt.disabled = false;
+          return;
+        }
+        opt.disabled = !optCandidate || optCandidate !== selectedCandidate;
+        if (opt.disabled && opt.selected) {
+          parentTaskSelect.value = "";
+        }
+      });
+    };
+
+    const updateSubtask = function () {
+      if (!subtaskToggle || !parentTaskWrap) return;
+      if (subtaskToggle.checked) {
+        parentTaskWrap.classList.remove('d-none');
+        if (subtasksPanel) subtasksPanel.classList.add('d-none');
+        filterParentTasksForCandidate();
+      } else {
+        parentTaskWrap.classList.add('d-none');
+        if (parentTaskSelect) parentTaskSelect.value = "";
+        if (subtasksPanel) subtasksPanel.classList.remove('d-none');
+      }
+    };
+
+    if (subtaskToggle) {
+      subtaskToggle.addEventListener('change', updateSubtask);
+      updateSubtask();
+    }
+
+    if (candidateSelect) {
+      candidateSelect.addEventListener('change', function () {
+        filterParentTasksForCandidate();
+      });
+    }
+
+    if (parentTaskSelect && targetTypeSelect) {
+      parentTaskSelect.addEventListener('change', function () {
+        if (!parentTaskSelect.value) return;
+        // If a parent task is chosen, force target to candidate (if a candidate is available).
+        // Backend enforces actual inheritance from parent.
+        if (candidateSelect && candidateSelect.value) {
+          targetTypeSelect.value = "candidate";
+          const evt = new Event("change");
+          targetTypeSelect.dispatchEvent(evt);
+        }
+      });
+    }
+
+    const subtaskOwnerOptionsHtml = `{% for owner in task_owners %}<option value="{{ owner.value|escape }}">{{ owner.label|escape }}</option>{% endfor %}`;
+    const onboardingTemplate = [{% for item in onboarding_subtask_template %}{ section: "{{ item.section|escapejs }}", task: "{{ item.task|escapejs }}" }{% if not forloop.last %},{% endif %}{% endfor %}];
+    const loadOnboardingTemplateBtn = document.getElementById('loadOnboardingTemplateBtn');
+    const subtaskStatusOptionsHtml = `{% for s in statuses %}<option value="{{ s|escape }}">{{ s }}</option>{% endfor %}`;
+    const subtaskPriorityOptionsHtml = `{% for p in priorities %}<option value="{{ p|escape }}">{{ p }}</option>{% endfor %}`;
+
+    // Multiple subtasks (under a parent task)
+    const refreshSubtaskIds = function () {
+      if (!subtasksTbody) return;
+      const parentTaskCode = ((document.getElementById("taskIdDisplay") || {}).value || "").trim();
+      Array.from(subtasksTbody.querySelectorAll("tr")).forEach(function (tr, idx) {
+        const idCell = tr.querySelector("[data-subtask-id]");
+        if (!idCell) return;
+        if (parentTaskCode && parentTaskCode !== "Auto") {
+          idCell.textContent = `${parentTaskCode}.${idx + 1}`;
+        } else {
+          idCell.textContent = "—";
+        }
+      });
+    };
+
+    const addSubtaskRow = function (subject, dueDate, groupTitle, statusValue, priorityValue) {
+      if (!subtasksTbody) return;
+      const tr = document.createElement('tr');
+      const parentOwner = (document.querySelector("select[name='task_owner']") || {}).value || "";
+      const parentTargetType = (document.getElementById("taskTargetType") || {}).value || "";
+      const parentCandidateText = (() => {
+        const sel = document.getElementById("taskCandidateSelect");
+        if (!sel || !sel.value) return "";
+        const opt = sel.options[sel.selectedIndex];
+        return opt ? (opt.textContent || "").trim() : "";
+      })();
+      const parentContactName = (document.querySelector("input[name='contact_name']") || {}).value || "";
+      const targetDisplay = parentTargetType === "candidate" ? (parentCandidateText || "Candidate") : (parentTargetType === "contact" ? (parentContactName || "Contact") : "Inherited");
+      tr.innerHTML = `
+        <td style="font-weight:800; color: var(--text2); font-family: var(--mono, monospace);">
+          <span data-subtask-id></span>
+        </td>
+        <td>
+          <input type="text" name="subtask_subject" value="${subject || ''}" class="form-control" placeholder="e.g. Collect documents" style="width: 100%;">
+          <input type="hidden" name="subtask_group" value="${groupTitle || ''}">
+        </td>
+        <td>
+          <input type="text" class="form-control" value="${targetDisplay}" readonly style="width: 100%; background: rgba(0,0,0,0.02); color: var(--text2);">
+        </td>
+        <td>
+          <select name="subtask_owner" class="form-control" style="width: 100%;">
+            <option value="">Same as parent</option>
+            ${subtaskOwnerOptionsHtml}
+          </select>
+        </td>
+        <td>
+          <input type="date" name="subtask_due_date" value="${dueDate || ''}" class="form-control" style="width: 100%;">
+        </td>
+        <td>
+          <select name="subtask_status" class="form-control" style="width: 100%;">
+            ${subtaskStatusOptionsHtml}
+          </select>
+        </td>
+        <td>
+          <select name="subtask_priority" class="form-control" style="width: 100%;">
+            ${subtaskPriorityOptionsHtml}
+          </select>
+        </td>
+        <td>
+          <input type="text" class="form-control" value="0h 00m" readonly style="width: 100%; background: rgba(0,0,0,0.02); color: var(--text2); font-family: var(--mono, monospace);">
+        </td>
+        <td>
+          <span class="badge-premium badge-draft" style="display:inline-flex;">Draft</span>
+        </td>
+        <td class="text-end">
+          <button type="button" class="btn-icon-action delete" title="Remove">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </td>
+      `;
+      const ownerSelect = tr.querySelector("select[name='subtask_owner']");
+      if (ownerSelect && parentOwner) {
+        ownerSelect.value = parentOwner;
+      }
+      const statusSelect = tr.querySelector("select[name='subtask_status']");
+      if (statusSelect) statusSelect.value = statusValue || "Open";
+      const prioritySelect = tr.querySelector("select[name='subtask_priority']");
+      if (prioritySelect) prioritySelect.value = priorityValue || "Low";
+      tr.querySelector('button').addEventListener('click', function () {
+        tr.remove();
+        refreshSubtaskIds();
+      });
+      subtasksTbody.appendChild(tr);
+      refreshSubtaskIds();
+    };
+
+    if (addSubtaskRowBtn) {
+      addSubtaskRowBtn.addEventListener('click', function () {
+        addSubtaskRow('', '', '', 'Open', 'Low');
+      });
+    }
+
+    const clearSubtasks = function () {
+      if (!subtasksTbody) return;
+      subtasksTbody.innerHTML = "";
+      refreshSubtaskIds();
+    };
+
+    const setParentSubject = function (value) {
+      const input = document.querySelector("input[name='subject']");
+      if (input && value) input.value = value;
+    };
+
+    if (loadOnboardingTemplateBtn) {
+      loadOnboardingTemplateBtn.addEventListener('click', function () {
+        if (!subtasksPanel || subtasksPanel.classList.contains("d-none")) return;
+        clearSubtasks();
+        setParentSubject("Onboarding");
+        onboardingTemplate.forEach(function (item) {
+          addSubtaskRow(item.task, '', item.section || '', 'Open', 'Low');
+        });
+      });
+    }
+
+    // If we are opening the form to create a subtask from a parent, keep subtasks panel hidden.
+    // Otherwise, show it by default when creating a parent task (not editing).
+    if (!subtaskToggle || !subtasksPanel) {
+      // no-op
+    } else {
+      if (!subtaskToggle.checked) {
+        subtasksPanel.classList.remove('d-none');
+      }
+    }
+
+    // Auto submit inline selects
+    document.querySelectorAll(".inline-select-form select").forEach(function (dropdown) {
+      dropdown.addEventListener("change", function () {
+        const form = dropdown.closest("form");
+        if (form) form.submit();
+      });
+    });
+
+    // Team / Owner Logic
+    const teamSelect = document.getElementById("taskTeamSelect");
+    const ownerSelect = document.querySelector("select[name='task_owner']");
+    const assignType = document.getElementById("taskAssignType");
+    const teamWrap = document.getElementById("taskTeamWrap");
+    const ownerWrap = document.getElementById("taskOwnerWrap");
+    const subtaskOwnerSelects = function () {
+      if (!subtasksTbody) return [];
+      return Array.from(subtasksTbody.querySelectorAll("select[name='subtask_owner']"));
+    };
+    
+    if (teamSelect && ownerSelect) {
+      const originalOptions = Array.from(ownerSelect.options).map(function (opt) {
+        return { value: opt.value, label: opt.text, selected: opt.selected };
+      });
+
+      const rebuildOwners = function (allowed) {
+        const rebuildOne = function (selectEl, includeSameAsParent) {
+          if (!selectEl) return;
+          const current = selectEl.value;
+          selectEl.innerHTML = "";
+          if (includeSameAsParent) {
+            const same = document.createElement("option");
+            same.value = "";
+            same.textContent = "Same as parent";
+            selectEl.appendChild(same);
+          }
+          originalOptions.forEach(function (opt) {
+            if (!opt.value) return; // skip placeholder "Select Staff Member"
+            if (allowed && !allowed.has(opt.value)) return;
+            const option = document.createElement("option");
+            option.value = opt.value;
+            option.textContent = opt.label;
+            selectEl.appendChild(option);
+          });
+          // restore if still available
+          const canRestore = Array.from(selectEl.options).some(o => o.value === current);
+          selectEl.value = canRestore ? current : (includeSameAsParent ? "" : (selectEl.options[0]?.value || ""));
+        };
+
+        // main owner dropdown keeps its original placeholder
+        ownerSelect.innerHTML = "";
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select Staff Member";
+        ownerSelect.appendChild(placeholder);
+        originalOptions.forEach(function (opt) {
+          if (!opt.value || !allowed || allowed.has(opt.value)) {
+            const option = document.createElement("option");
+            option.value = opt.value;
+            option.textContent = opt.label;
+            if (opt.selected) option.selected = true;
+            ownerSelect.appendChild(option);
+          }
+        });
+
+        // apply same filter to all subtask assignee dropdowns
+        subtaskOwnerSelects().forEach(function (sel) {
+          rebuildOne(sel, true);
+        });
+      };
+
+      const parseMembers = function (option) {
+        const members = new Set();
+        const raw = (option.getAttribute("data-members") || "").split(",");
+        raw.forEach(function (item) {
+          const value = item.trim();
+          if (value) members.add(value);
+        });
+        const lead = (option.getAttribute("data-lead") || "").trim();
+        if (lead) members.add(lead);
+        return members;
+      };
+
+      const applyTeamFilter = function () {
+        const selected = teamSelect.options[teamSelect.selectedIndex];
+        if (selected && selected.value) {
+          rebuildOwners(parseMembers(selected));
+        } else {
+          rebuildOwners(null);
+        }
+      };
+
+      const applyAssignType = function () {
+        if (!assignType || !teamWrap) return;
+        if (assignType.value === "team") {
+          teamWrap.classList.remove("d-none");
+          if (ownerWrap) ownerWrap.classList.add("d-none");
+          applyTeamFilter();
+        } else {
+          teamWrap.classList.add("d-none");
+          teamSelect.value = "";
+          if (ownerWrap) ownerWrap.classList.remove("d-none");
+          rebuildOwners(null);
+        }
+      };
+
+      if (assignType) {
+        assignType.addEventListener("change", applyAssignType);
+      }
+      teamSelect.addEventListener("change", applyTeamFilter);
+      applyAssignType();
+    }
+
+    // Simple Table Search
+    const taskSearch = document.getElementById('taskSearch');
+    if (taskSearch) {
+      taskSearch.addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const rows = Array.from(document.querySelectorAll('#taskTableBody .table-row'));
+
+        // When searching, show matches + their ancestor chain.
+        const matched = new Set();
+        const byId = new Map();
+        rows.forEach(r => byId.set(r.getAttribute("data-task-id"), r));
+
+        const markAncestors = function (rowEl) {
+          let current = rowEl;
+          while (current) {
+            matched.add(current);
+            const parentId = current.getAttribute("data-parent-id");
+            if (!parentId) break;
+            current = byId.get(parentId);
+          }
+        };
+
+        if (!filter) {
+          rows.forEach(r => r.classList.remove("task-row-hidden"));
+          // Collapse all subtasks by default
+          rows.forEach(r => {
+            if (parseInt(r.getAttribute("data-level") || "0", 10) > 0) r.classList.add("task-row-hidden");
+            const toggle = r.querySelector(".task-tree-toggle");
+            if (toggle) toggle.setAttribute("aria-expanded", "false");
+          });
+          return;
+        }
+
+        rows.forEach(r => r.classList.add("task-row-hidden"));
+        rows.forEach(r => {
+          const text = (r.innerText || "").toLowerCase();
+          if (text.includes(filter)) markAncestors(r);
+        });
+        matched.forEach(r => r.classList.remove("task-row-hidden"));
+        // Expand ancestors so matched children remain visible
+        matched.forEach(r => {
+          const toggle = r.querySelector(".task-tree-toggle");
+          if (toggle) toggle.setAttribute("aria-expanded", "true");
+        });
+      });
+    }
+
+    // Hierarchy expand/collapse
+    const taskTableBody = document.getElementById("taskTableBody");
+    if (taskTableBody) {
+      const rows = Array.from(taskTableBody.querySelectorAll(".table-row"));
+      const byParent = new Map();
+      const byId = new Map();
+      rows.forEach(r => {
+        const id = r.getAttribute("data-task-id");
+        byId.set(id, r);
+        const parentId = r.getAttribute("data-parent-id");
+        if (parentId) {
+          if (!byParent.has(parentId)) byParent.set(parentId, []);
+          byParent.get(parentId).push(r);
+        }
+      });
+
+      const setChildrenVisible = function (parentId, visible) {
+        const children = byParent.get(parentId) || [];
+        children.forEach(child => {
+          if (visible) {
+            child.classList.remove("task-row-hidden");
+          } else {
+            child.classList.add("task-row-hidden");
+          }
+          const toggle = child.querySelector(".task-tree-toggle");
+          const expanded = toggle ? toggle.getAttribute("aria-expanded") === "true" : false;
+          if (!visible || !expanded) {
+            setChildrenVisible(child.getAttribute("data-task-id"), false);
+          } else {
+            setChildrenVisible(child.getAttribute("data-task-id"), true);
+          }
+        });
+      };
+
+      // Default: collapse all children rows
+      rows.forEach(r => {
+        if (parseInt(r.getAttribute("data-level") || "0", 10) > 0) r.classList.add("task-row-hidden");
+      });
+
+      taskTableBody.addEventListener("click", function (e) {
+        const btn = e.target.closest(".task-tree-toggle");
+        if (!btn) return;
+        const row = btn.closest("tr");
+        const id = row && row.getAttribute("data-task-id");
+        if (!id) return;
+        const isExpanded = btn.getAttribute("aria-expanded") === "true";
+        btn.setAttribute("aria-expanded", isExpanded ? "false" : "true");
+        setChildrenVisible(id, !isExpanded);
+      });
+    }
+  });
+</script>
+{% endblock %}

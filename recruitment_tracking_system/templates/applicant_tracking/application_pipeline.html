@@ -1,0 +1,147 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Strategic Talent Pipeline{% endblock %}
+{% block nav_applicant_tracking %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .pipeline-board { display: flex; gap: 24px; padding-bottom: 24px; overflow-x: auto; min-height: calc(100vh - 220px); align-items: flex-start; }
+  .pipeline-col { 
+    min-width: 340px; background: rgba(255,255,255,0.01); border: 1px solid var(--border); 
+    border-radius: 24px; display: flex; flex-direction: column; max-height: calc(100vh - 200px);
+    transition: all 0.2s;
+  }
+  .pipeline-header { 
+    padding: 24px; border-bottom: 3px solid var(--accent); 
+    display: flex; justify-content: space-between; align-items: center; 
+    background: rgba(255,255,255,0.02); border-radius: 24px 24px 0 0;
+  }
+  .pipeline-name { font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text); }
+  .pipeline-count { background: var(--surface3); padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; color: var(--accent2); }
+  
+  .pipeline-body { padding: 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  
+  .kanban-card { 
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; 
+    padding: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: var(--shadow-sm);
+    cursor: grab; position: relative;
+  }
+  .kanban-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  .kanban-card:active { cursor: grabbing; transform: scale(0.98); }
+  
+  .kcard-top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .kcard-avatar { width: 44px; height: 44px; border-radius: 14px; background: var(--surface2); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; border: 1px solid var(--border); }
+  .kcard-name { font-weight: 800; font-size: 15.5px; color: var(--text); }
+  .kcard-id { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: 0.5px; margin-top: 2px; }
+  
+  .kcard-job { font-size: 12px; font-weight: 700; color: var(--text2); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .kcard-job i { color: var(--accent2); font-size: 14px; }
+
+  .kcard-metrics { display: flex; gap: 10px; margin-bottom: 20px; }
+  .kcard-badge { font-size: 9px; font-weight: 900; padding: 4px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .kcard-footer { 
+    display: flex; align-items: center; justify-content: space-between; margin-top: 12px; 
+    padding-top: 16px; border-top: 1px solid var(--border);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<input type="hidden" id="pipelineCsrfToken" value="{{ csrf_token }}">
+
+<div class="page-header" style="margin-bottom: 32px;">
+  <div>
+    <div class="page-title" style="font-size: 28px; font-weight: 900;">Strategic Talent Pipeline</div>
+    <div class="page-subtitle" style="font-size: 15px; opacity: 0.7;">Visual Kanban orchestration · Drag profiles across operational stages.</div>
+  </div>
+  <div style="display: flex; gap: 16px; align-items: center;">
+    <form method="get" id="pipelineJobFilterForm">
+      <select id="pipelineJobFilter" name="job_id" onchange="this.form.submit()" style="height: 48px; padding: 0 20px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--border); font-weight: 700; min-width: 200px;">
+        <option value="">Global Filter: All Jobs</option>
+        {% for job in position_options %}
+        <option value="{{ job.job_id }}" {% if selected_job_id == job.job_id %}selected{% endif %}>
+          {{ job.job_id }} - {{ job.title }}
+        </option>
+        {% endfor %}
+      </select>
+    </form>
+    <button id="createStageBtn" class="btn btn-secondary" style="height: 48px; border-radius: 14px; font-weight: 800; padding: 0 24px;">
+      <i class="bi bi-plus-square-fill me-2"></i> Define Stage
+    </button>
+  </div>
+</div>
+
+<div class="pipeline-board">
+  {% for column in columns %}
+  <div class="pipeline-col" data-stage="{{ column.name }}">
+    <div class="pipeline-header" style="border-color: {% if column.name|lower == 'hired' %}var(--green){% elif column.name|lower == 'rejected' %}var(--red){% else %}var(--accent){% endif %};">
+      <div class="pipeline-name">{{ column.name }}</div>
+      <div class="pipeline-count">{{ column.items|length }}</div>
+    </div>
+
+    <div class="pipeline-body">
+      {% for c in column.items %}
+      <div class="kanban-card" draggable="true" data-candidate-id="{{ c.candidate_id }}" data-job="{{ c.job_applied }}" data-name="{{ c.name }}">
+        <div class="kcard-top">
+          <div class="kcard-avatar">{{ c.name|slice:":1"|upper }}</div>
+          <div>
+            <div class="kcard-name">{{ c.name }}</div>
+            <div class="kcard-id">ID: #{{ c.candidate_id }}</div>
+          </div>
+        </div>
+        
+        <div class="kcard-job">
+          <i class="bi bi-briefcase-fill"></i> {{ c.job_applied }}
+        </div>
+
+        <div class="kcard-metrics">
+          <span class="status-pill pill-purple kcard-badge">Match: {% if c.match_score is not None %}{{ c.match_score }}%{% else %}-{% endif %}</span>
+          <span class="status-pill pill-blue kcard-badge">{{ c.last_updated|slice:":10" }}</span>
+        </div>
+
+        <div class="kcard-footer">
+          <div style="font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase;">Quotient: <span style="color: var(--accent2);">{{ c.quotient|default:"N/A" }}</span></div>
+          <div style="display: flex; gap: 10px;">
+            <a class="icon-btn" style="width: 32px; height: 32px; font-size: 14px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="Signal History" href="/candidate-management/notes/?candidate_id={{ c.candidate_id }}" onclick="event.stopPropagation();"><i class="bi bi-chat-text-fill"></i></a>
+            <a class="icon-btn" style="width: 32px; height: 32px; font-size: 14px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="Candidate Profile" href="/candidate-management/profile/?candidate_id={{ c.candidate_id }}" onclick="event.stopPropagation();"><i class="bi bi-file-earmark-person-fill"></i></a>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div style="text-align: center; padding: 60px 20px; color: var(--text3); font-size: 12px; border: 2.5px dashed var(--border); border-radius: 20px; background: rgba(0,0,0,0.01);">
+        <i class="bi bi-database-slash" style="font-size: 32px; display: block; margin-bottom: 12px; opacity: 0.2;"></i>
+        No Talent Documented
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Modal -->
+<div id="stageModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+  <div class="card" style="width: 440px; padding: 32px; border-radius: 28px; border: 1px solid var(--border2); box-shadow: var(--shadow-lg);">
+    <div class="card-header" style="margin-bottom: 24px;">
+      <div class="card-title" style="font-size: 20px; font-weight: 900;">Initialize Pipeline Stage</div>
+    </div>
+    <div class="field" style="margin-bottom: 32px;">
+      <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Stage Identifier</label>
+      <input id="stageNameInput" type="text" placeholder="e.g. Technical Validation" style="height: 52px; border-radius: 14px; font-weight: 700;">
+    </div>
+    <div style="display: flex; justify-content: flex-end; gap: 12px;">
+      <button class="btn btn-ghost" style="height: 48px; padding: 0 24px; border-radius: 14px;" onclick="document.getElementById('stageModal').style.display='none'">Abort</button>
+      <button id="saveStageBtn" class="btn btn-primary" style="height: 48px; padding: 0 32px; border-radius: 14px; font-weight: 800;">Commit Stage</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/applicant_pipeline.js"></script>
+<script>
+document.getElementById('createStageBtn').addEventListener('click', () => {
+  document.getElementById('stageModal').style.display = 'flex';
+});
+</script>
+{% endblock %}

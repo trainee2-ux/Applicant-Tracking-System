@@ -1,0 +1,42 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Offer Response{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block header %}Candidate Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <h4 class="mb-2">Offer Response</h4>
+      <p class="mb-2">
+        Candidate: <strong>{{ offer.candidate.full_name }}</strong> ({{ offer.candidate.candidate_id }})
+      </p>
+      {% if decision == "accepted" %}
+        <div class="alert alert-success mb-3">Thank you. You have accepted the offer.</div>
+      {% elif decision == "rejected" %}
+        <div class="alert alert-danger mb-3">Thank you. You have rejected the offer.</div>
+      {% elif decision == "expired" %}
+        <div class="alert alert-warning mb-3">This offer link has expired.</div>
+      {% else %}
+        <div class="alert alert-secondary mb-3">Offer status: {{ offer.status }}</div>
+      {% endif %}
+
+      {% if decision == "accepted" %}
+        <div class="text-muted small mb-3">Redirecting to your Candidate Portal...</div>
+      {% endif %}
+      <a class="btn btn-primary" href="{{ portal_url|default:'/candidate-portal/' }}">Go to Candidate Portal</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+{% if decision == "accepted" %}
+<script>
+  setTimeout(function () {
+    window.location.href = "{{ portal_url|default:'/candidate-portal/' }}";
+  }, 1600);
+</script>
+{% endif %}
+{% endblock %}

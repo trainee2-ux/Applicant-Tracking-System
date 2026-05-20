@@ -1,0 +1,271 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS – Proctoring Sessions{% endblock %}
+{% block nav_interview_evaluation %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  /* ── Layout ── */
+  .proctor-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+    align-items: start;
+    margin-top: 28px;
+  }
+  @media (max-width: 1100px) { .proctor-grid { grid-template-columns: 1fr; } }
+
+  /* ── Session list sidebar ── */
+  .session-list { display: flex; flex-direction: column; gap: 10px; }
+  .session-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: block;
+  }
+  .session-card:hover,
+  .session-card.active { border-color: var(--accent); background: var(--accentbg); }
+  .session-card-name { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 3px; }
+  .session-card-meta { font-size: 11.5px; color: var(--text3); display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ── Status pills ── */
+  .proctor-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.3px;
+  }
+  .pill-active     { background: rgba(74,222,128,0.12); color:#4ade80; border:1px solid rgba(74,222,128,0.25); }
+  .pill-completed  { background: rgba(99,102,241,0.12); color:#818cf8; border:1px solid rgba(99,102,241,0.25); }
+  .pill-terminated { background: rgba(248,113,113,0.12); color:#f87171; border:1px solid rgba(248,113,113,0.25); }
+
+  /* ── Detail panel ── */
+  .detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    overflow: hidden;
+  }
+  .detail-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap; justify-content: space-between;
+  }
+  .detail-section { padding: 28px 32px; border-bottom: 1px solid var(--border); }
+  .detail-section:last-child { border-bottom: none; }
+  .section-title {
+    font-size: 12px; font-weight: 900; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--accent2); margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Stats row ── */
+  .stat-row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .stat-box {
+    flex: 1; min-width: 120px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px 20px;
+  }
+  .stat-label { font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+  .stat-value { font-size: 26px; font-weight: 900; color: var(--text); }
+
+  /* ── Violation timeline ── */
+  .violation-timeline { display: flex; flex-direction: column; gap: 10px; max-height: 360px; overflow-y: auto; }
+  .violation-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 14px;
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+  }
+  .violation-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .v-tab_switch     { background: #fbbf24; }
+  .v-fullscreen_exit { background: #f97316; }
+  .v-devtools_open  { background: #f87171; }
+  .v-copy_paste     { background: #a78bfa; }
+  .v-right_click    { background: #94a3b8; }
+  .v-multiple_faces { background: #ef4444; }
+  .v-no_face        { background: #6b7280; }
+  .violation-type { font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+  .violation-time { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+  /* ── Snapshot gallery ── */
+  .snapshot-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+  .snapshot-thumb {
+    border-radius: 10px; overflow: hidden; border: 1px solid var(--border);
+    aspect-ratio: 4/3; background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text3);
+  }
+  .snapshot-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* ── Empty state ── */
+  .empty-state { text-align: center; padding: 80px 20px; color: var(--text3); }
+  .empty-state i { font-size: 48px; opacity: 0.2; display: block; margin-bottom: 16px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 32px;">
+  <div>
+    <div class="page-title" style="font-size: 28px; font-weight: 900;">Proctoring Monitor</div>
+    <div class="page-subtitle" style="font-size: 14px; opacity: 0.7;">
+      Live and archived proctoring sessions for candidate assessments and interview evaluations.
+    </div>
+  </div>
+  <div class="header-actions">
+    <span class="proctor-pill {% if active_count > 0 %}pill-active{% else %}pill-completed{% endif %}">
+      <span style="width:6px;height:6px;border-radius:50%;background:currentColor;"></span>
+      {{ active_count }} Active
+    </span>
+    <span class="proctor-pill pill-terminated" style="margin-left:8px;">
+      {{ terminated_count }} Terminated
+    </span>
+  </div>
+</div>
+
+<div class="proctor-grid">
+  {# ── LEFT: Session list ── #}
+  <div>
+    <div style="font-size: 12px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;">
+      All Sessions ({{ sessions|length }})
+    </div>
+
+    {% if sessions %}
+    <div class="session-list">
+      {% for s in sessions %}
+      <a href="?session={{ s.session_token }}" class="session-card {% if selected_session and selected_session.session_token == s.session_token %}active{% endif %}">
+        <div class="session-card-name">{{ s.candidate_name|default:"(No name)" }}</div>
+        <div class="session-card-meta">
+          <span class="proctor-pill pill-{{ s.status }}">{{ s.status|capfirst }}</span>
+          <span>⚠️ {{ s.warnings_count }}/{{ s.max_warnings }}</span>
+          <span>{{ s.started_at|date:"d M, H:i" }}</span>
+        </div>
+        <div style="font-size: 11px; color: var(--text3); margin-top: 5px; opacity: 0.7;">
+          {{ s.context|capfirst }} ·
+          {% if s.candidate_email %}{{ s.candidate_email }}{% else %}—{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="bi bi-shield-check"></i>
+      No proctoring sessions recorded yet.
+    </div>
+    {% endif %}
+  </div>
+
+  {# ── RIGHT: Session detail ── #}
+  <div>
+    {% if selected_session %}
+    {% with s=selected_session %}
+    <div class="detail-card">
+
+      {# Header #}
+      <div class="detail-header">
+        <div>
+          <div style="font-size: 20px; font-weight: 900; color: var(--text);">
+            {{ s.candidate_name|default:"Unknown Candidate" }}
+          </div>
+          <div style="font-size: 13px; color: var(--text3); margin-top: 4px;">
+            {{ s.candidate_email }} · {{ s.context|capfirst }} ·
+            Started {{ s.started_at|date:"d M Y, H:i" }}
+          </div>
+        </div>
+        <span class="proctor-pill pill-{{ s.status }}" style="font-size: 13px; padding: 6px 16px;">
+          {% if s.status == "active" %}🟢{% elif s.status == "completed" %}✅{% else %}🚫{% endif %}
+          {{ s.status|capfirst }}
+        </span>
+      </div>
+
+      {# Stats #}
+      <div class="detail-section">
+        <div class="section-title"><i class="bi bi-bar-chart-fill"></i> Session Summary</div>
+        <div class="stat-row">
+          <div class="stat-box">
+            <div class="stat-label">Warnings</div>
+            <div class="stat-value" style="color: {% if s.warnings_count >= s.max_warnings %}#f87171{% elif s.warnings_count > 0 %}#fbbf24{% else %}#4ade80{% endif %};">
+              {{ s.warnings_count }}<span style="font-size:14px;color:var(--text3);">/{{ s.max_warnings }}</span>
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Violations</div>
+            <div class="stat-value">{{ violations|length }}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Snapshots</div>
+            <div class="stat-value">{{ snapshots|length }}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Duration</div>
+            <div class="stat-value" style="font-size: 18px;">
+              {% if s.ended_at %}{{ s.ended_at|timesince:s.started_at }}{% else %}Ongoing{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Violation Timeline #}
+      <div class="detail-section">
+        <div class="section-title"><i class="bi bi-exclamation-triangle-fill"></i> Violation Log</div>
+        {% if violations %}
+        <div class="violation-timeline">
+          {% for v in violations %}
+          <div class="violation-row">
+            <div class="violation-dot v-{{ v.violation_type }}"></div>
+            <div class="violation-type">{{ v.get_violation_type_display }}</div>
+            <div class="violation-time">{{ v.timestamp|date:"H:i:s" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align:center; padding: 32px; color: var(--text3); font-size: 13px;">
+          <i class="bi bi-check-circle" style="font-size: 28px; display:block; margin-bottom:10px; color: #4ade80;"></i>
+          No violations recorded.
+        </div>
+        {% endif %}
+      </div>
+
+      {# Snapshots #}
+      {% if snapshots %}
+      <div class="detail-section">
+        <div class="section-title"><i class="bi bi-camera-fill"></i> Webcam Snapshots ({{ snapshots|length }})</div>
+        <div class="snapshot-gallery">
+          {% for snap in snapshots %}
+          <div class="snapshot-thumb">
+            {% if snap.image_data %}
+              <img src="{{ snap.image_data }}" alt="Snapshot {{ snap.timestamp|date:'H:i:s' }}" loading="lazy">
+            {% else %}
+              No image
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# Device info #}
+      <div class="detail-section">
+        <div class="section-title"><i class="bi bi-display"></i> Device Info</div>
+        <div style="font-size: 12px; color: var(--text3); line-height: 1.7; font-family: var(--mono);">
+          <div><strong>IP:</strong> {{ s.ip_address|default:"—" }}</div>
+          <div style="word-break: break-all;"><strong>UA:</strong> {{ s.user_agent|default:"—"|truncatechars:120 }}</div>
+          <div><strong>Ref ID:</strong> {{ s.reference_id|default:"—" }}</div>
+        </div>
+      </div>
+
+    </div>
+    {% endwith %}
+
+    {% else %}
+    <div class="detail-card" style="padding: 80px; text-align: center; color: var(--text3);">
+      <i class="bi bi-shield-lock" style="font-size: 48px; opacity: 0.18; display:block; margin-bottom: 16px;"></i>
+      <div style="font-weight: 700; font-size: 15px;">Select a session from the list to view details.</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

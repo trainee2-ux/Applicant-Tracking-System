@@ -1,0 +1,943 @@
+{% extends "layouts/app_shell.html" %}
+{% block title %}Ultimatix ATS - Activity Dashboard{% endblock %}
+{% block nav_activity %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  /* ── Activity Dashboard Redesign (Theme-Adaptive Glassmorphism) ─────────────────────────── */
+  .act-dash-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 10px 30px 40px;
+  }
+
+  .act-dash-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 35px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .act-dash-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.75px;
+  }
+
+  .act-dash-sub {
+    font-size: 14px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  /* 3 Clickable Tiles Grid */
+  .act-tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 900px) {
+    .act-tiles-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+  }
+
+  /* Glassmorphic Clickable Tile Card (Theme Adaptive) */
+  .act-tile-card {
+    display: block;
+    text-decoration: none !important;
+    background: color-mix(in oklab, var(--surface) 85%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 30px 24px;
+    transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  /* Border gradients and glow on hover */
+  .act-tile-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 20px;
+    padding: 1.5px;
+    background: linear-gradient(135deg, var(--border2), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    pointer-events: none;
+    transition: all 0.3s;
+  }
+
+  .act-tile-card:hover {
+    transform: translateY(-8px);
+    background: color-mix(in oklab, var(--surface) 95%, transparent);
+  }
+
+  /* Category Specific Hover Borders & Highlights */
+  .tile-past:hover::before {
+    background: linear-gradient(135deg, var(--red) 0%, rgba(245, 101, 101, 0.2) 100%);
+  }
+
+  .tile-past:hover {
+    box-shadow: 0 15px 30px rgba(245, 101, 101, 0.08), var(--shadow);
+  }
+
+  .tile-today:hover::before {
+    background: linear-gradient(135deg, var(--accent) 0%, rgba(108, 99, 255, 0.2) 100%);
+  }
+
+  .tile-today:hover {
+    box-shadow: 0 15px 30px rgba(108, 99, 255, 0.08), var(--shadow);
+  }
+
+  .tile-future:hover::before {
+    background: linear-gradient(135deg, var(--green) 0%, rgba(34, 211, 165, 0.2) 100%);
+  }
+
+  .tile-future:hover {
+    box-shadow: 0 15px 30px rgba(34, 211, 165, 0.08), var(--shadow);
+  }
+
+  /* Card Content Structure */
+  .tile-icon-wrapper {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 24px;
+    transition: transform 0.3s ease;
+  }
+
+  .act-tile-card:hover .tile-icon-wrapper {
+    transform: scale(1.1) rotate(3deg);
+  }
+
+  .tile-past .tile-icon-wrapper {
+    background: var(--redbg);
+    color: var(--red);
+  }
+
+  .tile-today .tile-icon-wrapper {
+    background: var(--accentbg);
+    color: var(--accent);
+  }
+
+  .tile-future .tile-icon-wrapper {
+    background: var(--greenbg);
+    color: var(--green);
+  }
+
+  .tile-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .tile-label {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .tile-desc {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .tile-number {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -1.5px;
+  }
+
+  .tile-past .tile-number {
+    color: var(--red);
+  }
+
+  .tile-today .tile-number {
+    color: var(--accent);
+  }
+
+  .tile-future .tile-number {
+    color: var(--green);
+  }
+
+  .tile-arrow {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text2);
+    transition: all 0.3s;
+  }
+
+  .act-tile-card:hover .tile-arrow {
+    gap: 12px;
+  }
+
+  .tile-past:hover .tile-arrow {
+    color: var(--red);
+  }
+
+  .tile-today:hover .tile-arrow {
+    color: var(--accent);
+  }
+
+  .tile-future:hover .tile-arrow {
+    color: var(--green);
+  }
+
+  /* Quick Overview Panel */
+  .overview-panel {
+    background: color-mix(in oklab, var(--surface) 90%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+
+  .overview-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .overview-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .overview-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+
+  .overview-val {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  .overview-lbl {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  /* ── Line Items Grid Table CSS ─────────────────────────── */
+  .detail-table-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.015);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .act-table-columns {
+    display: grid;
+    grid-template-columns: 60px 1.5fr 2.2fr 1.3fr 160px;
+    gap: 16px;
+    padding: 12px 24px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text2);
+    letter-spacing: 0.75px;
+  }
+
+  @media (max-width: 768px) {
+    .act-table-columns {
+      display: none;
+    }
+  }
+
+  .act-detail-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .act-detail-row {
+    display: grid;
+    grid-template-columns: 60px 1.5fr 2.2fr 1.3fr 160px;
+    gap: 16px;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.2s ease;
+    text-align: left;
+    position: relative;
+  }
+
+  @media (max-width: 768px) {
+    .act-detail-row {
+      grid-template-columns: 1fr;
+      gap: 14px;
+      padding: 20px;
+    }
+  }
+
+  .act-detail-row:last-child {
+    border-bottom: none;
+  }
+
+  .act-detail-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: transparent;
+    transition: all 0.25s;
+  }
+
+  .act-detail-row:hover {
+    background: var(--surface2);
+  }
+
+  .act-detail-row.row-past::before {
+    background: var(--red);
+  }
+  .act-detail-row.row-past {
+    background: rgba(245, 101, 101, 0.012);
+  }
+  .act-detail-row.row-past:hover {
+    background: rgba(245, 101, 101, 0.045);
+  }
+
+  .act-detail-row.row-today::before {
+    background: var(--green);
+  }
+  .act-detail-row.row-today {
+    background: rgba(34, 211, 165, 0.012);
+  }
+  .act-detail-row.row-today:hover {
+    background: rgba(34, 211, 165, 0.045);
+  }
+
+  .act-detail-row.row-future::before {
+    background: var(--blue);
+  }
+  .act-detail-row.row-future {
+    background: rgba(96, 165, 250, 0.012);
+  }
+  .act-detail-row.row-future:hover {
+    background: rgba(96, 165, 250, 0.045);
+  }
+
+  .type-icon-circle {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin: 0 auto;
+  }
+  .type-icon-circle.call     { background: var(--greenbg);  color: var(--green); }
+  .type-icon-circle.email    { background: var(--bluebg);   color: var(--blue); }
+  .type-icon-circle.meeting  { background: var(--accentbg); color: var(--accent); }
+  .type-icon-circle.todo     { background: var(--amberbg);  color: var(--amber); }
+  .type-icon-circle.document { background: var(--redbg);    color: var(--red); }
+
+  .candidate-info-cell {
+    display: flex;
+    flex-direction: column;
+  }
+  .candidate-name-link {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+    text-decoration: none !important;
+    transition: color 0.2s;
+  }
+  .candidate-name-link:hover {
+    color: var(--accent);
+  }
+  .candidate-sub-info {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 3px;
+    font-weight: 500;
+  }
+
+  .content-info-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .content-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text);
+  }
+  .content-desc {
+    font-size: 12.5px;
+    color: var(--text2);
+    line-height: 1.45;
+    white-space: pre-wrap;
+  }
+
+  .meta-info-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 600;
+  }
+
+  .meta-info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .meta-info-item i {
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .doc-badge-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text2);
+    text-decoration: none !important;
+    margin-top: 6px;
+    transition: all 0.2s;
+    width: fit-content;
+  }
+  .doc-badge-link:hover {
+    background: var(--surface3);
+    color: var(--text);
+    border-color: var(--border2);
+    transform: translateY(-1px);
+  }
+
+  .actions-cell {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .status-badge {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .status-badge.scheduled { background: var(--accentbg); color: var(--accent); }
+  .status-badge.done      { background: var(--greenbg); color: var(--green); }
+
+  .btn-icon-xs {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .btn-mark-done {
+    background: var(--greenbg);
+    color: var(--green);
+    border-color: rgba(34, 211, 165, 0.25);
+  }
+  .btn-mark-done:hover {
+    background: var(--green);
+    color: #fff;
+    transform: scale(1.08);
+  }
+
+  .btn-delete {
+    background: var(--redbg);
+    color: var(--red);
+    border-color: rgba(245, 101, 101, 0.25);
+  }
+  .btn-delete:hover {
+    background: var(--red);
+    color: #fff;
+    transform: scale(1.08);
+  }
+
+  .btn-reschedule:hover {
+    background: var(--blue);
+    color: #fff;
+    transform: scale(1.08);
+  }
+
+  /* Modal Overlay styling */
+  .act-modal-bg {
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center;
+  }
+  .act-modal-bg.open { display: flex; }
+  .act-modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 16px; padding: 28px; width: 100%; max-width: 480px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5); animation: slideUp .2s ease;
+  }
+  .act-modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .act-modal-title { font-size: 16px; font-weight: 800; color: var(--text); }
+  .act-modal-close {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text2); cursor: pointer;
+    font-size: 18px; display: flex; align-items: center; justify-content: center;
+  }
+  .act-modal-close:hover { background: var(--surface3); color: var(--text); }
+  .act-modal-field { margin-bottom: 16px; }
+  .act-modal-field label { display: block; font-size: 11px; font-weight: 700; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .6px; }
+  .act-modal-field input, .act-modal-field textarea, .act-modal-field select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text);
+    font-family: inherit; font-size: 13px; outline: none;
+  }
+  .act-modal-field input:focus, .act-modal-field textarea:focus { border-color: var(--accent); }
+  .act-modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .act-modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+  /* Premium Empty State styling */
+  .empty-state {
+    padding: 60px 40px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-state-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
+    position: relative;
+  }
+
+  .empty-state-icon-wrapper i {
+    font-size: 32px;
+    opacity: 0.6;
+  }
+
+  .empty-state-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .empty-state-text {
+    font-size: 13px;
+    color: var(--text2);
+    max-width: 320px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    font-weight: 500;
+  }
+
+  .btn-premium-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    text-decoration: none !important;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 12px rgba(108, 99, 255, 0.2);
+  }
+
+  .btn-premium-action:hover {
+    background: var(--accent2);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(108, 99, 255, 0.35);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="act-dash-container">
+
+  <!-- ── Header ───────────────────────────────────────────── -->
+  <div class="act-dash-header">
+    <div>
+      <div class="act-dash-title">Candidate Activity Dashboard</div>
+      <div class="act-dash-sub">Monitor and schedule candidate calls, emails, meetings, tasks, and file uploads.</div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <a href="/candidate-management/notes/" class="btn btn-secondary btn-sm"
+        style="display: inline-flex; align-items: center; gap: 8px;">
+        <i class="bi bi-journal-text"></i> Candidate Notes &amp; Actions
+      </a>
+      <a href="/candidate-management/" class="btn btn-secondary btn-sm"
+        style="display: inline-flex; align-items: center; gap: 8px;">
+        <i class="bi bi-people-fill"></i> Candidates List
+      </a>
+    </div>
+  </div>
+
+  <!-- ── 3 Clickable Tiles ──────────────────────────────────── -->
+  <div class="act-tiles-grid">
+
+    <!-- PAST ACTIVITIES -->
+    <a href="/candidate-management/activity/?view=past" class="act-tile-card tile-past">
+      <div class="tile-icon-wrapper">
+        <i class="bi bi-clock-history"></i>
+      </div>
+      <div class="tile-info-row">
+        <div>
+          <div class="tile-label">Past Activities</div>
+          <div class="tile-desc">Overdue tasks &amp; past correspondence</div>
+        </div>
+        <div class="tile-number">{{ past_count }}</div>
+      </div>
+      <div class="tile-arrow">
+        <span>View Details</span> <i class="bi bi-arrow-right"></i>
+      </div>
+    </a>
+
+    <!-- TODAY'S ACTIVITIES -->
+    <a href="/candidate-management/activity/?view=today" class="act-tile-card tile-today">
+      <div class="tile-icon-wrapper">
+        <i class="bi bi-calendar-check-fill"></i>
+      </div>
+      <div class="tile-info-row">
+        <div>
+          <div class="tile-label">Today's Activities</div>
+          <div class="tile-desc">Actions scheduled for today</div>
+        </div>
+        <div class="tile-number">{{ today_count }}</div>
+      </div>
+      <div class="tile-arrow">
+        <span>View Details</span> <i class="bi bi-arrow-right"></i>
+      </div>
+    </a>
+
+    <!-- UPCOMING ACTIVITIES -->
+    <a href="/candidate-management/activity/?view=future" class="act-tile-card tile-future">
+      <div class="tile-icon-wrapper">
+        <i class="bi bi-calendar-plus-fill"></i>
+      </div>
+      <div class="tile-info-row">
+        <div>
+          <div class="tile-label">Upcoming Activities</div>
+          <div class="tile-desc">Future schedules &amp; roadmap</div>
+        </div>
+        <div class="tile-number">{{ future_count }}</div>
+      </div>
+      <div class="tile-arrow">
+        <span>View Details</span> <i class="bi bi-arrow-right"></i>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- ── Quick Overview Panel ───────────────────────────────── -->
+  <div class="overview-panel">
+    <div class="overview-title">
+      <i class="bi bi-activity" style="color: var(--accent);"></i> Quick Analytics Overview
+    </div>
+    <div class="overview-grid">
+      <div class="overview-item">
+        <div class="overview-val" style="color: var(--accent);">
+          {{ past_count|add:today_count|add:future_count }}
+        </div>
+        <div class="overview-lbl">Total Logged</div>
+      </div>
+      <div class="overview-item">
+        <div class="overview-val" style="color: var(--red);">
+          {{ past_count }}
+        </div>
+        <div class="overview-lbl">Overdue / Past</div>
+      </div>
+      <div class="overview-item">
+        <div class="overview-val" style="color: var(--green);">
+          {{ today_count }}
+        </div>
+        <div class="overview-lbl">Today's Agenda</div>
+      </div>
+      <div class="overview-item">
+        <div class="overview-val" style="color: var(--amber);">
+          {{ future_count }}
+        </div>
+        <div class="overview-lbl">Planned Ahead</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Detailed Activities List ── -->
+  <div class="overview-panel" style="margin-top: 40px; padding: 0; overflow: hidden;">
+    <div class="detail-table-header" style="border-bottom: 1px solid var(--border); padding: 20px 24px;">
+      <span style="font-size: 16px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 8px;">
+        <i class="bi bi-list-check" style="color: var(--accent);"></i> All Logged Activities
+      </span>
+      <span style="font-size: 11px; background: var(--surface2); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; color: var(--text2); font-weight: 600;">
+        {{ activities|length }} items
+      </span>
+    </div>
+
+    <!-- Explicit Column Headers -->
+    <div class="act-table-columns">
+      <div>Type</div>
+      <div>Candidate</div>
+      <div>Details / Description</div>
+      <div>Scheduled</div>
+      <div style="text-align: right;">Actions</div>
+    </div>
+    
+    <div class="act-detail-list">
+      {% for act in activities %}
+      <div class="act-detail-row row-{{ act.time_frame }}">
+        
+        <!-- Column 1: Icon Type -->
+        <div>
+          <div class="type-icon-circle {{ act.activity_type }}" title="{{ act.get_activity_type_display }}">
+            {% if act.activity_type == 'call' %}<i class="bi bi-telephone-fill"></i>
+            {% elif act.activity_type == 'email' %}<i class="bi bi-envelope-fill"></i>
+            {% elif act.activity_type == 'meeting' %}<i class="bi bi-calendar-event-fill"></i>
+            {% elif act.activity_type == 'todo' %}<i class="bi bi-check2-square"></i>
+            {% else %}<i class="bi bi-paperclip"></i>{% endif %}
+          </div>
+        </div>
+
+        <!-- Column 2: Candidate Info -->
+        <div class="candidate-info-cell">
+          <a href="/candidate-management/notes/?candidate_id={{ act.candidate.candidate_id }}" class="candidate-name-link">
+            {{ act.candidate.full_name }}
+          </a>
+          <div class="candidate-sub-info">
+            ID: {{ act.candidate.candidate_id }} &bull; {{ act.candidate.applied_position|default:"Applicant" }}
+          </div>
+        </div>
+
+        <!-- Column 3: Title & Description -->
+        <div class="content-info-cell">
+          <div class="content-title">{{ act.title }}</div>
+          {% if act.description %}
+          <div class="content-desc">{{ act.description }}</div>
+          {% endif %}
+          {% if act.document %}
+          <a href="{{ act.document.url }}" class="doc-badge-link" target="_blank" download>
+            <i class="bi bi-file-earmark-arrow-down-fill" style="color: var(--red);"></i> Attached Document
+          </a>
+          {% endif %}
+        </div>
+
+        <!-- Column 4: Schedule Meta -->
+        <div class="meta-info-cell">
+          <div class="meta-info-item">
+            <i class="bi bi-calendar-event"></i>
+            <span>{{ act.scheduled_at|date:"M d, Y"|default:"Not Scheduled" }}</span>
+          </div>
+          {% if act.scheduled_at %}
+          <div class="meta-info-item">
+            <i class="bi bi-clock"></i>
+            <span>{{ act.scheduled_at|date:"h:i A" }}</span>
+          </div>
+          {% endif %}
+          {% if act.created_by %}
+          <div class="meta-info-item" style="font-size: 11px; opacity: 0.85;">
+            <i class="bi bi-person"></i>
+            <span>{{ act.created_by }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Column 5: Status & Actions -->
+        <div class="actions-cell">
+          {% if act.status == 'Done' %}
+          <span class="status-badge done"><i class="bi bi-check-circle-fill"></i> Done</span>
+          {% else %}
+          
+          <!-- Reschedule Button -->
+          <button type="button" class="btn-icon-xs btn-reschedule" style="background: var(--bluebg); color: var(--blue); border-color: rgba(96, 165, 250, 0.25);"
+                  title="Reschedule"
+                  data-id="{{ act.id }}"
+                  data-title="{{ act.title }}"
+                  data-date="{{ act.scheduled_at|date:'Y-m-d' }}"
+                  data-time="{{ act.scheduled_at|date:'H:i' }}"
+                  onclick="triggerReschedule(this)">
+            <i class="bi bi-calendar-event"></i>
+          </button>
+
+          <a href="/candidate-management/notes/?candidate_id={{ act.candidate.candidate_id }}&complete_activity={{ act.id }}"
+             class="btn-icon-xs btn-mark-done"
+             title="Complete & Add Note"
+             style="text-decoration: none;">
+            <i class="bi bi-check-lg"></i>
+          </a>
+          {% endif %}
+
+          <form method="post" style="margin:0;" onsubmit="return confirm('Are you sure you want to delete this activity?')">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete_activity">
+            <input type="hidden" name="activity_id" value="{{ act.id }}">
+            <input type="hidden" name="next" value="/candidate-management/activity/">
+            <button type="submit" class="btn-icon-xs btn-delete" title="Delete">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+
+      </div>
+      {% empty %}
+      <div class="empty-state">
+        <div class="empty-state-icon-wrapper" style="color: var(--accent);">
+          <i class="bi bi-lightning-charge"></i>
+        </div>
+        <div class="empty-state-title">No Activities Logged Yet</div>
+        <div class="empty-state-text">
+          Track recruiter and candidate milestones by logging follow-up actions.
+        </div>
+        <a href="/candidate-management/notes/" class="btn-premium-action">
+          <i class="bi bi-plus-circle"></i> Log Candidate Activity
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Reschedule Modal -->
+<div class="act-modal-bg" id="rescheduleModal">
+  <div class="act-modal">
+    <div class="act-modal-header">
+      <div class="act-modal-title" style="color: var(--accent2);"><i class="bi bi-calendar-event"></i> &nbsp;Reschedule Activity</div>
+      <button class="act-modal-close" onclick="closeRescheduleModal()">×</button>
+    </div>
+    <form method="post" style="margin:0;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reschedule_activity">
+      <input type="hidden" name="activity_id" id="rescheduleActivityId">
+      <input type="hidden" name="next" value="/candidate-management/activity/">
+      
+      <div class="act-modal-field">
+        <label>Activity Title</label>
+        <input type="text" id="rescheduleActivityTitle" readonly style="opacity: 0.8; background: var(--surface2);">
+      </div>
+      
+      <div class="act-modal-row">
+        <div class="act-modal-field">
+          <label>New Date</label>
+          <input type="date" name="scheduled_date" id="rescheduleDate" required>
+        </div>
+        <div class="act-modal-field">
+          <label>New Time</label>
+          <input type="time" name="scheduled_time" id="rescheduleTime" required>
+        </div>
+      </div>
+      
+      <div class="act-modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeRescheduleModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-calendar-event"></i> Update Schedule</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+function triggerReschedule(btn) {
+  var id = btn.getAttribute('data-id');
+  var title = btn.getAttribute('data-title');
+  var date = btn.getAttribute('data-date');
+  var time = btn.getAttribute('data-time');
+  openRescheduleModal(id, title, date, time);
+}
+function openRescheduleModal(id, title, date, time) {
+  document.getElementById('rescheduleActivityId').value = id;
+  document.getElementById('rescheduleActivityTitle').value = title;
+  document.getElementById('rescheduleDate').value = date || '';
+  document.getElementById('rescheduleTime').value = time || '10:00';
+  document.getElementById('rescheduleModal').classList.add('open');
+}
+function closeRescheduleModal() {
+  document.getElementById('rescheduleModal').classList.remove('open');
+}
+// Close on backdrop click
+document.getElementById('rescheduleModal').addEventListener('click', function(e) {
+  if (e.target === this) closeRescheduleModal();
+});
+// ESC to close
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeRescheduleModal();
+});
+</script>
+{% endblock %}

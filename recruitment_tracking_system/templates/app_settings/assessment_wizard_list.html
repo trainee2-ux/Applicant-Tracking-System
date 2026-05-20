@@ -1,0 +1,90 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Assessments{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=15">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Assessments{% endblock %}
+
+{% block content %}
+<div class="settings-layout builder-pro-layout">
+  {% include "app_settings/_settings_menu.html" %}
+
+  <div class="settings-main">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+      <div>
+        <h2 class="h3 fw-800 text-main mb-1">Assessments</h2>
+        <p class="text-muted mb-0">Create and manage assessment and feedback forms.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'app_settings:assessment_wizard' %}?step=1" class="btn btn-primary rounded-pill px-4">
+          <i class="bi bi-plus-lg me-2"></i>Create Assessment
+        </a>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm border-0" style="border-radius: 18px; overflow: hidden;">
+      <div class="card-header bg-transparent border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="fw-800">Assessment Directory</div>
+        <div class="text-muted small">{{ forms|length }} records</div>
+      </div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="min-width: 220px;">Title</th>
+              <th>Type</th>
+              <th>Department</th>
+              <th>Difficulty</th>
+              <th class="text-center">Questions</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in forms %}
+            <tr>
+              <td>
+                <div style="font-weight: 800;">{{ f.name }}</div>
+                <div class="text-muted small">Created: {{ f.created_at }}</div>
+              </td>
+              <td><span class="badge bg-light text-dark border">{{ f.form_type|title }}</span></td>
+              <td class="text-muted">{{ f.department|default:"-" }}</td>
+              <td class="text-muted">{{ f.difficulty_level|default:"-" }}</td>
+              <td class="text-center" style="font-weight: 800;">{{ f.fields_count|default:0 }}</td>
+              <td>
+                {% if f.is_published %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Published</span>
+                {% else %}
+                  <span class="badge bg-light text-muted border">Draft</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a class="btn btn-light btn-sm" href="{% url 'app_settings:assessment_wizard' f.id %}?step=1" title="Edit">
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+                <a class="btn btn-light btn-sm" href="{% url 'app_settings:assessment_fill' f.id %}" title="Preview">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a class="btn btn-light btn-sm text-danger" href="{% url 'app_settings:assessment_delete_confirm' f.id %}" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+              <tr><td colspan="7" class="text-center text-muted py-5">No assessments yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

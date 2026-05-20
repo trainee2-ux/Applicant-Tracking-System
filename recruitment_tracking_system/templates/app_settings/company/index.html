@@ -1,0 +1,74 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Company Master{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=25">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Company Master{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  <div class="settings-main">
+
+    <div class="cm-page-header">
+      <div>
+        <h2 class="cm-title">Company Master</h2>
+        <p class="cm-subtitle">Manage your organization profile, branding, and careers portal</p>
+      </div>
+    </div>
+
+    <div class="cm-nav-grid">
+      <a href="{% url 'app_settings:company_info' %}" class="cm-nav-card">
+        <div class="cm-nav-icon"><i class="bi bi-building"></i></div>
+        <div class="cm-nav-body">
+          <div class="cm-nav-label">Company Info</div>
+          <div class="cm-nav-desc">Name, domain, location, industry, and contact details</div>
+        </div>
+        <i class="bi bi-chevron-right cm-nav-arrow"></i>
+      </a>
+      <a href="{% url 'app_settings:company_careers' %}" class="cm-nav-card">
+        <div class="cm-nav-icon green"><i class="bi bi-briefcase"></i></div>
+        <div class="cm-nav-body">
+          <div class="cm-nav-label">Careers Page</div>
+          <div class="cm-nav-desc">Configure your public-facing job listings and branding</div>
+        </div>
+        <i class="bi bi-chevron-right cm-nav-arrow"></i>
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .cm-page-header { margin-bottom: 24px; }
+  .cm-title { font-size: 22px; font-weight: 800; color: var(--text); margin: 0 0 4px; }
+  .cm-subtitle { font-size: 13px; color: var(--text3); margin: 0; }
+
+  .cm-nav-grid { display: flex; flex-direction: column; gap: 12px; max-width: 680px; }
+
+  .cm-nav-card {
+    display: flex; align-items: center; gap: 20px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px 24px; text-decoration: none;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .cm-nav-card:hover {
+    border-color: var(--accent); transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(108,99,255,0.12);
+  }
+
+  .cm-nav-icon {
+    width: 48px; height: 48px; border-radius: 14px; flex-shrink: 0;
+    background: var(--accentbg); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .cm-nav-icon.green { background: #dcfce7; color: #15803d; }
+
+  .cm-nav-body { flex: 1; }
+  .cm-nav-label { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .cm-nav-desc { font-size: 12px; color: var(--text3); line-height: 1.4; }
+  .cm-nav-arrow { color: var(--text3); font-size: 14px; }
+</style>
+{% endblock %}

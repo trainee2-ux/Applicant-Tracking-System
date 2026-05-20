@@ -1,0 +1,136 @@
+{% extends "super_admin/base.html" %}
+{% block title %}Super Admin - Billing{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/super_admin.css?v=2">{% endblock %}
+{% block header %}Super Admin &gt; Billing{% endblock %}
+{% block nav_super_admin_billing %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2 superadmin-page">
+  <div class="sa-head">
+    <div>
+      <p class="sa-subtitle">Update payment status, extend or cancel subscriptions.</p>
+      <h2 class="sa-title">Billing</h2>
+    </div>
+    <div class="sa-actions">
+      <a class="btn btn-sm btn-primary" href="/super-admin/subscriptions/">
+        <i class="bi bi-stars me-1"></i> Subscriptions
+      </a>
+    </div>
+  </div>
+
+  <div class="sa-card p-0 mb-3">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Plan</th>
+            <th>End</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th style="width: 420px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in subscriptions %}
+          <tr>
+            <td>{{ s.company.company_name }}</td>
+            <td>{{ s.plan.name }}</td>
+            <td>{{ s.end_date }}</td>
+            <td>
+              {% if s.status == "active" %}
+                <span class="badge text-bg-success">active</span>
+              {% elif s.status == "expired" %}
+                <span class="badge text-bg-secondary">expired</span>
+              {% else %}
+                <span class="badge text-bg-light border">{{ s.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.payment_status == "paid" %}
+                <span class="badge text-bg-success">paid</span>
+              {% elif s.payment_status == "failed" %}
+                <span class="badge text-bg-danger">failed</span>
+              {% else %}
+                <span class="badge text-bg-warning">pending</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="sa-actions">
+              <form method="post" class="d-inline mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="subscription_id" value="{{ s.id }}">
+                <input type="hidden" name="action" value="set_payment_status">
+                <select class="form-select form-select-sm d-inline-block" name="payment_status" style="width: 130px;">
+                  <option value="pending" {% if s.payment_status == "pending" %}selected{% endif %}>pending</option>
+                  <option value="paid" {% if s.payment_status == "paid" %}selected{% endif %}>paid</option>
+                  <option value="failed" {% if s.payment_status == "failed" %}selected{% endif %}>failed</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary" type="submit">
+                  <i class="bi bi-arrow-repeat me-1"></i> Update
+                </button>
+              </form>
+
+              <form method="post" class="d-inline mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="subscription_id" value="{{ s.id }}">
+                <input type="hidden" name="action" value="extend">
+                <input class="form-control form-control-sm d-inline-block" name="extend_days" placeholder="Days" style="width: 90px;">
+                <button class="btn btn-sm btn-outline-success" type="submit">
+                  <i class="bi bi-calendar-plus me-1"></i> Extend
+                </button>
+              </form>
+
+              <form method="post" class="d-inline mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="subscription_id" value="{{ s.id }}">
+                <input type="hidden" name="action" value="cancel">
+                <button class="btn btn-sm btn-outline-danger" type="submit">
+                  <i class="bi bi-x-circle me-1"></i> Cancel
+                </button>
+              </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No subscriptions.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sa-card p-3">
+    <div class="sa-card-head">
+      <h3 class="sa-card-title">Recent Billing Events</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Company</th>
+            <th>Action</th>
+            <th>By</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in events %}
+          <tr>
+            <td>{{ e.created_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ e.company.company_name }}</td>
+            <td>{{ e.action }}</td>
+            <td>{{ e.created_by|default:"-" }}</td>
+            <td>{{ e.notes|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-3">No events.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Interview Engineering Intelligence{% endblock %}
+{% block nav_interview_evaluation %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Candidate Evaluation Intelligence</div>
+    <div class="page-subtitle">Aggregate data-driven performance metrics, competency assessments, and panel consensus.</div>
+  </div>
+  <div class="header-actions">
+    <a href="/interview-evaluation/evaluation/" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> New Evaluation Round</a>
+  </div>
+</div>
+
+<div class="stat-grid" style="margin-bottom: 32px; gap: 24px;">
+  <div class="stat-card" style="border-left: 4px solid var(--accent);">
+    <div class="stat-icon purple" style="background: var(--accentbg); color: var(--accent2);">
+      <i class="bi bi-person-check-fill"></i>
+    </div>
+    <div class="stat-value">{{ aggregates|length|default:"0" }}</div>
+    <div class="stat-label">Assessed Profiles</div>
+    <div class="stat-delta up">▲ 8% Velocity Increase</div>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid var(--green);">
+    <div class="stat-icon green" style="background: var(--greenbg); color: var(--green);">
+      <i class="bi bi-cpu"></i>
+    </div>
+    <div class="stat-value">{% if aggregates %}78.4%{% else %}0%{% endif %}</div>
+    <div class="stat-label">System-Wide Avg. Score</div>
+    <div class="stat-delta up">▲ 2.1% Tech Index Growth</div>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid var(--amber);">
+    <div class="stat-icon amber" style="background: var(--amberbg); color: var(--amber);">
+      <i class="bi bi-chat-right-text-fill"></i>
+    </div>
+    <div class="stat-value">{% if aggregates %}14{% else %}0{% endif %}</div>
+    <div class="stat-label">Intelligence Submissions</div>
+    <div class="stat-delta" style="color: var(--text3);">Real-time Telemetry</div>
+  </div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden; border-radius: 24px;">
+  <div class="card-header" style="padding: 24px 30px; border-bottom: 1px solid var(--border);">
+    <div class="card-title">Aggregated Competency Matrix <span style="font-weight: 400; font-size: 12px; margin-left: 8px; color: var(--text3);">Synchronized Profile Evaluations</span></div>
+  </div>
+  
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="padding-left: 30px;">Talent Profile</th>
+          <th>Tech Proficiency</th>
+          <th>Comm Efficiency</th>
+          <th>Cultural Synergy</th>
+          <th>Net Quotient</th>
+          <th>Reviews Log</th>
+          <th style="text-align: right; padding-right: 30px;">Operations</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in aggregates %}
+        <tr>
+          <td class="primary" style="padding-left: 30px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div class="user-avatar" style="width: 40px; height: 40px; font-size: 13px; font-weight: 800; border-radius: 14px;">{{ row.candidate_name|slice:":1" }}</div>
+              <div>
+                <div style="font-weight: 800; color: var(--text); font-size: 14.5px;">{{ row.candidate_name }}</div>
+                <div style="font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: 0.5px;">SEC-ID: #{{ row.candidate_id }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+             <span class="status-pill pill-purple" style="font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 10px;">{{ row.technical_score }}%</span>
+          </td>
+          <td>
+             <span class="status-pill pill-amber" style="font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 10px;">{{ row.communication_score }}%</span>
+          </td>
+          <td>
+             <span class="status-pill pill-green" style="font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 10px;">{{ row.cultural_fit_score }}%</span>
+          </td>
+          <td>
+             <div style="font-weight: 900; color: var(--accent2); font-family: var(--mono); font-size: 16px;">{{ row.overall_score }}</div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 6px; color: var(--text2); font-size: 12px; font-weight: 600;">
+              <i class="bi bi-stack" style="color: var(--accent);"></i> {{ row.submission_count }} Assessments
+            </div>
+          </td>
+          <td style="text-align: right; padding-right: 30px;">
+            <a href="/interview-evaluation/evaluation/?candidate_id={{ row.candidate_id }}" class="icon-btn" style="width: 38px; height: 38px;" title="Deep Dive Analytics"><i class="bi bi-graph-up-arrow"></i></a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 120px; color: var(--text3);">
+            <div style="font-size: 64px; opacity: 0.1; margin-bottom: 24px;"><i class="bi bi-shield-shaded"></i></div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Intelligence Matrix Offline</div>
+            <div style="font-size: 13px; opacity: 0.7;">No candidate evaluations documented. Initialize assessments to begin performance tracking.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

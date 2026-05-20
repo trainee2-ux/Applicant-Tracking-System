@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Signature Required</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background: #f8fafc; padding: 24px;">
+    <div style="max-width: 680px; margin: 0 auto; background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+      <div style="padding: 18px 20px; background: #0f172a; color: white;">
+        <div style="font-size: 14px; opacity: 0.9;">{{ company_name }}</div>
+        <div style="font-size: 18px; font-weight: 700; margin-top: 6px;">Signature Required</div>
+      </div>
+      <div style="padding: 20px;">
+        <div style="font-size: 14px; color: #0f172a; line-height: 1.6;">
+          <p>Dear {{ candidate.full_name }},</p>
+          <p>Your onboarding documents have been approved. Please complete your signature to proceed.</p>
+        </div>
+
+        <div style="margin-top: 16px;">
+          <a href="{{ sign_url }}" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 10px 14px; border-radius: 8px; font-weight: 700;">Sign Documents</a>
+        </div>
+
+        <div style="margin-top: 18px; font-size: 12px; color: #64748b;">
+          If you cannot click the button, copy/paste this link into your browser:<br>
+          <a href="{{ sign_url }}" style="color:#2563eb;">{{ sign_url }}</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+

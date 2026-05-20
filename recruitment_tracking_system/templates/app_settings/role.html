@@ -1,0 +1,243 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Role Management{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=22">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Role Master{% endblock %}
+
+{% block content %}
+<div class="settings-layout pro-dashboard">
+  {% include "app_settings/_settings_menu.html" %}
+  
+  <div class="settings-main">
+    <div class="page-top-bar d-flex justify-content-between align-items-end mb-4">
+      <div class="breadcrumb-pro">
+        <h2 class="h3 fw-800 text-main mb-0">Role Management</h2>
+        <p class="text-muted small mb-0">Define organizational access levels and permission hierarchies.</p>
+      </div>
+      <div class="actions-pro">
+        <button id="openRoleCreateBtn" class="btn btn-primary-pro">
+          <i class="bi bi-shield-lock-fill"></i> New Role
+        </button>
+      </div>
+    </div>
+
+    {% if messages %}
+      <div class="alert-container-pro mb-4">
+        {% for message in messages %}
+          <div class="pro-alert alert-{{ message.tags|default:'info' }}">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Interactive Role Form -->
+    <div id="roleCreateFormWrap" class="{% if not selected_role %}d-none{% endif %} mb-4">
+      <div class="pro-card form-canvas">
+        <div class="pro-card-header">
+          <h6 class="pro-card-title"><i class="bi bi-pencil-square"></i> {% if selected_role %}Modify Role Definition{% else %}New Role Configuration{% endif %}</h6>
+        </div>
+        <form id="roleCreateForm" method="post" class="pro-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="{% if selected_role %}update_role{% else %}create_role{% endif %}">
+          <input type="hidden" name="role_id" value="{{ selected_role.id|default:'' }}">
+          
+          <div class="row g-4">
+            <div class="col-md-3">
+              <div class="input-group-pro">
+                <label>Role Identifier</label>
+                <input type="text" value="{% if selected_role %}{{ selected_role.role_id }}{% else %}{{ next_role_id }}{% endif %}" readonly class="ghost-input">
+              </div>
+            </div>
+            <div class="col-md-5">
+              <div class="input-group-pro">
+                <label>Role Name</label>
+                <input type="text" name="role_name" value="{{ selected_role.role_name|default:'' }}" required placeholder="e.g. Senior Recruiter">
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="input-group-pro">
+                <label>Role Hierarchy Level</label>
+                <select name="role_level" class="form-select-pro" required>
+                  <option value="">Select Level</option>
+                  <option {% if selected_role.role_level == 'Admin' %}selected{% endif %}>Admin</option>
+                  <option {% if selected_role.role_level == 'Manager' %}selected{% endif %}>Manager</option>
+                  <option {% if selected_role.role_level == 'User' %}selected{% endif %}>User</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="input-group-pro">
+                <label>Description & Purpose</label>
+                <textarea name="role_description" rows="2" placeholder="Describe the scope of this role...">{{ selected_role.role_description|default:'' }}</textarea>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="input-group-pro">
+                <label>Status</label>
+                <select name="status" class="form-select-pro" required>
+                  <option {% if selected_role.status == 'Active' %}selected{% endif %}>Active</option>
+                  <option {% if selected_role.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-8 d-flex gap-2 align-items-end">
+              <button type="submit" class="btn btn-save-pro w-100">
+                {% if selected_role %}Update Hierarchy{% else %}Deploy Role{% endif %}
+              </button>
+              {% if selected_role %}
+                <a href="{% url 'app_settings:role' %}" class="btn btn-cancel-pro">Cancel</a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Role Inventory -->
+    <div class="pro-card">
+      <div class="pro-card-header d-flex justify-content-between align-items-center">
+        <h6 class="pro-card-title"><i class="bi bi-shield-shaded"></i> Active Permissions Matrix</h6>
+        <div class="pro-search-mini">
+           <i class="bi bi-search"></i>
+           <input type="text" placeholder="Filter roles...">
+        </div>
+      </div>
+      <div class="table-pro-wrap">
+        <table class="table-pro">
+          <thead>
+            <tr>
+              <th>ROLE NAME & LEVEL</th>
+              <th>IDENTIFIER</th>
+              <th>AUDIT INFO</th>
+              <th class="text-center">STATUS</th>
+              <th class="text-end">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in records %}
+            <tr class="pro-row">
+              <td class="primary-cell">
+                <div class="record-name">{{ item.role_name }}</div>
+                <div class="record-sub text-muted small">{{ item.role_level }} Level Access</div>
+              </td>
+              <td>
+                <span class="pro-chip">{{ item.role_id }}</span>
+              </td>
+              <td>
+                <div class="small fw-600 text-main">{{ item.created_by }}</div>
+                <div class="small text-muted">{{ item.created_date|date:"M d, Y" }}</div>
+              </td>
+              <td class="text-center">
+                {% if item.status|lower == 'active' %}
+                  <span class="status-pill pill-green">Active</span>
+                {% else %}
+                  <span class="status-pill pill-red">Inactive</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <div class="action-buttons-pro">
+                  <a href="{% url 'app_settings:role' %}?edit={{ item.id }}" class="btn-action-pro edit" title="Modify">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form method="post" class="d-inline" onsubmit="return confirm('Archive this role?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_role">
+                    <input type="hidden" name="role_id" value="{{ item.id }}">
+                    <button type="submit" class="btn-action-pro delete" title="Archive">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-5">
+                <div class="pro-empty-state">
+                  <i class="bi bi-shield-slash mb-3"></i>
+                  <p>No roles defined in the matrix.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .pro-dashboard { background: var(--bg); min-height: 100vh; padding-bottom: 40px; }
+  .fw-800 { font-weight: 800; }
+  
+  .btn-primary-pro { 
+    background: var(--accent); color: #fff; border: none; padding: 10px 24px; border-radius: 12px;
+    font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3); transition: all 0.2s;
+  }
+  .btn-primary-pro:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4); }
+
+  .pro-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+  .pro-card-header { padding: 18px 24px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.01); }
+  .pro-card-title { font-size: 13px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin: 0; display: flex; align-items: center; gap: 8px; }
+  
+  .pro-form { padding: 24px; }
+  .input-group-pro { display: flex; flex-direction: column; gap: 8px; }
+  .input-group-pro label { font-size: 12px; font-weight: 700; color: var(--text3); margin-left: 4px; }
+  .input-group-pro input, .input-group-pro textarea, .form-select-pro { 
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; 
+    color: var(--text); font-size: 14px; transition: all 0.2s; width: 100%;
+  }
+  .input-group-pro input:focus, .input-group-pro textarea:focus, .form-select-pro:focus { 
+    border-color: var(--accent); background: var(--surface3); outline: none; box-shadow: 0 0 0 4px var(--accentbg); 
+  }
+  .ghost-input { opacity: 0.6; cursor: not-allowed; }
+
+  .btn-save-pro { background: var(--accent); color: #fff; border: none; padding: 12px; border-radius: 12px; font-weight: 700; transition: all 0.2s; }
+  .btn-save-pro:hover { background: var(--accent2); }
+  .btn-cancel-pro { background: var(--surface2); color: var(--text2); text-decoration: none; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; }
+
+  .table-pro-wrap { padding: 8px; }
+  .table-pro { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .table-pro thead th { font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase; padding: 18px 24px; border-bottom: 1px solid var(--border); letter-spacing: 1px; }
+  .pro-row:hover { background: rgba(0,0,0,0.02); }
+  .pro-row td { padding: 16px 24px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  
+  .primary-cell .record-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .pro-chip { background: var(--accentbg); color: var(--accent); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; font-family: var(--mono); }
+  
+  .action-buttons-pro { display: flex; justify-content: flex-end; gap: 8px; }
+  .btn-action-pro { 
+    width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; 
+    text-decoration: none; font-size: 16px; transition: all 0.2s; border: 1px solid var(--border);
+  }
+  .btn-action-pro.edit { color: var(--blue); background: var(--bluebg); border-color: transparent; }
+  .btn-action-pro.delete { color: var(--red); background: var(--redbg); border-color: transparent; }
+  .btn-action-pro:hover { transform: scale(1.1); }
+
+  .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pill-green { background: #dcfce7; color: #166534; }
+  .pill-red { background: #fee2e2; color: #991b1b; }
+
+  .pro-empty-state { padding: 60px; display: flex; flex-direction: column; align-items: center; color: var(--text3); text-align: center; }
+  .pro-empty-state i { font-size: 48px; opacity: 0.2; }
+  
+  .pro-search-mini { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 4px 12px; display: flex; align-items: center; gap: 8px; }
+  .pro-search-mini input { background: none; border: none; outline: none; color: var(--text); font-size: 12px; width: 120px; }
+  .pro-search-mini i { color: var(--text3); font-size: 12px; }
+
+  .pro-alert { 
+    background: var(--accentbg); border-left: 4px solid var(--accent); padding: 12px 20px; border-radius: 0 12px 12px 0;
+    display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 600; color: var(--text);
+  }
+</style>
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/role_form.js"></script>
+{% endblock %}

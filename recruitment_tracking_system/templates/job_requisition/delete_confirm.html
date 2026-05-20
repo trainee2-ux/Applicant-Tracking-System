@@ -1,0 +1,43 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Confirm Job Delete{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/delete_confirm.css">{% endblock %}
+{% block nav_jobs %}active{% endblock %}
+{% block header %}Requisition Management &gt; Job Delete Confirmation{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="delete-confirm-wrap">
+  <div class="delete-confirm-card">
+    <div class="delete-confirm-badge">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+    <h2 class="delete-confirm-title">Delete Job Requisition?</h2>
+    <p class="delete-confirm-subtitle">
+      You are about to remove this job requisition from the system.
+    </p>
+
+    <div class="delete-confirm-details">
+      <div><strong>Job ID:</strong> {{ job.job_id }}</div>
+      <div><strong>Title:</strong> {{ job.title }}</div>
+      <div><strong>Department:</strong> {{ job.department|default:"-" }}</div>
+    </div>
+
+    <p class="delete-confirm-warning">This action cannot be undone.</p>
+
+    <div class="delete-confirm-actions">
+      <a href="{% url 'job_requisition:job_position_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm_delete">
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

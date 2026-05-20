@@ -1,0 +1,170 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ job.title }} - Careers</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=10">
+  <link rel="stylesheet" href="{% static 'css/careers.css' %}?v=1">
+</head>
+<body class="careers-body {% if request.session.theme == 'light' %}light-mode{% endif %}">
+  <header class="careers-hero">
+    <div class="careers-topbar">
+      <div class="careers-shell">
+        <a class="careers-brand" href="{% url 'public_careers' %}">
+          <span class="careers-brand-mark"><i class="bi bi-hexagon-fill"></i></span>
+          <span class="careers-brand-text">Ultimatix Careers</span>
+        </a>
+        <div class="careers-topbar-actions">
+          <a href="{% url 'public_careers' %}" class="careers-link"><i class="bi bi-arrow-left"></i> Back</a>
+          <a href="{% url 'accounts:login' %}" class="btn btn-outline-light btn-sm careers-topbar-btn">Login</a>
+        </div>
+      </div>
+    </div>
+    <div class="careers-hero-body">
+      <div class="careers-shell">
+        <div class="careers-kicker"><i class="bi bi-briefcase"></i> Job Details</div>
+        <h1 class="careers-title" style="font-size: 34px;">{{ job.title }}</h1>
+        <p class="careers-subtitle">
+          Apply in minutes. Track your application status in the candidate portal.
+        </p>
+      </div>
+    </div>
+  </header>
+
+  <div class="careers-main">
+    <div class="careers-shell">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="careers-detail-grid">
+      <section class="careers-detail-card">
+        <div class="careers-detail-head">
+          <div>
+            <div class="careers-detail-meta">Job ID: <span class="careers-mono">{{ job.job_id }}</span></div>
+            <div class="careers-detail-badges">
+              <span class="careers-pill"><i class="bi bi-building"></i> {{ job.department|default:"-" }}</span>
+              <span class="careers-pill"><i class="bi bi-geo-alt"></i> {{ job.location|default:"-" }}</span>
+              <span class="careers-pill"><i class="bi bi-graph-up"></i> {{ job.experience_range|default:"-" }}</span>
+              <span class="careers-pill"><i class="bi bi-people"></i> Openings: {{ job.openings }}</span>
+            </div>
+          </div>
+          <span class="careers-status {% if job.status|lower == 'approved' %}ok{% else %}neutral{% endif %}">{{ job.status }}</span>
+        </div>
+
+        <div class="careers-detail-section">
+          <h2 class="careers-detail-title">Skills Required</h2>
+          <div class="careers-detail-text">{{ job.skills_required|default:"-" }}</div>
+        </div>
+
+        <div class="careers-detail-section">
+          <h2 class="careers-detail-title">Description</h2>
+          <div class="careers-detail-text">{{ job.job_description|default:"-"|linebreaksbr }}</div>
+        </div>
+
+        <div class="careers-detail-section">
+          <h2 class="careers-detail-title">Requirements</h2>
+          <div class="careers-detail-text">{{ job.requirements|default:"-"|linebreaksbr }}</div>
+        </div>
+
+        <div class="careers-detail-section">
+          <h2 class="careers-detail-title">Benefits</h2>
+          <div class="careers-detail-text">{{ job.benefits|default:"-"|linebreaksbr }}</div>
+        </div>
+      </section>
+
+      <aside class="careers-apply-card">
+        <div class="careers-apply-title">Apply for this job</div>
+        <div class="careers-apply-sub">Complete your registration to submit the application.</div>
+        <button id="openRegistrationBtn" type="button" class="btn btn-primary w-100" style="height: 44px; border-radius: 14px; font-weight: 900;">
+          <i class="bi bi-send"></i> Apply Now
+        </button>
+        <div class="careers-apply-note">
+          By applying, you agree to share your information with the hiring team.
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div id="candidateRegistrationModal" class="careers-modal {% if not form_data %}d-none{% endif %}">
+    <div class="careers-modal-card" role="dialog" aria-modal="true" aria-label="Candidate registration">
+      <div class="careers-modal-head">
+        <div>
+          <div class="careers-modal-title">Candidate Registration</div>
+          <div class="careers-modal-sub">Complete registration to continue your application.</div>
+        </div>
+        <button id="closeRegistrationBtn" type="button" class="btn btn-ghost btn-sm">Close</button>
+      </div>
+      <div class="careers-modal-body">
+        <form method="post" class="careers-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="apply_job">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Full Name</label>
+              <input id="candidateNameField" class="form-control" type="text" name="full_name" value="{{ form_data.full_name|default:'' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input class="form-control" type="email" name="email" value="{{ form_data.email|default:'' }}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Contact Number</label>
+              <input class="form-control" type="text" name="contact_number" value="{{ form_data.contact_number|default:'' }}" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Password</label>
+              <input class="form-control" type="password" name="password" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Confirm Password</label>
+              <input class="form-control" type="password" name="confirm_password" required>
+            </div>
+          </div>
+          <div class="mt-3 d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-primary" style="border-radius: 14px; font-weight: 900;">Register & Apply</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Sync public pages with portal theme toggle (localStorage)
+      try {
+        const savedTheme = localStorage.getItem("ats-theme");
+        if (savedTheme) document.body.classList.toggle("light-mode", savedTheme === "light");
+      } catch (e) {}
+
+      const openBtn = document.getElementById("openRegistrationBtn");
+      const closeBtn = document.getElementById("closeRegistrationBtn");
+      const modal = document.getElementById("candidateRegistrationModal");
+      const firstInput = document.getElementById("candidateNameField");
+      if (!openBtn || !modal) return;
+
+      openBtn.addEventListener("click", function () {
+        modal.classList.remove("d-none");
+        if (firstInput) firstInput.focus();
+      });
+
+      if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+          modal.classList.add("d-none");
+        });
+      }
+
+      modal.addEventListener("click", function (event) {
+        if (event.target === modal) {
+          modal.classList.add("d-none");
+        }
+      });
+    });
+  </script>
+</body>
+</html>

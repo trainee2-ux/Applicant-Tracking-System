@@ -1,0 +1,82 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - BGV Finalized Reports{% endblock %}
+{% block nav_background_verification %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Compliance & Risk Reports</div>
+    <div class="page-subtitle">Consolidated verification summaries, risk indexing, and security audit logs for candidate screening.</div>
+  </div>
+  <div class="header-actions">
+    <a href="?format=pdf" class="btn btn-secondary btn-sm"><i class="bi bi-file-earmark-pdf"></i> Export Summary</a>
+    <a href="{% url 'background_verification:verification_dashboard' %}" class="btn btn-ghost btn-sm"><i class="bi bi-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+    <div class="card-title">Finalized Audit Log <span style="font-weight: 400; font-size: 12px; margin-left: 8px; color: var(--text3);">Showing {{ rows|length }} verified profiles</span></div>
+  </div>
+  
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate Ref</th>
+          <th>Screening Summary</th>
+          <th>Verification State</th>
+          <th>Flagged Discrepancies</th>
+          <th>Risk Quotient</th>
+          <th>Security Status</th>
+          {% if show_risk_reason %}<th>Technical Rationale</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="primary">
+            <div style="font-weight: 800; color: var(--accent2); font-family: var(--mono);">{{ row.candidate_id }}</div>
+          </td>
+          <td>
+            <div style="font-size: 12.5px; color: var(--text2); font-weight: 600; max-width: 250px;">{{ row.verification_summary|default:"Standard screening completed." }}</div>
+          </td>
+          <td>
+            <div style="font-size: 13px; font-weight: 700; color: var(--text);">{{ row.score_status|default:"Cleared" }}</div>
+          </td>
+          <td>
+            <div style="font-size: 12px; color: var(--text3); font-weight: 600;">{{ row.discrepancies|default:"None Detected" }}</div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; border: 3px solid {% if row.risk_score > 70 %}var(--red){% elif row.risk_score > 30 %}var(--amber){% else %}var(--green){% endif %}; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; font-family: var(--mono);">
+                {{ row.risk_score }}
+              </div>
+              <span style="font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase;">Score</span>
+            </div>
+          </td>
+          <td>
+            <span class="status-pill {% if row.risk_level|lower == 'low' %}pill-green{% elif row.risk_level|lower == 'high' %}pill-red{% else %}pill-amber{% endif %}" style="font-size: 10px; padding: 2px 10px;">
+              <span class="dot"></span> {{ row.risk_level }}
+            </span>
+          </td>
+          {% if show_risk_reason %}
+          <td>
+            <div style="font-size: 11px; color: var(--text3); font-style: italic;">{{ row.risk_reason|default:"—" }}</div>
+          </td>
+          {% endif %}
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="{% if show_risk_reason %}7{% else %}6{% endif %}" style="text-align: center; padding: 80px; color: var(--text3);">
+            <div style="font-size: 48px; opacity: 0.1; margin-bottom: 16px;"><i class="bi bi-file-earmark-lock"></i></div>
+            <div>No finalized screening reports available for display.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

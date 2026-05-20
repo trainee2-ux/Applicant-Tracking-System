@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.so
+.Python
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+
+# Project-local venv/runtime folders (do not commit)
+recruitment_tracking_system/venv/
+recruitment_tracking_system/runtime/
+recruitment_tracking_system/runtime.old.*/
+recruitment_tracking_system/runtime.staging.*/
+recruitment_tracking_system/runtime.*/
+
+# Env files (keep docker-safe env if desired)
+.env
+.env.*
+!.env.docker
+
+# Local caches / generated content
+recruitment_tracking_system/hf_cache/
+recruitment_tracking_system/media/
+
+# Logs & temp
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/

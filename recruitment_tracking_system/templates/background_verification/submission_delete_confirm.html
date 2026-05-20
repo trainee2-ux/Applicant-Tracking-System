@@ -1,0 +1,44 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Confirm BGV Submission Delete{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/delete_confirm.css">{% endblock %}
+{% block nav_background_verification %}active{% endblock %}
+{% block header %}Background Verification &gt; Submission Delete Confirmation{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="delete-confirm-wrap">
+  <div class="delete-confirm-card">
+    <div class="delete-confirm-badge">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+    <h2 class="delete-confirm-title">Delete BGV Submission?</h2>
+    <p class="delete-confirm-subtitle">
+      You are about to remove this background verification submission.
+    </p>
+
+    <div class="delete-confirm-details">
+      <div><strong>Candidate ID:</strong> {{ record.candidate.candidate_id }}</div>
+      <div><strong>ID Proof:</strong> {{ record.id_proof|default:"-" }}</div>
+      <div><strong>Address Proof:</strong> {{ record.address_proof|default:"-" }}</div>
+      <div><strong>Status:</strong> {{ record.status|default:"-" }}</div>
+    </div>
+
+    <p class="delete-confirm-warning">This action cannot be undone.</p>
+
+    <div class="delete-confirm-actions">
+      <a href="{% url 'background_verification:submission' %}" class="btn btn-outline-secondary">Cancel</a>
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm_delete">
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Confirm Recording Delete{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/delete_confirm.css">{% endblock %}
+{% block nav_interview_recording %}active{% endblock %}
+{% block header %}Interview Recording &gt; Recording Delete Confirmation{% endblock %}
+
+{% block content %}
+<div class="delete-confirm-wrap">
+  <div class="delete-confirm-card">
+    <div class="delete-confirm-badge"><i class="bi bi-exclamation-triangle-fill"></i></div>
+    <h2 class="delete-confirm-title">Delete Recording Entry?</h2>
+    <div class="delete-confirm-details">
+      <div><strong>Candidate:</strong> {{ record.candidate.full_name }}</div>
+      <div><strong>Interviewer:</strong> {{ record.interviewer }}</div>
+      <div><strong>Video File:</strong> {{ record.video_file_name }}</div>
+    </div>
+    <p class="delete-confirm-warning">This action cannot be undone.</p>
+    <div class="delete-confirm-actions">
+      <a href="/interview-recording/recording/" class="btn btn-outline-secondary">Cancel</a>
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm_delete">
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

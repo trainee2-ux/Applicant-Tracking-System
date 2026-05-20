@@ -1,0 +1,40 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Onboarding Registration{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block header %}Candidate Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <h4 class="mb-1">Onboarding Registration</h4>
+      <div class="text-muted small mb-3">
+        Candidate: <strong>{{ candidate.full_name }}</strong> ({{ candidate.candidate_id }}) — {{ candidate.email }}
+      </div>
+
+      {% if has_account %}
+        <div class="alert alert-info">An account already exists for this email. You can reset your password here.</div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input class="form-control" value="{{ candidate.email }}" disabled>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input class="form-control" type="password" name="password" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Confirm Password</label>
+          <input class="form-control" type="password" name="confirm_password" required>
+        </div>
+        <button class="btn btn-primary" type="submit">Continue</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

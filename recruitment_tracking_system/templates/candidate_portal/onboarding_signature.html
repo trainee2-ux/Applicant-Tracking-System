@@ -1,0 +1,270 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Signature{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block header %}Candidate Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+    <div>
+      <h4 class="mb-0">Sign Documents</h4>
+      <div class="text-muted small">{{ candidate.full_name }} ({{ candidate.candidate_id }})</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="/candidate-portal/onboarding-documents/">Back</a>
+    </div>
+  </div>
+
+  {% if already_signed %}
+    <div class="alert alert-success">Signature already submitted. HR will review and finalize.</div>
+  {% else %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <p class="mb-2">Click the highlighted signature block in the PDF to sign.</p>
+        {% if signature_request.document_pdf %}
+          <div class="mb-2 small text-muted">Offer Letter PDF (signature block highlighted):</div>
+          <div class="border rounded bg-white p-2 mb-3" style="max-height:360px; overflow:auto;">
+            <div id="pdfPages"></div>
+          </div>
+          <div class="text-muted small mb-3">Tip: click the green “Sign here” box to open the signature pad.</div>
+        {% endif %}
+
+        <div id="sigPanel" class="card border-0 shadow-sm" style="display:none; max-width: 560px;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="fw-semibold">Signature</div>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="sigCloseBtn">Close</button>
+            </div>
+            <div class="border rounded p-2 bg-white">
+              <canvas id="sigCanvas" width="480" height="200" style="width:100%;height:auto;border:1px dashed #cbd5e1;border-radius:8px;"></canvas>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="sigClearBtn">Clear</button>
+            </div>
+
+            <form method="post" class="mt-3" onsubmit="return window.__ATS_SIG_submit();">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="submit_signature">
+              <input type="hidden" name="signature_data" id="sigData">
+              <input type="hidden" name="doc_id" id="docId" value="">
+              <button class="btn btn-primary">Submit Signature</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block page_js %}
+{% if not already_signed %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+{{ sign_documents_json|json_script:"sign-docs-data" }}
+<script>
+  (function () {
+    // Render PDF pages and highlight signature block (like dmsystem)
+    const pagesHost = document.getElementById('pdfPages');
+    const docsDataEl = document.getElementById('sign-docs-data');
+    let docs = [];
+    try { docs = docsDataEl ? JSON.parse(docsDataEl.textContent) : []; } catch (e) { docs = []; }
+
+    const pdfUrlLegacy = "{{ signature_request.document_pdf.url|default:'' }}";
+    const legacyPage = parseInt("{{ signature_request.page_number|default:1 }}", 10) || 1;
+    const legacyX = parseFloat("{{ signature_request.position_x|default:70 }}") || 70;
+    const legacyY = parseFloat("{{ signature_request.position_y|default:80 }}") || 80;
+    const legacyW = parseFloat("{{ signature_request.width|default:180 }}") || 180;
+    const legacyH = parseFloat("{{ signature_request.height|default:70 }}") || 70;
+
+    const docIdField = document.getElementById('docId');
+
+    function currentDoc() {
+      if (docs && docs.length) return docs.find(d => d.status === "pending") || docs[0];
+      return null;
+    }
+
+    function renderPdfAllPages(pdfUrl, blockPage, blockX, blockY, blockW, blockH, activeDocId) {
+      if (!pagesHost || !pdfUrl || !window.pdfjsLib) return;
+      try {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+      } catch (e) {}
+
+      window.pdfjsLib.getDocument(pdfUrl).promise.then(async function (pdf) {
+        pagesHost.innerHTML = "";
+        const maxWidth = Math.min(760, (pagesHost.clientWidth || 760));
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport1 = page.getViewport({ scale: 1.0 });
+          const scale = Math.max(0.4, Math.min(2.0, maxWidth / viewport1.width));
+          const viewport = page.getViewport({ scale: scale });
+
+          const wrapper = document.createElement("div");
+          wrapper.style.position = "relative";
+          wrapper.style.marginBottom = "12px";
+          wrapper.style.border = "1px solid #eef2f7";
+          wrapper.style.borderRadius = "10px";
+          wrapper.style.overflow = "hidden";
+          wrapper.style.background = "#fff";
+
+          const label = document.createElement("div");
+          label.textContent = "Page " + i;
+          label.style.position = "absolute";
+          label.style.left = "10px";
+          label.style.top = "10px";
+          label.style.zIndex = "12";
+          label.style.background = "rgba(15,23,42,.85)";
+          label.style.color = "#fff";
+          label.style.fontSize = "12px";
+          label.style.padding = "3px 8px";
+          label.style.borderRadius = "999px";
+
+          const canvas = document.createElement("canvas");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.display = "block";
+          canvas.style.width = "100%";
+          canvas.style.height = "auto";
+
+          const ctx = canvas.getContext("2d");
+          await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+          wrapper.appendChild(canvas);
+          wrapper.appendChild(label);
+
+          if (i === blockPage) {
+            const marker = document.createElement("div");
+            marker.style.position = "absolute";
+            marker.style.border = "3px solid #16a34a";
+            marker.style.borderRadius = "12px";
+            marker.style.zIndex = "11";
+            marker.style.pointerEvents = "none";
+            marker.style.boxShadow = "0 0 0 4px rgba(22,163,74,.15)";
+
+            // Position marker by % within wrapper (same stored values used server-side).
+            const rectW = viewport.width;
+            const rectH = viewport.height;
+            const xPx = (blockX / 100) * rectW;
+            const yPx = (blockY / 100) * rectH;
+            const left = Math.max(0, Math.min(rectW - blockW, xPx));
+            const top = Math.max(0, Math.min(rectH - blockH, yPx));
+            marker.style.left = left + "px";
+            marker.style.top = top + "px";
+            marker.style.width = blockW + "px";
+            marker.style.height = blockH + "px";
+
+            const tag = document.createElement("div");
+            tag.textContent = "Sign here";
+            tag.style.position = "absolute";
+            tag.style.left = "8px";
+            tag.style.top = "8px";
+            tag.style.background = "#16a34a";
+            tag.style.color = "#fff";
+            tag.style.fontSize = "12px";
+            tag.style.padding = "3px 8px";
+            tag.style.borderRadius = "999px";
+            marker.appendChild(tag);
+
+            // Click-to-open signature pad (like dmsystem UX)
+            marker.style.pointerEvents = "auto";
+            marker.style.cursor = "pointer";
+            marker.addEventListener("click", function () {
+              const panel = document.getElementById("sigPanel");
+              if (panel) {
+                if (docIdField) docIdField.value = String(activeDocId || "");
+                panel.style.display = "block";
+                panel.scrollIntoView({behavior: "smooth", block: "start"});
+              }
+            });
+
+            wrapper.appendChild(marker);
+          }
+
+          pagesHost.appendChild(wrapper);
+        }
+      }).catch(function () {
+        // If PDF.js fails, fallback: show a link.
+        pagesHost.innerHTML = '<a class="btn btn-outline-primary btn-sm" href="' + pdfUrl + '" target="_blank">View PDF</a>';
+      });
+    }
+
+    const canvas = document.getElementById('sigCanvas');
+    const clearBtn = document.getElementById('sigClearBtn');
+    const closeBtn = document.getElementById('sigCloseBtn');
+    const ctx = canvas.getContext('2d');
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#0f172a';
+
+    let drawing = false;
+    let lastX = 0, lastY = 0;
+
+    function posFromEvent(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = (e.touches && e.touches[0] ? e.touches[0].clientX : e.clientX);
+      const clientY = (e.touches && e.touches[0] ? e.touches[0].clientY : e.clientY);
+      return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
+    }
+
+    function start(e) {
+      drawing = true;
+      const p = posFromEvent(e);
+      lastX = p.x; lastY = p.y;
+    }
+    function move(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const p = posFromEvent(e);
+      ctx.beginPath();
+      ctx.moveTo(lastX, lastY);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      lastX = p.x; lastY = p.y;
+    }
+    function end() { drawing = false; }
+
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start, {passive: false});
+    canvas.addEventListener('touchmove', move, {passive: false});
+    window.addEventListener('touchend', end);
+
+    clearBtn.addEventListener('click', function () {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        const panel = document.getElementById("sigPanel");
+        if (panel) panel.style.display = "none";
+      });
+    }
+
+    window.__ATS_SIG_submit = function () {
+      const dataUrl = canvas.toDataURL('image/png');
+      // quick empty check: if all pixels transparent, block submit
+      const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let hasInk = false;
+      for (let i = 3; i < pixels.length; i += 4) {
+        if (pixels[i] !== 0) { hasInk = true; break; }
+      }
+      if (!hasInk) {
+        alert('Please draw your signature first.');
+        return false;
+      }
+      document.getElementById('sigData').value = dataUrl;
+      return true;
+    };
+
+    const d = currentDoc();
+    if (d) {
+      renderPdfAllPages(d.document_pdf, parseInt(d.page_number || 1, 10), parseFloat(d.position_x || 70), parseFloat(d.position_y || 80), parseFloat(d.width || 180), parseFloat(d.height || 70), d.id);
+      if (docIdField) docIdField.value = String(d.id);
+    } else if (pdfUrlLegacy) {
+      renderPdfAllPages(pdfUrlLegacy, legacyPage, legacyX, legacyY, legacyW, legacyH, "");
+    }
+  })();
+</script>
+{% endif %}
+{% endblock %}

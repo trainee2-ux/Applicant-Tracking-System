@@ -1,0 +1,27 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Onboarding Locked{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block header %}Candidate Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <h4 class="mb-2">Complete Offer Response First</h4>
+      <p class="mb-3">
+        Please accept or reject the offer before submitting onboarding documents.
+      </p>
+      {% if offer_view_url %}
+      <div class="mb-3">
+        <a class="btn btn-outline-primary" href="{{ offer_view_url }}">View Offer Letter</a>
+      </div>
+      {% endif %}
+      <div class="d-flex gap-2">
+        <a class="btn btn-success" href="{{ accept_url }}">Accept Offer</a>
+        <a class="btn btn-danger" href="{{ reject_url }}">Reject Offer</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

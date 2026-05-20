@@ -1,0 +1,266 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - In Person Interview{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=4">{% endblock %}
+{% block nav_interviews %}active{% endblock %}
+{% block header %}Interviews &gt; In Person Interview Form{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="form-shell" style="max-width: 1000px; margin: 0 auto;">
+  <div class="page-header mb-4">
+    <div>
+      <h2 class="page-title">Schedule In-Person Interview</h2>
+      <p class="page-subtitle">Configure the physical evaluation parameters for the candidate.</p>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="record_id" value="{{ form_data.record_id|default:'' }}">
+
+    <!-- Section 1: Candidate & Position -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-person-badge"></i></div>
+        <div>
+          <div class="section-title">Candidate & Position Mapping</div>
+          <div class="section-sub">Linking talent to the target requisition protocol.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Manpower Requisition ID</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-hash field-icon"></i>
+            <input class="premium-input-v2" type="text" value="MPR0001" readonly>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Candidate Name</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-person field-icon"></i>
+            <select id="ipCandidateSelect" class="premium-input-v2" name="candidate_name" required>
+              <option value="">Select Candidate</option>
+              {% for item in candidate_options %}
+              <option value="{{ item.id }}" data-posting="{{ item.posting }}" {% if form_data.candidate_name == item.id %}selected{% endif %}>{{ item.id }} - {{ item.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Posting Title</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-briefcase field-icon"></i>
+            <select id="ipPostingTitle" class="premium-input-v2" name="posting_title" required>
+              <option value="">Select Posting Title</option>
+              {% for item in posting_options %}
+              <option value="{{ item }}" {% if form_data.posting_title == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Interview Process Name</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-diagram-3 field-icon"></i>
+            <select class="premium-input-v2" name="interview_process_name">
+              <option value="">Select Process Round</option>
+              {% for item in process_options %}
+              <option value="{{ item }}" {% if form_data.interview_process_name == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Schedule & Logistics -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-calendar-check"></i></div>
+        <div>
+          <div class="section-title">Schedule & Logistics</div>
+          <div class="section-sub">Define the timing and physical location for the evaluation.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Date</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-calendar3 field-icon"></i>
+            <input class="premium-input-v2" name="date" type="date" value="{{ form_data.date|default:'' }}" required>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Time Window (From - To)</label>
+          <div class="d-flex gap-2">
+            <div class="input-icon-wrap flex-fill">
+              <i class="bi bi-clock field-icon"></i>
+              <input class="premium-input-v2" name="from_time" type="time" value="{{ form_data.from_time|default:'' }}" required>
+            </div>
+            <div class="input-icon-wrap flex-fill">
+              <i class="bi bi-clock-history field-icon"></i>
+              <input class="premium-input-v2" name="to_time" type="time" value="{{ form_data.to_time|default:'' }}" required>
+            </div>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Location</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-geo-alt field-icon"></i>
+            <input class="premium-input-v2" name="location" type="text" value="{{ form_data.location|default:'' }}" placeholder="e.g. Conference Room A, Level 4">
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Client Name</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-building field-icon"></i>
+            <select class="premium-input-v2" name="client_name">
+              <option value="">Select Client Name</option>
+              {% for item in client_options %}
+              <option value="{{ item }}" {% if form_data.client_name == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Ownership & Additional Info -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-info-circle"></i></div>
+        <div>
+          <div class="section-title">Ownership & Directives</div>
+          <div class="section-sub">Assign accountability and add specific instructions.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Interview Owner</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-shield-check field-icon"></i>
+            <select class="premium-input-v2" name="interview_owner">
+              <option value="">Select Owner</option>
+              {% for item in owner_options %}
+              <option value="{{ item }}" {% if form_data.interview_owner == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Assessment Schema</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-clipboard-data field-icon"></i>
+            <select class="premium-input-v2" name="assessment_name">
+              <option value="">Select Assessment Name</option>
+              {% for item in assessment_options %}
+              <option value="{{ item }}" {% if form_data.assessment_name == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap col-span-2">
+          <label class="field-label">Schedule Comments</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-chat-right-text field-icon"></i>
+            <textarea class="premium-input-v2" name="schedule_comments" rows="2" placeholder="Add any specific instructions for the interviewer or candidate...">{{ form_data.schedule_comments|default:'' }}</textarea>
+          </div>
+        </div>
+        <div class="field-wrap col-span-2">
+          <label class="field-label">Attachment (Brief / JD / Evaluation Guide)</label>
+          <div class="attachment-upload">
+            <i class="bi bi-cloud-arrow-up"></i>
+            <span>Drag and drop or click to upload</span>
+            <input type="file" name="attachment" id="attachmentInput">
+            <div id="fileName" class="mt-2 text-accent font-bold"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-end gap-3 mt-5">
+      <a href="{% url 'applicant_tracking:in_person_interview' %}" class="btn btn-secondary" style="padding: 12px 32px; border-radius: 12px;">Cancel</a>
+      <button type="submit" class="btn btn-primary" style="padding: 12px 48px; border-radius: 12px; box-shadow: 0 8px 20px var(--accentbg);">Schedule Interview</button>
+    </div>
+  </form>
+</div>
+
+<style>
+  .input-icon-wrap { position: relative; display: flex; align-items: center; width: 100%; }
+  .field-icon { position: absolute; left: 14px; color: var(--text3); font-size: 1rem; pointer-events: none; }
+  .premium-input-v2 { 
+    width: 100%;
+    height: 48px;
+    padding-left: 42px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13.5px;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.2s;
+  }
+  textarea.premium-input-v2 { height: auto; padding-top: 12px; }
+  .premium-input-v2:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accentbg); }
+  .premium-input-v2[readonly] { opacity: 0.7; cursor: not-allowed; }
+  
+  .attachment-upload {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    color: var(--text3);
+    position: relative;
+    transition: all 0.2s;
+    background: var(--surface2);
+  }
+  .attachment-upload:hover { border-color: var(--accent); background: var(--accentbg); color: var(--accent); }
+  .attachment-upload i { display: block; font-size: 24px; margin-bottom: 8px; }
+  .attachment-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  
+  .section { transition: transform 0.2s; }
+  .section:hover { transform: translateY(-2px); }
+</style>
+
+<script>
+  document.getElementById('attachmentInput').onchange = function() {
+    if(this.files.length > 0) {
+      document.getElementById('fileName').innerHTML = '<i class="bi bi-file-earmark-check me-1"></i> ' + this.files[0].name;
+    }
+  };
+</script>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const candidateSelect = document.getElementById("ipCandidateSelect");
+    const postingSelect = document.getElementById("ipPostingTitle");
+    if (candidateSelect && postingSelect) {
+      candidateSelect.addEventListener("change", function () {
+        const selected = candidateSelect.options[candidateSelect.selectedIndex];
+        const posting = selected && selected.dataset ? selected.dataset.posting : "";
+        if (!posting) return;
+        let matched = Array.from(postingSelect.options).find(function (opt) {
+          return opt.value === posting || opt.text === posting;
+        });
+        if (!matched) {
+          matched = document.createElement("option");
+          matched.value = posting;
+          matched.textContent = posting;
+          postingSelect.appendChild(matched);
+        }
+        postingSelect.value = matched.value;
+      });
+    }
+  });
+</script>
+{% endblock %}

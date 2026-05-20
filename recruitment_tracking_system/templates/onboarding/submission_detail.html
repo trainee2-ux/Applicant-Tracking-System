@@ -1,0 +1,472 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Onboarding Submission{% endblock %}
+{% block nav_onboarding %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .submission-header { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .data-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); font-weight: 700; margin-bottom: 4px; }
+  .data-value { font-size: 14px; font-weight: 600; color: var(--text); }
+  
+  .doc-item { 
+    display: flex; align-items: center; justify-content: space-between; 
+    padding: 12px; background: var(--surface2); border: 1px solid var(--border); 
+    border-radius: 10px; margin-bottom: 8px; transition: all 0.2s;
+  }
+  .doc-item:hover { border-color: var(--accent); background: var(--surface); }
+  
+  .pdf-preview-container {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface3);
+    overflow: hidden;
+    margin-top: 16px;
+  }
+  
+  .signature-controls {
+    background: var(--surface2);
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border2);
+    margin-top: 16px;
+  }
+
+  /* Override bootstrap list-group for dark mode */
+  .list-group-item { background: transparent; border-color: var(--border); color: var(--text); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Candidate Onboarding Submission</div>
+    <div class="page-subtitle">Review documents and manage signature requests for <strong>{{ submission.invitation.candidate.full_name }}</strong></div>
+  </div>
+  <div class="header-actions">
+    <a href="/onboarding/approvals/" class="btn btn-ghost btn-sm"><i class="bi bi-arrow-left"></i> Back to Approvals</a>
+    <a href="/onboarding/board/" class="btn btn-secondary btn-sm"><i class="bi bi-kanban"></i> Onboarding Board</a>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 400px; gap: 24px;">
+  
+  <!-- LEFT: Form Data & Large Elements -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    
+    <!-- Candidate Info Mini-Card -->
+    <div class="card" style="padding: 16px 24px; background: var(--accentbg); border-color: rgba(108,99,255,0.2);">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <div class="user-avatar" style="width: 48px; height: 48px; font-size: 16px;">{{ submission.invitation.candidate.full_name|slice:":1" }}</div>
+        <div>
+          <div style="font-size: 16px; font-weight: 800; color: var(--text);">{{ submission.invitation.candidate.full_name }}</div>
+          <div style="font-size: 12px; color: var(--accent2); font-weight: 600;">Candidate ID: #{{ submission.invitation.candidate.candidate_id }}</div>
+        </div>
+        <div style="margin-left: auto; text-align: right;">
+          <div class="data-label">Submission Status</div>
+          <span class="status-pill {% if submission.status == 'approved' %}pill-green{% elif submission.status == 'rejected' %}pill-red{% else %}pill-amber{% endif %}">
+            <span class="dot"></span> {{ submission.status|capfirst }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Data Section -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-input-cursor-text"></i> Submitted Form Details</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <tbody>
+            {% for k,v in submission.form_data.items %}
+              <tr>
+                <td style="width: 200px; font-weight: 700; color: var(--text3); font-size: 12px; text-transform: uppercase;">{{ k|capfirst }}</td>
+                <td style="font-weight: 600; color: var(--text);">{{ v }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="2" style="text-align: center; padding: 40px; color: var(--text3);">No form data provided.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Interactive PDF Section (If Approved) -->
+    {% if submission.status == "approved" and signature_request %}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-pen"></i> Signature Placement & Preview</div>
+        <div class="card-action">Select a document below to place signature block</div>
+      </div>
+      
+      <div style="padding: 16px;">
+        {% if sign_documents %}
+          <div class="field" style="max-width: 300px; margin-bottom: 16px;">
+            <label class="field-label">Active Document</label>
+            <select class="form-select" id="docSelect" style="border-radius: 8px;"></select>
+          </div>
+        {% endif %}
+
+        <div class="pdf-preview-container">
+          <div id="pdfPages" style="max-height: 600px; overflow-y: auto; padding: 20px;">
+            <!-- PDF Canvas rendered here -->
+          </div>
+        </div>
+
+        <form method="post" action="/onboarding/approvals/{{ submission.id }}/action/" class="signature-controls">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save_signature_block">
+          <input type="hidden" name="doc_id" id="docId" value="">
+          <input type="hidden" name="page_number" id="pageNo" value="{{ signature_request.page_number|default:1 }}">
+          
+          <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;">
+            <div class="field" style="width: 80px;">
+              <label class="field-label">X (%)</label>
+              <input name="position_x" id="posX" value="{{ signature_request.position_x|default:70 }}" required readonly style="background: var(--surface3);">
+            </div>
+            <div class="field" style="width: 80px;">
+              <label class="field-label">Y (%)</label>
+              <input name="position_y" id="posY" value="{{ signature_request.position_y|default:80 }}" required readonly style="background: var(--surface3);">
+            </div>
+            <div class="field" style="width: 100px;">
+              <label class="field-label">Width (px)</label>
+              <input name="width" id="blkW" value="{{ signature_request.width|default:180 }}" required>
+            </div>
+            <div class="field" style="width: 100px;">
+              <label class="field-label">Height (px)</label>
+              <input name="height" id="blkH" value="{{ signature_request.height|default:70 }}" required>
+            </div>
+            <button class="btn btn-primary" type="submit" style="margin-bottom: 4px;"><i class="bi bi-save"></i> Save Block</button>
+          </div>
+          <div style="font-size: 11px; color: var(--text3); margin-top: 8px;"><i class="bi bi-mouse"></i> Click on the PDF page above to auto-fill X and Y coordinates.</div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT: Documents & Decision Sidebar -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    
+    <!-- Documents Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-files"></i> Uploaded Documents</div>
+      </div>
+      <div style="padding: 16px;">
+        {% for d in documents %}
+          <div class="doc-item">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="font-size: 20px; color: var(--accent2);"><i class="bi bi-file-earmark-check"></i></div>
+              <div>
+                <div style="font-size: 13px; font-weight: 700;">{{ d.document_key|capfirst }}</div>
+                <div style="font-size: 10px; color: var(--text3);">{{ d.uploaded_at|date:"M j, Y H:i" }}</div>
+              </div>
+            </div>
+            {% if d.file %}
+              <a href="{{ d.file.url }}" target="_blank" class="icon-btn" title="Download"><i class="bi bi-download"></i></a>
+            {% endif %}
+          </div>
+        {% empty %}
+          <div style="text-align: center; padding: 24px; color: var(--text3); font-size: 13px;">No documents found.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Decision / Action Card -->
+    <div class="card" style="border-top: 4px solid {% if submission.status == 'approved' %}var(--green){% elif submission.status == 'rejected' %}var(--red){% else %}var(--accent){% endif %};">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-shield-check"></i> Administrative Decision</div>
+      </div>
+      <div style="padding: 16px;">
+        
+        {% if submission.status == "submitted" %}
+          <!-- Approval / Rejection Forms -->
+          <form method="post" action="/onboarding/approvals/{{ submission.id }}/action/" class="mb-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="approve_submission">
+            <button class="btn btn-primary w-100" type="submit" style="height: 44px;"><i class="bi bi-check-lg"></i> Approve Submission</button>
+          </form>
+          
+          <div style="height: 1px; background: var(--border); margin: 20px 0;"></div>
+          
+          <form method="post" action="/onboarding/approvals/{{ submission.id }}/action/">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reject_submission">
+            <div class="field" style="margin-bottom: 12px;">
+              <label class="field-label">Rejection Reason</label>
+              <textarea name="rejection_reason" rows="3" placeholder="Provide feedback to the candidate..." required></textarea>
+            </div>
+            <button class="btn btn-ghost w-100" type="submit" style="color: var(--red); border-color: var(--redbg);"><i class="bi bi-x-circle"></i> Reject Submission</button>
+          </form>
+
+        {% elif submission.status == "approved" %}
+          <div style="background: var(--greenbg); padding: 12px; border-radius: 10px; color: var(--green); font-size: 13px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+            <i class="bi bi-check-circle-fill"></i> Approved {% if submission.approved_at %}on {{ submission.approved_at|date:"M j, Y" }}{% endif %}
+          </div>
+
+          <div class="data-label">Onboarding Signature</div>
+          {% if signature_request %}
+            <div style="font-size: 13px; margin-bottom: 16px;">
+              Current Status: <span class="status-pill pill-purple" style="font-size: 10px; padding: 2px 8px;">{{ signature_request.get_status_display }}</span>
+            </div>
+
+            <!-- Upload for Signature -->
+            <form method="post" action="/onboarding/approvals/{{ submission.id }}/action/" enctype="multipart/form-data" style="background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px solid var(--border2); margin-bottom: 16px;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="upload_sign_document">
+              <label class="field-label">Add Document for Signature</label>
+              <input type="file" name="document_pdfs" accept="application/pdf" multiple required style="margin-bottom: 12px;">
+              <button class="btn btn-secondary btn-sm w-100" type="submit"><i class="bi bi-cloud-upload"></i> Upload PDF</button>
+            </form>
+
+            {% if sign_documents %}
+              <div class="data-label" style="margin-bottom: 8px;">Signature Documents</div>
+              <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+                {% for d in sign_documents %}
+                  <div style="padding: 10px; background: var(--surface3); border: 1px solid var(--border2); border-radius: 10px;">
+                    <div style="font-size: 12px; font-weight: 700; color: var(--text);">{{ d.title }}</div>
+                    <div style="display: flex; gap: 8px; margin-top: 6px;">
+                      {% if d.document_pdf %}
+                        <a href="{{ d.document_pdf.url }}" target="_blank" style="font-size: 11px; color: var(--accent2); text-decoration: none;"><i class="bi bi-file-earmark-pdf"></i> View</a>
+                      {% else %}
+                        <span style="font-size: 11px; color: var(--text3);">Not uploaded</span>
+                      {% endif %}
+                      {% if d.signed_pdf %}
+                        <a href="{{ d.signed_pdf.url }}" target="_blank" style="font-size: 11px; color: var(--green); text-decoration: none;"><i class="bi bi-pen"></i> Signed</a>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if signature_request.status == "pending" and not signature_request.signed_at %}
+              {% if sign_documents %}
+              <form method="post" action="/onboarding/approvals/{{ submission.id }}/action/" class="mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="send_signature_request">
+                <button class="btn btn-success w-100" type="submit" style="height: 44px;"><i class="bi bi-send"></i> Send for Signature</button>
+              </form>
+              {% else %}
+                <div style="font-size: 11px; color: var(--text3); text-align: center; padding: 10px; border: 1px dashed var(--border); border-radius: 8px;">Upload a PDF to enable sending.</div>
+              {% endif %}
+            {% endif %}
+
+            {% if signature_request.status == "signed" %}
+              <form method="post" action="/onboarding/approvals/{{ submission.id }}/action/">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="final_approve_signature">
+                <button class="btn btn-primary w-100" type="submit"><i class="bi bi-patch-check"></i> Final Approve Signature</button>
+              </form>
+            {% elif signature_request.status == "final_approved" %}
+              <div style="background: var(--greenbg); padding: 12px; border-radius: 10px; color: var(--green); font-size: 12px; text-align: center; margin-bottom: 12px;">
+                Signature Final Approved
+              </div>
+              <a class="btn btn-success w-100" href="/onboarding/employee-code/{{ submission.id }}/"><i class="bi bi-person-badge"></i> Assign Employee Code</a>
+            {% else %}
+              <div style="font-size: 12px; color: var(--text3); text-align: center; padding: 16px; border: 1px dashed var(--border); border-radius: 10px; background: rgba(0,0,0,0.01);">
+                <i class="bi bi-hourglass-split"></i> Waiting for candidate signature...
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div style="font-size: 12px; color: var(--text3); text-align: center; padding: 20px; border: 1px dashed var(--border); border-radius: 12px;">
+              Signature request not created.
+            </div>
+          {% endif %}
+
+        {% elif submission.status == "rejected" %}
+          <div style="background: var(--redbg); padding: 16px; border-radius: 12px; color: var(--red); margin-bottom: 16px;">
+            <div style="font-size: 14px; font-weight: 700;"><i class="bi bi-x-octagon-fill"></i> Rejected</div>
+            {% if submission.rejection_reason %}
+              <div style="font-size: 12px; margin-top: 8px; font-weight: 500; opacity: 0.9;">{{ submission.rejection_reason }}</div>
+            {% endif %}
+          </div>
+          <form method="post" action="/onboarding/approvals/{{ submission.id }}/action/">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="approve_submission">
+            <button class="btn btn-secondary w-100" type="submit">Re-Approve Submission</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+{{ sign_documents_json|json_script:"sign-documents-data" }}
+<script>
+  (function () {
+    const pagesHost = document.getElementById('pdfPages');
+    if (!pagesHost) return;
+
+    const docsDataEl = document.getElementById('sign-documents-data');
+    let docs = [];
+    try { docs = docsDataEl ? JSON.parse(docsDataEl.textContent) : []; } catch (e) { docs = []; }
+
+    const posX = document.getElementById('posX');
+    const posY = document.getElementById('posY');
+    const blkW = document.getElementById('blkW');
+    const blkH = document.getElementById('blkH');
+    const pageNo = document.getElementById('pageNo');
+    const docSelect = document.getElementById('docSelect');
+    const docId = document.getElementById('docId');
+
+    function currentDoc() {
+      if (docSelect && docSelect.value) {
+        const id = parseInt(docSelect.value, 10);
+        return docs.find(d => d.id === id) || null;
+      }
+      return docs.length ? docs[0] : null;
+    }
+
+    function placeMarker(marker, wrap, xPct, yPct) {
+      const rect = wrap.getBoundingClientRect();
+      const w = parseFloat((blkW && blkW.value) || "180");
+      const h = parseFloat((blkH && blkH.value) || "70");
+      const xPx = (xPct / 100) * rect.width;
+      const yPx = (yPct / 100) * rect.height;
+      marker.style.width = w + "px";
+      marker.style.height = h + "px";
+      marker.style.left = Math.max(0, Math.min(rect.width - w, xPx)) + "px";
+      marker.style.top = Math.max(0, Math.min(rect.height - h, yPx)) + "px";
+      marker.style.display = "block";
+    }
+
+    function renderPdfAllPages(pdfUrl, existingPage, existingX, existingY) {
+      if (!window.pdfjsLib) return;
+      try {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+      } catch (e) {}
+
+      const url = pdfUrl || "{{ signature_request_pdf_url|default:'' }}";
+      if (!url) return;
+
+      window.pdfjsLib.getDocument(url).promise.then(async function (pdf) {
+        pagesHost.innerHTML = "";
+        const maxWidth = pagesHost.clientWidth ? (pagesHost.clientWidth - 40) : 760;
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const viewport1 = page.getViewport({ scale: 1.0 });
+          const scale = Math.max(0.4, Math.min(2.0, maxWidth / viewport1.width));
+          const viewport = page.getViewport({ scale: scale });
+
+          const wrapper = document.createElement("div");
+          wrapper.style.position = "relative";
+          wrapper.style.marginBottom = "24px";
+          wrapper.style.border = "1px solid var(--border)";
+          wrapper.style.borderRadius = "12px";
+          wrapper.style.overflow = "hidden";
+          wrapper.style.background = "#fff";
+          wrapper.style.boxShadow = "var(--shadow)";
+
+          const label = document.createElement("div");
+          label.textContent = "Page " + i;
+          label.style.position = "absolute";
+          label.style.left = "16px";
+          label.style.top = "16px";
+          label.style.zIndex = "12";
+          label.style.background = "var(--accent)";
+          label.style.color = "#fff";
+          label.style.fontSize = "11px";
+          label.style.fontWeight = "800";
+          label.style.padding = "4px 10px";
+          label.style.borderRadius = "99px";
+
+          const canvas = document.createElement("canvas");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.display = "block";
+          canvas.style.width = "100%";
+          canvas.style.height = "auto";
+
+          const ctx = canvas.getContext("2d");
+          await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+          const overlay = document.createElement("div");
+          overlay.style.position = "absolute";
+          overlay.style.inset = "0";
+          overlay.style.cursor = "crosshair";
+          overlay.style.background = "transparent";
+          overlay.style.zIndex = "10";
+
+          const marker = document.createElement("div");
+          marker.style.position = "absolute";
+          marker.style.display = "none";
+          marker.style.border = "2px dashed var(--accent)";
+          marker.style.background = "rgba(108,99,255,0.1)";
+          marker.style.borderRadius = "8px";
+          marker.style.pointerEvents = "none";
+          marker.style.zIndex = "11";
+
+          overlay.addEventListener("click", function (e) {
+            const rect = wrapper.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const xPct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+            const yPct = Math.max(0, Math.min(100, (y / rect.height) * 100));
+            if (posX) posX.value = xPct.toFixed(2);
+            if (posY) posY.value = yPct.toFixed(2);
+            if (pageNo) pageNo.value = String(i);
+            if (docId && docSelect && docSelect.value) docId.value = docSelect.value;
+            placeMarker(marker, wrapper, xPct, yPct);
+          });
+
+          wrapper.appendChild(canvas);
+          wrapper.appendChild(overlay);
+          wrapper.appendChild(marker);
+          wrapper.appendChild(label);
+          pagesHost.appendChild(wrapper);
+
+          const exp = parseInt(existingPage || "1", 10);
+          if (exp === i) {
+            const x = parseFloat(existingX || (posX && posX.value) || "70");
+            const y = parseFloat(existingY || (posY && posY.value) || "80");
+            placeMarker(marker, wrapper, x, y);
+          }
+        }
+      });
+    }
+
+    if (docSelect && docs.length) {
+      docSelect.innerHTML = "";
+      for (const d of docs) {
+        const opt = document.createElement("option");
+        opt.value = String(d.id);
+        opt.textContent = d.title || ("Document " + d.id);
+        docSelect.appendChild(opt);
+      }
+      const selected = currentDoc();
+      if (selected) {
+        if (docId) docId.value = String(selected.id);
+        if (posX) posX.value = String(selected.position_x ?? 70);
+        if (posY) posY.value = String(selected.position_y ?? 80);
+        if (blkW) blkW.value = String(selected.width ?? 180);
+        if (blkH) blkH.value = String(selected.height ?? 70);
+        if (pageNo) pageNo.value = String(selected.page_number ?? 1);
+        renderPdfAllPages(selected.document_pdf, selected.page_number, selected.position_x, selected.position_y);
+      }
+
+      docSelect.addEventListener("change", function () {
+        const d = currentDoc();
+        if (!d) return;
+        if (docId) docId.value = String(d.id);
+        if (posX) posX.value = String(d.position_x ?? 70);
+        if (posY) posY.value = String(d.position_y ?? 80);
+        if (blkW) blkW.value = String(d.width ?? 180);
+        if (blkH) blkH.value = String(d.height ?? 70);
+        if (pageNo) pageNo.value = String(d.page_number ?? 1);
+        renderPdfAllPages(d.document_pdf, d.page_number, d.position_x, d.position_y);
+      });
+    } else {
+      renderPdfAllPages("{{ signature_request_pdf_url|default:'' }}", (pageNo && pageNo.value) || "1", (posX && posX.value) || "70", (posY && posY.value) || "80");
+    }
+  })();
+</script>
+{% endblock %}

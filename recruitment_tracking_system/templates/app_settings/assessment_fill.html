@@ -1,0 +1,95 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Fill Assessment{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=12">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Assessment Form &gt; {{ form_obj.name }}{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  <div class="settings-main">
+    <div class="settings-panel">
+      <div class="settings-head">
+        <h3 class="settings-title">{{ form_obj.name }}</h3>
+        <a href="{% url 'app_settings:assessment_builder' form_obj.id %}" class="btn btn-outline-secondary btn-sm">Back to Builder</a>
+      </div>
+      <p class="text-muted">{{ form_obj.description }}</p>
+      <form method="post">
+        {% csrf_token %}
+        <div class="settings-fields-grid">
+          {% for field in fields %}
+          <div>
+            <label class="form-label">{{ field.label }}{% if field.required %} *{% endif %}</label>
+            {% if field.field_type == "textarea" %}
+              <textarea class="form-control" name="{{ field.field_name }}" {% if field.required %}required{% endif %}></textarea>
+            {% elif field.field_type == "select" %}
+              <select class="form-control" name="{{ field.field_name }}" {% if field.required %}required{% endif %}>
+                <option value="">Select</option>
+                {% for option in field.options_list %}
+                  <option value="{{ option }}">{{ option }}</option>
+                {% endfor %}
+              </select>
+            {% elif field.field_type == "radio" %}
+              <div class="d-flex flex-wrap gap-3">
+                {% for option in field.options_list %}
+                <label class="form-check-label d-flex align-items-center gap-1">
+                  <input class="form-check-input mt-0" type="radio" name="{{ field.field_name }}" value="{{ option }}" {% if field.required %}required{% endif %}>
+                  <span>{{ option }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            {% elif field.field_type == "checkbox" %}
+              <div class="d-flex flex-wrap gap-3">
+                {% for option in field.options_list %}
+                <label class="form-check-label d-flex align-items-center gap-1">
+                  <input class="form-check-input mt-0" type="checkbox" name="{{ field.field_name }}" value="{{ option }}">
+                  <span>{{ option }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            {% else %}
+              <input
+                class="form-control"
+                type="{% if field.field_type == 'number' %}number{% elif field.field_type == 'date' %}date{% elif field.field_type == 'email' %}email{% elif field.field_type == 'tel' %}tel{% elif field.field_type == 'url' %}url{% elif field.field_type == 'time' %}time{% elif field.field_type == 'datetime' %}datetime-local{% else %}text{% endif %}"
+                name="{{ field.field_name }}"
+                {% if field.required %}required{% endif %}
+              >
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm settings-btn mt-3">Save Entry</button>
+      </form>
+
+      {% if entry_rows %}
+      <div class="table-responsive mt-3">
+        <table class="table table-sm settings-table mb-0">
+          <thead>
+            <tr>
+              {% for col in entry_columns %}
+              <th>{{ col }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in entry_rows %}
+            <tr>
+              {% for cell in row %}
+              <td>{{ cell|default:"-" }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Strategic Requisition Orchestration{% endblock %}
+{% block nav_jobs %}active{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 24px;">
+  <div>
+    <div class="page-title">Strategic Requisition Management</div>
+    <div class="page-subtitle">Coordinate high-bandwidth job postings, approval workflows, and talent demand
+      forecasting.</div>
+  </div>
+</div>
+
+<!-- Quick Stats Row -->
+<div class="stat-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="bi bi-layers-fill"></i></div>
+    <div class="stat-value">{{ total_requisitions }}</div>
+    <div class="stat-label">Total Requisitions</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="bi bi-door-open-fill"></i></div>
+    <div class="stat-value">{{ total_openings }}</div>
+    <div class="stat-label">Active Openings</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber"><i class="bi bi-clock-history"></i></div>
+    <div class="stat-value">{{ pending_count }}</div>
+    <div class="stat-label">Pending Approval</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="bi bi-check-all"></i></div>
+    <div class="stat-value">{{ approved_count }}</div>
+    <div class="stat-label">Authorized Jobs</div>
+  </div>
+</div>
+
+<!-- Primary Actions -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
+  <a href="{% url 'job_requisition:job_position_dashboard' %}" class="card"
+    style="text-decoration: none; padding: 24px; display: flex; align-items: center; gap: 20px; transition: all 0.2s; border-left: 4px solid var(--accent);">
+    <div class="stat-icon purple" style="margin-bottom: 0; width: 44px; height: 44px; font-size: 20px;"><i
+        class="bi bi-plus-square-fill"></i></div>
+    <div style="flex: 1;">
+      <div style="font-size: 16px; font-weight: 800; color: var(--text);">Initialize Job Protocol</div>
+      <div style="font-size: 12px; color: var(--text3); font-weight: 500;">Draft and launch new manpower requisitions
+      </div>
+    </div>
+    <i class="bi bi-arrow-right" style="color: var(--text3); font-size: 18px;"></i>
+  </a>
+  <a href="{% url 'job_requisition:approval_workflow' %}" class="card"
+    style="text-decoration: none; padding: 24px; display: flex; align-items: center; gap: 20px; transition: all 0.2s; border-left: 4px solid var(--green);">
+    <div class="stat-icon green" style="margin-bottom: 0; width: 44px; height: 44px; font-size: 20px;"><i
+        class="bi bi-shield-lock-fill"></i></div>
+    <div style="flex: 1;">
+      <div style="font-size: 16px; font-weight: 800; color: var(--text);">Security Authorization</div>
+      <div style="font-size: 12px; color: var(--text3); font-weight: 500;">Review and authorize pending workflows</div>
+    </div>
+    <i class="bi bi-arrow-right" style="color: var(--text3); font-size: 18px;"></i>
+  </a>
+</div>
+
+{{ dept_labels|safe|json_script:"dept-labels" }}
+{{ dept_data|safe|json_script:"dept-data" }}
+{{ status_data|safe|json_script:"status-data" }}
+
+
+
+
+<!-- Recent Requisitions Table -->
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 0;">
+    <div class="card-title" style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Recent Requisition
+      History</div>
+    <a href="{% url 'job_requisition:dashboard' %}"
+      style="font-size: 12px; color: var(--accent); font-weight: 700; text-decoration: none;">View Archive <i
+        class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Position Title</th>
+          <th>Department</th>
+          <th>Openings</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in recent_jobs %}
+        <tr>
+          <td style="font-family: var(--mono); font-size: 12px;">{{ job.job_id }}</td>
+          <td class="primary">{{ job.title }}</td>
+          <td>{{ job.department }}</td>
+          <td>{{ job.openings }}</td>
+          <td>
+            {% if job.status == 'Approved' %}
+            <span class="status-pill pill-green"><span class="dot"></span> Authorized</span>
+            {% elif job.status == 'Pending' %}
+            <span class="status-pill pill-amber"><span class="dot"></span> Reviewing</span>
+            {% else %}
+            <span class="status-pill pill-red"><span class="dot"></span> {{ job.status }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'job_requisition:job_position_dashboard' %}" class="btn-ghost"
+              style="padding: 4px 8px; font-size: 11px;">Details</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 40px; color: var(--text3);">No recent requisition activity
+            detected.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/static/js/requisition_charts.js"></script>
+{% endblock %}

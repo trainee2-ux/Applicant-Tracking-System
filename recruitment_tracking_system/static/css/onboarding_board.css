@@ -1,0 +1,158 @@
+:root {
+  --ob-col-w: 320px;
+  --ob-gap: 16px;
+}
+
+/* Onboarding board uses reference-style kanban classes */
+.onboarding-board {
+  max-width: 100%;
+}
+
+.onboarding-board .pipeline-board {
+  display: flex;
+  gap: var(--ob-gap);
+  overflow-x: auto;
+  padding: 12px 2px 22px;
+  scroll-snap-type: x mandatory;
+}
+
+.onboarding-board .pipeline-col {
+  width: var(--ob-col-w);
+  min-width: var(--ob-col-w);
+  scroll-snap-align: start;
+  background: color-mix(in oklab, var(--surface2) 70%, var(--surface));
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+.onboarding-board .pipeline-col::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--ob-accent, var(--accent));
+}
+
+.onboarding-board .pipeline-col[data-stage="Finalized"] { --ob-accent: var(--accent2); }
+.onboarding-board .pipeline-col[data-stage="Offer Sent"] { --ob-accent: var(--blue, #60a5fa); }
+.onboarding-board .pipeline-col[data-stage="Offer Accepted"] { --ob-accent: var(--green, #22d3a5); }
+.onboarding-board .pipeline-col[data-stage="Documents Submitted"] { --ob-accent: var(--amber, #f59e0b); }
+.onboarding-board .pipeline-col[data-stage="HR Approved"] { --ob-accent: var(--green, #22d3a5); }
+.onboarding-board .pipeline-col[data-stage="Employee Code Assigned"] { --ob-accent: var(--accent); }
+
+.onboarding-board .pipeline-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklab, var(--surface2) 70%, transparent);
+}
+
+.onboarding-board .pipeline-col-name {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+.onboarding-board .pipeline-count {
+  min-width: 38px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface3) 70%, transparent);
+  border: 1px solid var(--border);
+  color: var(--text3);
+  font-weight: 800;
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.onboarding-board .pipeline-body {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  min-height: 120px;
+}
+
+.onboarding-board .pipeline-empty {
+  border: 1px dashed color-mix(in oklab, var(--border2) 70%, transparent);
+  border-radius: 14px;
+  padding: 18px 14px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 12px;
+  background: color-mix(in oklab, var(--surface2) 55%, transparent);
+}
+
+.onboarding-board .kanban-card {
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.onboarding-board .kanban-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--accent) 35%, var(--border));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.onboarding-board .kanban-card .avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 55%, #a78bfa));
+  border: 1px solid color-mix(in oklab, var(--accent) 25%, transparent);
+  flex: 0 0 auto;
+}
+
+.onboarding-board .kanban-card .c-name {
+  color: var(--text);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.onboarding-board .kanban-card .c-id {
+  color: var(--text3);
+  font-size: 10px;
+  font-family: var(--mono);
+}
+
+.onboarding-board .kanban-card .ktag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--accent) 25%, var(--border));
+  background: var(--accentbg);
+  color: var(--accent2);
+  font-weight: 700;
+}
+
+.onboarding-board .kanban-actions .btn {
+  width: 100%;
+  justify-content: center;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+@media (max-width: 520px) {
+  :root { --ob-col-w: 86vw; }
+  .onboarding-board .pipeline-board { padding-left: 8px; padding-right: 8px; }
+}

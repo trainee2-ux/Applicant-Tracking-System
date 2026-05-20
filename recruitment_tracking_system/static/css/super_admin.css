@@ -1,0 +1,95 @@
+:root {
+  --sa-card-radius: 14px;
+}
+
+.superadmin-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.superadmin-page .sa-head {
+  padding-top: 4px;
+}
+
+.superadmin-page .sa-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.superadmin-page .sa-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.superadmin-page .sa-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text3);
+}
+
+.superadmin-page .sa-card {
+  border: 1px solid var(--border);
+  border-radius: var(--sa-card-radius);
+  background: var(--surface);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.14);
+  min-height: 96px;
+}
+
+.superadmin-page .sa-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.superadmin-page .sa-card-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.superadmin-page .table thead th {
+  font-weight: 700;
+  color: var(--text3);
+}
+
+.superadmin-page .sa-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.superadmin-page .sa-actions .form-control,
+.superadmin-page .sa-actions .form-select {
+  height: 34px;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.superadmin-page .sa-actions .btn {
+  height: 34px;
+  padding-top: 0.3rem;
+  padding-bottom: 0.3rem;
+}
+
+.superadmin-page .badge {
+  font-weight: 700;
+}
+
+@media (max-width: 576px) {
+  .superadmin-page {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}

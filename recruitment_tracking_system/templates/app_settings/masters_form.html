@@ -1,0 +1,419 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - {{ master_config.title }}{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/app_settings.css?v=20">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Master Data{% endblock %}
+
+{% block content %}
+<div class="settings-layout pro-dashboard">
+  {% include "app_settings/_settings_menu.html" %}
+
+  <div class="settings-main">
+    <div class="page-top-bar d-flex justify-content-between align-items-end mb-4">
+      <div class="breadcrumb-pro">
+        <a href="{% url 'app_settings:masters' %}" class="back-link"><i class="bi bi-arrow-left"></i> Masters</a>
+        <h2 class="h3 fw-800 text-main mt-1 mb-0">{{ master_config.title }}</h2>
+      </div>
+      <div class="actions-pro">
+        <button id="openMasterAddFormBtn" class="btn btn-primary-pro">
+          <i class="bi bi-plus-lg"></i> {{ master_config.button }}
+        </button>
+      </div>
+    </div>
+
+    {% if messages %}
+    <div class="alert-container-pro mb-4">
+      {% for message in messages %}
+      <div class="pro-alert alert-{{ message.tags|default:'info' }}">
+        <i class="bi bi-info-circle-fill"></i>
+        <span>{{ message }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Interactive Form Area -->
+    <div id="masterAddFormWrap" class="{% if not selected_record %}d-none{% endif %} mb-4">
+      <div class="pro-card form-canvas">
+        <div class="pro-card-header">
+          <h6 class="pro-card-title"><i class="bi bi-pencil-square"></i> {% if selected_record %}Update Record{% else
+            %}Add New Entry{% endif %}</h6>
+        </div>
+        <form id="masterAddForm" method="post" action="{% url 'app_settings:masters_form' master_key %}"
+          class="pro-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="{% if selected_record %}update{% else %}create{% endif %}">
+          <input type="hidden" name="record_id" value="{{ selected_record.id|default:'' }}">
+
+          <div class="row g-4 align-items-center">
+            <div class="col-md-5">
+              <div class="input-group-pro">
+                <label>{{ master_config.name_label }}</label>
+                <input type="text" name="name" value="{{ selected_record.name|default:'' }}" placeholder="e.g. New York"
+                  required>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="input-group-pro">
+                <label>{{ master_config.code_label }}</label>
+                <input type="text" name="code" value="{{ selected_record.code|default:'' }}" placeholder="e.g. NYC"
+                  required>
+              </div>
+            </div>
+            <div class="col-md-4 d-flex gap-2 align-items-end pt-3">
+              <button type="submit" class="btn btn-save-pro w-100">
+                {% if selected_record %}Update Changes{% else %}Confirm & Save{% endif %}
+              </button>
+              {% if selected_record %}
+              <a href="{% url 'app_settings:masters_form' master_key %}" class="btn btn-cancel-pro">Cancel</a>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Data Table Area -->
+    <div class="pro-card">
+      <div class="pro-card-header d-flex justify-content-between align-items-center">
+        <h6 class="pro-card-title"><i class="bi bi-list-ul"></i> Records Inventory</h6>
+        <div class="pro-search-mini">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="Quick Filter...">
+        </div>
+      </div>
+      <div class="table-pro-wrap">
+        <table class="table-pro">
+          <thead>
+            <tr>
+              <th style="width: 50%">{{ master_config.name_label }}</th>
+              <th style="width: 30%">{{ master_config.code_label }}</th>
+              <th class="text-end" style="width: 20%">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in records %}
+            <tr class="pro-row">
+              <td class="primary-cell">
+                <div class="record-name">{{ item.name }}</div>
+              </td>
+              <td>
+                <span class="pro-chip">{{ item.code }}</span>
+              </td>
+              <td class="text-end">
+                <div class="action-buttons-pro">
+                  <a href="{% url 'app_settings:masters_form' master_key %}?edit={{ item.id }}"
+                    class="btn-action-pro edit" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <form method="post" action="{% url 'app_settings:masters_form' master_key %}" class="d-inline"
+                    onsubmit="return confirm('Confirm Deletion?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="record_id" value="{{ item.id }}">
+                    <button type="submit" class="btn-action-pro delete" title="Delete">
+                      <i class="bi bi-trash3"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="text-center py-5">
+                <div class="pro-empty-state">
+                  <i class="bi bi-database-dash mb-3"></i>
+                  <p>{{ master_config.empty }}</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .pro-dashboard {
+    background: var(--bg);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  .fw-800 {
+    font-weight: 800;
+  }
+
+  /* Top Bar */
+  .back-link {
+    text-decoration: none;
+    color: var(--text3);
+    font-size: 13px;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+    transition: color 0.2s;
+  }
+
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  .btn-primary-pro {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+    transition: all 0.2s;
+  }
+
+  .btn-primary-pro:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+  }
+
+  /* Pro Card */
+  .pro-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  }
+
+  .pro-card-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.01);
+  }
+
+  .pro-card-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Pro Form */
+  .pro-form {
+    padding: 24px;
+  }
+
+  .input-group-pro {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .input-group-pro label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text3);
+    margin-left: 4px;
+  }
+
+  .input-group-pro input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .input-group-pro input:focus {
+    border-color: var(--accent);
+    background: var(--surface3);
+    outline: none;
+    box-shadow: 0 0 0 4px var(--accentbg);
+  }
+
+  .btn-save-pro {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+
+  .btn-save-pro:hover {
+    background: var(--accent2);
+  }
+
+  .btn-cancel-pro {
+    background: var(--surface2);
+    color: var(--text2);
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  /* Pro Table */
+  .table-pro-wrap {
+    padding: 8px;
+  }
+
+  .table-pro {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .table-pro thead th {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pro-row {
+    transition: background 0.2s;
+  }
+
+  .pro-row:hover {
+    background: var(--surface2);
+  }
+
+  .pro-row td {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pro-row:last-child td {
+    border-bottom: none;
+  }
+
+  .primary-cell .record-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .pro-chip {
+    background: var(--accentbg);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--mono);
+  }
+
+  /* Action Buttons */
+  .action-buttons-pro {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .btn-action-pro {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 16px;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+  }
+
+  .btn-action-pro.edit {
+    color: var(--blue);
+    background: var(--bluebg);
+    border-color: transparent;
+  }
+
+  .btn-action-pro.delete {
+    color: var(--red);
+    background: var(--redbg);
+    border-color: transparent;
+  }
+
+  .btn-action-pro:hover {
+    transform: scale(1.1);
+  }
+
+  /* Empty State */
+  .pro-empty-state {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: var(--text3);
+  }
+
+  .pro-empty-state i {
+    font-size: 48px;
+    opacity: 0.2;
+  }
+
+  /* Mini Search */
+  .pro-search-mini {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pro-search-mini input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 12px;
+    width: 120px;
+  }
+
+  .pro-search-mini i {
+    color: var(--text3);
+    font-size: 12px;
+  }
+
+  /* Alert Pro */
+  .pro-alert {
+    background: var(--accentbg);
+    border-left: 4px solid var(--accent);
+    padding: 12px 20px;
+    border-radius: 0 12px 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+</style>
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/masters_form.js"></script>
+{% endblock %}

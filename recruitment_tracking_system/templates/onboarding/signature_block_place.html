@@ -1,0 +1,128 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Place Signature Block{% endblock %}
+{% block nav_onboarding %}active{% endblock %}
+{% block header %}Onboarding{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="breadcrumb-custom">Onboarding &gt; Approvals &gt; Signature Block</div>
+
+  <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+    <div class="text-muted small">
+      Candidate: <strong>{{ candidate.full_name }}</strong> ({{ candidate.candidate_id }})
+    </div>
+    <div class="d-flex gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="/onboarding/approvals/{{ submission.id }}/">Back</a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="mb-2">Click to place signature (Page 1)</h5>
+          <div class="text-muted small mb-2">Click where the candidate should sign. Then save.</div>
+
+          <div id="pdfWrap" style="position:relative;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fff;height:75vh;">
+            <iframe id="pdfFrame" src="{{ signature_request.document_pdf.url }}" style="width:100%;height:100%;border:0;"></iframe>
+            <div id="clickOverlay" style="position:absolute;inset:0;cursor:crosshair;background:transparent;"></div>
+            <div id="marker" style="position:absolute;display:none;width:180px;height:70px;border:2px dashed #2563eb;border-radius:10px;pointer-events:none;">
+              <div style="font-size:12px;background:#2563eb;color:#fff;padding:2px 6px;border-radius:8px;display:inline-block;margin:6px;">
+                Sign here
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="mb-2">Signature Block</h5>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_signature_block">
+            <div class="mb-2">
+              <label class="form-label small">X (%)</label>
+              <input class="form-control form-control-sm" name="position_x" id="posX" value="{{ signature_request.position_x|default:70 }}" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Y (%)</label>
+              <input class="form-control form-control-sm" name="position_y" id="posY" value="{{ signature_request.position_y|default:80 }}" required>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label small">Width (px)</label>
+                <input class="form-control form-control-sm" name="width" id="blkW" value="{{ signature_request.width|default:180 }}" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label small">Height (px)</label>
+                <input class="form-control form-control-sm" name="height" id="blkH" value="{{ signature_request.height|default:70 }}" required>
+              </div>
+            </div>
+            <button class="btn btn-primary w-100 mt-3" type="submit">Save Signature Block</button>
+          </form>
+          <div class="text-muted small mt-3">
+            Tip: you can fine-tune X/Y values after clicking.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  (function () {
+    const overlay = document.getElementById('clickOverlay');
+    const marker = document.getElementById('marker');
+    const posX = document.getElementById('posX');
+    const posY = document.getElementById('posY');
+    const blkW = document.getElementById('blkW');
+    const blkH = document.getElementById('blkH');
+
+    function placeMarker(xPct, yPct) {
+      const wrap = document.getElementById('pdfWrap');
+      const rect = wrap.getBoundingClientRect();
+      const w = parseFloat(blkW.value || "180");
+      const h = parseFloat(blkH.value || "70");
+      const xPx = (xPct / 100) * rect.width;
+      const yPx = (yPct / 100) * rect.height;
+      marker.style.width = w + "px";
+      marker.style.height = h + "px";
+      marker.style.left = Math.max(0, Math.min(rect.width - w, xPx)) + "px";
+      marker.style.top = Math.max(0, Math.min(rect.height - h, yPx)) + "px";
+      marker.style.display = "block";
+    }
+
+    overlay.addEventListener('click', function (e) {
+      const wrap = document.getElementById('pdfWrap');
+      const rect = wrap.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const xPct = Math.max(0, Math.min(100, (x / rect.width) * 100));
+      const yPct = Math.max(0, Math.min(100, (y / rect.height) * 100));
+      posX.value = xPct.toFixed(2);
+      posY.value = yPct.toFixed(2);
+      placeMarker(xPct, yPct);
+    });
+
+    function syncFromInputs() {
+      const x = parseFloat(posX.value || "70");
+      const y = parseFloat(posY.value || "80");
+      placeMarker(x, y);
+    }
+    posX.addEventListener('input', syncFromInputs);
+    posY.addEventListener('input', syncFromInputs);
+    blkW.addEventListener('input', syncFromInputs);
+    blkH.addEventListener('input', syncFromInputs);
+
+    // initial marker
+    syncFromInputs();
+  })();
+</script>
+{% endblock %}
+

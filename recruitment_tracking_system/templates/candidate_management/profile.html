@@ -1,0 +1,273 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Candidate Profile{% endblock %}
+{% block nav_candidate_management %}active{% endblock %}
+
+{% block content %}
+<div class="form-shell">
+  <div class="form-hero">
+    <div>
+      <div class="form-title">Candidate Profile</div>
+      <div class="form-subtitle">Manage candidate details, employment history, and AI-driven match analysis.</div>
+    </div>
+    <div class="header-actions">
+       <a href="/candidate-management/list/" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back to List</a>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="update_profile">
+    <input type="hidden" name="candidate_id" value="{{ profile.candidate_id }}">
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon-box purple"><i class="bi bi-person-circle"></i></div>
+        <div>
+          <div class="section-title">Personal Information</div>
+          <div class="section-sub">Essential contact and identifying details.</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 32px; align-items: flex-start; margin-bottom: 32px;">
+        <div class="profile-avatar-wrap">
+          <input id="candidateProfilePhotoInput" class="d-none" type="file" name="profile_photo_upload" accept=".jpg,.jpeg,.png">
+          <label for="candidateProfilePhotoInput" style="cursor: pointer; display: block;">
+            <div class="avatar" style="width: 100px; height: 100px; font-size: 32px; position: relative; border-radius: 20px;">
+              <img id="candidateProfilePreview" src="{{ profile.profile_photo_url|default:'' }}" alt="P" class="{% if not profile.profile_photo_url %}d-none{% endif %}" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;">
+              <i id="candidateProfileAvatarIcon" class="bi bi-camera {% if profile.profile_photo_url %}d-none{% endif %}"></i>
+            </div>
+          </label>
+        </div>
+
+        <div class="field-grid grid-2" style="flex: 1;">
+          <div class="field">
+            <label class="field-label">Candidate ID</label>
+            <input type="text" value="{{ profile.candidate_id }}" readonly style="background: var(--bg-main); opacity: 0.7;">
+          </div>
+          <div class="field">
+            <label class="field-label">Full Name</label>
+            <input type="text" name="name" value="{{ profile.name }}" required>
+          </div>
+          <div class="field">
+            <label class="field-label">Email Address</label>
+            <input type="email" name="email" value="{{ profile.email }}" required>
+          </div>
+          <div class="field">
+            <label class="field-label">Contact Number</label>
+            <input type="text" name="phone" value="{{ profile.phone }}" required>
+          </div>
+          <div class="field col-span-2">
+            <label class="field-label">Resume (PDF)</label>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+              <input type="file" name="resume_upload" accept=".pdf">
+              {% if profile.resume_url %}
+                <a class="btn btn-outline-primary btn-sm" href="{{ profile.resume_url }}" target="_blank">
+                  <i class="bi bi-file-earmark-person"></i> View Resume
+                </a>
+                {% if profile.resume_name %}
+                  <span class="small text-muted">{{ profile.resume_name }}</span>
+                {% endif %}
+              {% else %}
+                <span class="small text-muted">No resume uploaded.</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-2">
+        <div class="field">
+          <label class="field-label">Experience Level</label>
+          <input type="text" name="experience" value="{{ profile.experience }}" placeholder="e.g. 5+ Years">
+        </div>
+        <div class="field">
+          <label class="field-label">Social Portfolio (LinkedIn/GitHub)</label>
+          <input type="url" name="social_media_link" value="{{ profile.social_media_link|default:'' }}" placeholder="https://linkedin.com/in/...">
+        </div>
+        <div class="field col-span-2">
+          <label class="field-label">Skills (Comma separated)</label>
+          <input type="text" name="skills" value="{{ profile.skills }}" placeholder="e.g. Python, Django, AWS">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon-box green"><i class="bi bi-mortarboard-fill"></i></div>
+        <div>
+          <div class="section-title">Professional Background</div>
+          <div class="section-sub">Academic records and work history.</div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-2">
+        <div class="field">
+          <label class="field-label">Employment History</label>
+          <textarea name="employment_history" style="min-height: 150px; resize: vertical;">{{ profile.employment_history }}</textarea>
+        </div>
+        <div class="field">
+          <label class="field-label">Education Overview</label>
+          <textarea name="education" style="min-height: 150px; resize: vertical;">{{ profile.education }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon-box amber"><i class="bi bi-robot"></i></div>
+        <div>
+          <div class="section-title">AI Match Analysis</div>
+          <div class="section-sub">Calculated affinity scores against active job requisitions.</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>JOB ID</th>
+              <th>POSITION</th>
+              <th>MATCH SCORE</th>
+              <th>SKILLS</th>
+              <th>EXP.</th>
+              <th>STATUS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in profile.job_matches %}
+            <tr>
+              <td class="primary">{{ item.job_id }}</td>
+              <td>{{ item.job_title|default:"-" }}</td>
+              <td>
+                <div class="ai-score" style="width: 36px; height: 36px; font-size: 11px;">{{ item.match_score|default:"-" }}%</div>
+              </td>
+              <td>{{ item.skill_score|default:"-" }}%</td>
+              <td>{{ item.experience_score|default:"-" }}%</td>
+              <td><span class="status-pill pill-blue">{{ item.match_status|default:"Analyzed" }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No JD match data calculated yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 16px; margin-top: 32px; padding-bottom: 40px;">
+       {% if profile.candidate_id %}
+       <button type="submit" name="action" value="recalculate_match" class="btn btn-secondary"><i class="bi bi-cpu"></i> Recalculate AI Match</button>
+       <a href="/candidate-management/notes/?candidate_id={{ profile.candidate_id }}" class="btn btn-secondary"><i class="bi bi-journal-text"></i> Candidate Notes</a>
+       {% endif %}
+       <button type="submit" class="btn btn-primary" style="padding: 10px 40px;"><i class="bi bi-save"></i> Save Profile</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("candidateProfilePhotoInput");
+    const preview = document.getElementById("candidateProfilePreview");
+    const icon = document.getElementById("candidateProfileAvatarIcon");
+    const circle = document.getElementById("candidateProfileAvatarCircle");
+
+    if (input && preview && icon) {
+      input.addEventListener("change", function () {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          preview.src = e.target.result;
+          preview.classList.remove("d-none");
+          icon.classList.add("d-none");
+          if (circle) circle.classList.add("has-photo");
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    const tagsHidden = document.getElementById("customTagsHidden");
+    const tagsInput = document.getElementById("customTagsInput");
+    const tagsList = document.getElementById("customTagsList");
+    if (!tagsHidden || !tagsInput || !tagsList) return;
+
+    const normalizeTag = function (value) {
+      return String(value || "").trim().replace(/^#+/, "").replace(/\s+/g, " ").slice(0, 40);
+    };
+
+    let tags = (tagsHidden.value || "").split(",").map(function (item) {
+      return normalizeTag(item);
+    }).filter(function (item, idx, arr) {
+      return item && arr.findIndex(function (x) { return x.toLowerCase() === item.toLowerCase(); }) === idx;
+    });
+
+    const syncHidden = function () {
+      tagsHidden.value = tags.join(", ");
+    };
+
+    const renderTags = function () {
+      tagsList.innerHTML = "";
+      tags.forEach(function (tag, idx) {
+        const chip = document.createElement("span");
+        chip.className = "badge bg-primary d-inline-flex align-items-center";
+        chip.style.gap = "6px";
+        chip.textContent = tag;
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "btn btn-sm text-white p-0 border-0";
+        remove.style.lineHeight = "1";
+        remove.style.background = "transparent";
+        remove.textContent = "x";
+        remove.setAttribute("data-remove-index", String(idx));
+        chip.appendChild(remove);
+        tagsList.appendChild(chip);
+      });
+      syncHidden();
+    };
+
+    const addBufferedTags = function () {
+      const parts = (tagsInput.value || "").split(",");
+      let changed = false;
+      parts.forEach(function (part) {
+        const token = normalizeTag(part);
+        if (!token) return;
+        const exists = tags.some(function (x) { return x.toLowerCase() === token.toLowerCase(); });
+        if (!exists) {
+          tags.push(token);
+          changed = true;
+        }
+      });
+      tagsInput.value = "";
+      if (changed) renderTags();
+    };
+
+    tagsInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === ",") {
+        event.preventDefault();
+        addBufferedTags();
+        return;
+      }
+      if (event.key === "Backspace" && !tagsInput.value && tags.length) {
+        tags.pop();
+        renderTags();
+      }
+    });
+
+    tagsInput.addEventListener("blur", addBufferedTags);
+
+    tagsList.addEventListener("click", function (event) {
+      const button = event.target.closest("button[data-remove-index]");
+      if (!button) return;
+      const idx = Number(button.getAttribute("data-remove-index"));
+      if (Number.isNaN(idx) || idx < 0 || idx >= tags.length) return;
+      tags.splice(idx, 1);
+      renderTags();
+    });
+
+    renderTags();
+  });
+</script>
+{% endblock %}

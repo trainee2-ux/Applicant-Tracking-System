@@ -1,0 +1,268 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Job Approval{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/job_requisition.css?v=2">{% endblock %}
+{% block nav_jobs %}active{% endblock %}
+{% block header %}Requisition Management &gt; Job Approval &gt; Job Approval Form{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="form-shell">
+  <div class="form-hero">
+    <div>
+      <div class="form-title">Job Approval Form</div>
+      <div class="form-subtitle">Review requisition details and approve/reject the posting.</div>
+      {% if form_data.manpower_requisition_id %}<div class="form-id">ID: {{ form_data.manpower_requisition_id }}</div>{% endif %}
+    </div>
+    <div class="header-actions">
+      <a href="{% url 'job_requisition:job_position_dashboard' %}" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Back</a>
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-briefcase"></i></div>
+        <div>
+          <div class="section-title">Job Opening Information</div>
+          <div class="section-sub">Core requisition details for review.</div>
+        </div>
+        <div class="section-badge">Required</div>
+      </div>
+
+      <div class="field-grid grid-3">
+        <div class="field">
+          <label class="field-label">Man Power Requisition ID</label>
+          <input type="text" name="manpower_requisition_id" value="{{ form_data.manpower_requisition_id|default:'' }}" readonly>
+        </div>
+        <div class="field">
+          <label class="field-label">Posting Title</label>
+          <input type="text" name="posting_title">
+        </div>
+        <div class="field">
+          <label class="field-label">Client Name</label>
+          <input type="text" name="client_name">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Contact Name</label>
+          <select name="contact_name"><option>Select Contact</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Account Manager</label>
+          <select name="account_manager"><option>Select Manager</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Assigned Recruiter</label>
+          <select name="assigned_recruiter"><option>Select Recruiter</option></select>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Date of Opening</label>
+          <input type="date" name="date_of_opening">
+        </div>
+        <div class="field">
+          <label class="field-label">Target Closure Date</label>
+          <input type="date" name="target_closure_date">
+        </div>
+        <div class="field">
+          <label class="field-label">Job Opening Status</label>
+          <select name="job_opening_status"><option>Open</option><option>Hold</option><option>Closed</option></select>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Job Type</label>
+          <select name="job_type"><option>Full-Time</option><option>Part-Time</option><option>Contract</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Work Experience</label>
+          <select name="work_experience"><option>0-2 Years</option><option>3-5 Years</option><option>6+ Years</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Industry</label>
+          <select name="industry"><option>IT</option><option>Banking</option><option>Healthcare</option></select>
+        </div>
+
+        <div class="field col-span-2">
+          <label class="field-label">Salary Range (From - To)</label>
+          <div class="field-grid grid-2" style="gap: 10px;">
+            <input type="number" name="salary_from" placeholder="From">
+            <input type="number" name="salary_to" placeholder="To">
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Currency Type</label>
+          <select name="currency_type"><option>INR</option><option>USD</option><option>EUR</option></select>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Number of Opening</label>
+          <input type="number" name="number_of_opening">
+        </div>
+        <div class="field">
+          <label class="field-label">Budget for the Position</label>
+          <select name="budget_for_position"><option>Within Budget</option><option>Needs Approval</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Required Skills</label>
+          <select name="required_skills" multiple size="3">
+            <option>Django</option><option>Python</option><option>SQL</option><option>JavaScript</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-geo-alt"></i></div>
+        <div>
+          <div class="section-title">Address Information</div>
+          <div class="section-sub">Candidate location details for the role.</div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-3">
+        <div class="field">
+          <label class="field-label">City</label>
+          <select name="city"><option>Select City</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Country</label>
+          <select name="country"><option>Select Country</option></select>
+        </div>
+        <div class="field">
+          <label class="field-label">Pincode</label>
+          <select name="pincode"><option>Select Pincode</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-file-text"></i></div>
+        <div>
+          <div class="section-title">Description Information</div>
+          <div class="section-sub">Role details used for publishing.</div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-1">
+        <div class="field">
+          <label class="field-label">Description</label>
+          <textarea class="job-long-text" name="description"></textarea>
+        </div>
+        <div class="field">
+          <label class="field-label">Requirements</label>
+          <textarea class="job-long-text" name="requirements"></textarea>
+        </div>
+        <div class="field">
+          <label class="field-label">Benefits</label>
+          <textarea class="job-long-text" name="benefits"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-paperclip"></i></div>
+        <div>
+          <div class="section-title">Attachments & Approval</div>
+          <div class="section-sub">Upload supporting docs and set approval status.</div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-2">
+        <div class="field">
+          <label class="field-label">Job Summary</label>
+          <input type="file" name="job_summary_file">
+        </div>
+        <div class="field">
+          <label class="field-label">Other</label>
+          <input type="file" name="other_file">
+        </div>
+        <div class="field">
+          <label class="field-label">Comment</label>
+          <input type="text" name="comment">
+        </div>
+        <div class="field">
+          <label class="field-label">Approval Status</label>
+          <select name="approval_status">
+            <option>Pending</option>
+            <option>Approved</option>
+            <option>Rejected</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; padding-bottom: 40px;">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save Decision</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block page_js %}
+{{ form_data|json_script:"job-approval-prefill-data" }}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const source = document.getElementById("job-approval-prefill-data");
+    if (!source) return;
+
+    let data = {};
+    try {
+      data = JSON.parse(source.textContent || "{}");
+    } catch (_e) {
+      data = {};
+    }
+
+    Object.keys(data).forEach(function (name) {
+      const value = data[name];
+      const field = document.querySelector('[name="' + name + '"]');
+      if (!field || value === null || value === undefined) return;
+
+      if (field.tagName === "SELECT" && field.multiple && Array.isArray(value)) {
+        value.forEach(function (item) {
+          const str = String(item);
+          let option = Array.from(field.options).find(function (opt) {
+            return opt.value === str || opt.text === str;
+          });
+          if (!option) {
+            option = document.createElement("option");
+            option.value = str;
+            option.textContent = str;
+            field.appendChild(option);
+          }
+          option.selected = true;
+        });
+        return;
+      }
+
+      if (field.tagName === "SELECT") {
+        const str = String(value);
+        let option = Array.from(field.options).find(function (opt) {
+          return opt.value === str || opt.text === str;
+        });
+        if (!option && str) {
+          option = document.createElement("option");
+          option.value = str;
+          option.textContent = str;
+          field.appendChild(option);
+        }
+        if (option) {
+          field.value = option.value;
+        }
+        return;
+      }
+
+      field.value = String(value);
+    });
+  });
+</script>
+{% endblock %}

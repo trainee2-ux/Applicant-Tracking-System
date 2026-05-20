@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Application Stage Update</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background: #f8fafc; padding: 24px;">
+    <div style="max-width: 680px; margin: 0 auto; background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+      <div style="padding: 18px 20px; background: #0f172a; color: white;">
+        <div style="font-size: 14px; opacity: 0.9;">{{ company_name }}</div>
+        <div style="font-size: 18px; font-weight: 700; margin-top: 6px;">Application Stage Update</div>
+      </div>
+      <div style="padding: 20px;">
+        <div style="font-size: 14px; color: #0f172a; line-height: 1.6;">
+          {{ body_html|safe }}
+        </div>
+
+        <div style="margin-top: 16px;">
+          <a href="{{ portal_url|default:'/candidate-portal/' }}" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 10px 14px; border-radius: 8px; font-weight: 700;">View Application Status</a>
+        </div>
+
+        <div style="margin-top: 18px; padding-top: 18px; border-top: 1px solid #e2e8f0;">
+          <div style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 10px;">Stage Details</div>
+          <div style="padding: 14px; background: #f1f5f9; border-radius: 8px;">
+            <div style="font-size: 13px; color: #334155;">
+              <div><strong>Job Applied:</strong> {{ job_title|default:"-" }}</div>
+              <div><strong>Previous Stage:</strong> {{ previous_stage|default:"-" }}</div>
+              <div><strong>New Stage:</strong> {{ new_stage|default:"-" }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; font-size: 12px; color: #64748b;">
+          If you cannot click the button, open: <span style="color:#2563eb;">{{ portal_url|default:'/candidate-portal/' }}</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

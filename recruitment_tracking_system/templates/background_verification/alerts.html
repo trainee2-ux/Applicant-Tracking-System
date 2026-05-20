@@ -1,0 +1,38 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Background Verification Alerts{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/background_verification.css">{% endblock %}
+{% block nav_background_verification %}active{% endblock %}
+{% block header %}Background Verification &gt; Background Verification Alerts{% endblock %}
+
+{% block content %}
+<div class="bgv-panel">
+  <div class="bgv-panel-head">
+    <h3 class="bgv-panel-title mb-0">Background Verification Alerts</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm bgv-table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Missing Document Type</th>
+          <th>Status</th>
+          <th>Action Required</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.candidate }}</td>
+          <td>{{ row.missing_document_type }}</td>
+          <td>{{ row.status }}</td>
+          <td>{{ row.action_required }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center text-muted">No records to display.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

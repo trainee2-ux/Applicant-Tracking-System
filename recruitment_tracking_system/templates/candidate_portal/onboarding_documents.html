@@ -1,0 +1,118 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Onboarding Documents{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block header %}Candidate Portal{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/candidate_portal.css?v=2">{% endblock %}
+
+{% block content %}
+<div class="cp-hero">
+  <div>
+    <div class="cp-title">Onboarding Documents</div>
+    <div class="cp-subtitle">{{ candidate.full_name }} <span style="opacity: 0.6;">({{ candidate.candidate_id }})</span></div>
+  </div>
+  <div class="cp-hero-actions">
+    <a class="btn btn-ghost btn-sm" href="/candidate-portal/"><i class="bi bi-arrow-left me-1"></i> Back</a>
+    {% if upload_url %}
+      <a class="btn btn-primary btn-sm" href="{{ upload_url }}"><i class="bi bi-cloud-upload me-1"></i> Upload / Update</a>
+    {% endif %}
+  </div>
+</div>
+
+  {% if not invitation %}
+    <div class="cp-callout">
+      <div class="cp-callout-icon"><i class="bi bi-info-circle"></i></div>
+      <div class="cp-callout-body">
+        <div class="cp-callout-title">No Invitation Yet</div>
+        <div class="cp-callout-sub">No onboarding invitation found yet. Please check back later.</div>
+      </div>
+    </div>
+  {% else %}
+    {% if document_requirements %}
+      <div class="cp-callout">
+        <div class="cp-callout-icon"><i class="bi bi-folder2-open"></i></div>
+        <div class="cp-callout-body">
+          <div class="cp-callout-title">
+            Documents Requested
+            {% if last_doc_request %}
+              <span style="font-weight:700; opacity:0.7; font-size:12px;">(Requested on {{ last_doc_request.created_at|date:"Y-m-d H:i" }})</span>
+            {% endif %}
+          </div>
+          <div class="cp-callout-sub">Please upload the following document(s) using the Upload / Update button:</div>
+          <div style="margin-top:10px;">
+            {% for doc in document_requirements %}
+              <div style="padding:4px 0; font-weight:800; color: var(--text); font-size: 13px;">• {{ doc }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="cp-card">
+      <div class="cp-card-head">
+        <div>
+          <div class="cp-card-title"><i class="bi bi-clipboard-check me-1"></i> Submission Summary</div>
+          <div class="cp-card-subtitle">
+            Status: <strong>{{ invitation.status }}</strong>
+            {% if submission %}<span class="cp-dot">•</span> Submission: <strong>{{ submission.status }}</strong>{% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="cp-card-body">
+        {% if submission and submission.form_data %}
+          <div class="cp-card-title" style="font-size: 0.9rem; margin-bottom: 10px;"><i class="bi bi-list-check me-1"></i> Submitted Details</div>
+          <div class="table-responsive cp-table-wrap">
+            <table class="table table-sm align-middle">
+              <tbody>
+                {% for k,v in submission.form_data.items %}
+                  <tr>
+                    <th style="width: 220px;">{{ k|capfirst }}</th>
+                    <td>{{ v }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="cp-muted-empty">No submitted form data found yet.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cp-card">
+      <div class="cp-card-head">
+        <div class="cp-card-title"><i class="bi bi-folder2-open me-1"></i> Uploaded Documents</div>
+      </div>
+      <div class="cp-card-body">
+        {% if documents %}
+          <div class="table-responsive cp-table-wrap">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Document</th>
+                  <th>Uploaded</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in documents %}
+                  <tr>
+                    <td class="cp-jobtitle">{{ d.document_key }}</td>
+                    <td class="text-muted small">{{ d.uploaded_at|date:"Y-m-d H:i" }}</td>
+                    <td class="text-end">
+                      {% if d.file %}
+                        <a class="btn btn-outline-primary btn-sm" href="{{ d.file.url }}" target="_blank"><i class="bi bi-eye me-1"></i> View</a>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="cp-muted-empty">No documents uploaded yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

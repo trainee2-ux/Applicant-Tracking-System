@@ -1,0 +1,244 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Candidate Registration{% endblock %}
+{% block nav_candidate_management %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .stepper { display: flex; gap: 8px; margin-bottom: 24px; padding: 4px; background: var(--surface2); border-radius: 12px; }
+  .step { 
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+    color: var(--text3); font-weight: 600; font-size: 13px;
+  }
+  .step.active { background: var(--surface); color: var(--accent2); box-shadow: var(--shadow); }
+  .step.done { color: var(--green); }
+  .step-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--surface3); display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--text2); }
+  .step.active .step-dot { background: var(--accent); color: #fff; }
+  .step.done .step-dot { background: var(--greenbg); color: var(--green); }
+
+  .form-hero { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .form-title { font-size: 24px; font-weight: 800; color: var(--text); }
+  .form-subtitle { font-size: 13px; color: var(--text3); margin-top: 4px; }
+  
+  .required-star { color: var(--red); margin-left: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-shell">
+  <div class="form-hero">
+    <div>
+      <div class="form-title">Candidate Intake</div>
+      <div class="form-subtitle">Add a new candidate to your global talent directory</div>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <a href="/candidate-management/" class="btn btn-ghost btn-sm">Discard</a>
+      <span class="status-pill pill-amber"><span class="dot"></span> Registration in Progress</span>
+    </div>
+  </div>
+
+  <!-- Stepper -->
+  <div class="stepper">
+    <div id="stepPersonal" class="step active">
+      <div class="step-dot">1</div>
+      <div class="step-label">Personal Information</div>
+    </div>
+    <div id="stepEducation" class="step">
+      <div class="step-dot">2</div>
+      <div class="step-label">Professional Background</div>
+    </div>
+  </div>
+
+  <form id="candidateRegistrationForm" method="post" enctype="multipart/form-data" data-parse-resume-url="{% url 'candidate_management:parse_resume' %}">
+    {% csrf_token %}
+    <input type="hidden" id="educationRecordsJsonInput" name="education_records_json" value="{{ form_data.education_records_json|default:'' }}">
+    
+    <!-- SECTION 1: PERSONAL -->
+    <div id="personalSection" class="section">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-person-badge"></i></div>
+        <div>
+          <div class="section-title">Identity & Contact</div>
+          <div class="section-sub">Primary identification and communication details</div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-3">
+        <div class="field">
+          <label class="field-label">System Candidate ID</label>
+          <input type="text" name="candidate_id" value="{{ form_data.candidate_id|default:generated_candidate_id }}" readonly style="opacity: 0.6; cursor: not-allowed;">
+        </div>
+        <div class="field col-span-2">
+          <label class="field-label">Legal Full Name <span class="required-star">*</span></label>
+          <input id="candidateFullNameInput" type="text" name="full_name" value="{{ form_data.full_name|default:'' }}" required placeholder="e.g. Rahul Sharma">
+        </div>
+        <div class="field">
+          <label class="field-label">Primary Email <span class="required-star">*</span></label>
+          <input id="candidateEmailInput" type="email" name="email" value="{{ form_data.email|default:'' }}" required placeholder="rahul.s@example.com">
+        </div>
+        <div class="field">
+          <label class="field-label">Mobile Number <span class="required-star">*</span></label>
+          <input id="candidateContactInput" type="tel" name="contact_number" value="{{ form_data.contact_number|default:'' }}" required placeholder="+91 90000 00000">
+        </div>
+        <div class="field">
+          <label class="field-label">Date of Birth</label>
+          <input type="date" name="date_of_birth" value="{{ form_data.date_of_birth|default:'' }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Gender</label>
+          <select name="gender">
+            <option value="">Select gender</option>
+            <option value="Male" {% if form_data.gender == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Female" {% if form_data.gender == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Other" {% if form_data.gender == 'Other' %}selected{% endif %}>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Current Location (City)</label>
+          <select name="current_city">
+            <option value="">Select City</option>
+            {% for item in city_options %}
+            <option value="{{ item }}" {% if form_data.current_city == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">State / Region</label>
+          <select name="state">
+            <option value="">Select State</option>
+            {% for item in state_options %}
+            <option value="{{ item }}" {% if form_data.state == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">PAN Number</label>
+          <input type="text" name="pan" value="{{ form_data.pan|default:'' }}" placeholder="ABCDE1234F">
+        </div>
+        <div class="field">
+          <label class="field-label">Aadhar Card</label>
+          <input type="text" name="aadhaar" value="{{ form_data.aadhaar|default:'' }}" placeholder="XXXX XXXX XXXX">
+        </div>
+        <div class="field col-span-2">
+          <label class="field-label">Professional Portfolio / LinkedIn</label>
+          <input id="candidateSocialMediaInput" type="url" name="social_media_link" value="{{ form_data.social_media_link|default:'' }}" placeholder="linkedin.com/in/username">
+        </div>
+        
+        <div class="field col-span-3">
+          <label class="field-label">Apply for Active Positions (Multiple)</label>
+          <select name="applied_positions" multiple style="height: 120px; padding: 8px;">
+            {% for item in position_options %}
+            <option value="{{ item.job_id }}">{{ item.job_id }} - {{ item.title }}</option>
+            {% endfor %}
+          </select>
+          <div style="font-size: 11px; color: var(--text3); margin-top: 6px;"><i class="bi bi-info-circle"></i> Candidates can be considered for multiple roles simultaneously.</div>
+        </div>
+      </div>
+
+      <!-- Resume & Photos -->
+      <div style="margin-top: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div class="field">
+          <label class="field-label">Resume / CV (PDF Only) <span class="required-star">*</span></label>
+          <label class="file-upload" style="padding: 40px; border: 2px dashed var(--border); background: var(--surface2); border-radius: 16px; text-align: center; cursor: pointer; display: block; transition: all 0.2s;">
+            <input id="resumeUploadInput" type="file" name="resume_upload" accept=".pdf" style="display: none;">
+            <div style="font-size: 32px; color: var(--accent);"><i class="bi bi-file-earmark-person"></i></div>
+            <div style="font-weight: 700; color: var(--text); margin-top: 12px;">Upload Resume</div>
+            <div style="font-size: 11px; color: var(--text3); margin-top: 4px;">AI will automatically parse details</div>
+          </label>
+          <div id="resumeParseAlert" class="status-pill pill-blue" style="margin-top: 12px; display: none; width: 100%; justify-content: center;"></div>
+        </div>
+        <div class="field">
+          <label class="field-label">Profile Image (Optional)</label>
+          <label class="file-upload" style="padding: 40px; border: 2px dashed var(--border); background: var(--surface2); border-radius: 16px; text-align: center; cursor: pointer; display: block; transition: all 0.2s;">
+            <input type="file" name="profile_photo_upload" accept="image/*" style="display: none;">
+            <div style="font-size: 32px; color: var(--text3);"><i class="bi bi-image"></i></div>
+            <div style="font-weight: 700; color: var(--text); margin-top: 12px;">Capture / Upload Photo</div>
+            <div style="font-size: 11px; color: var(--text3); margin-top: 4px;">Square ratio preferred</div>
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-top: 40px; display: flex; justify-content: flex-end;">
+        <button id="toEducationBtn" type="button" class="btn btn-primary" style="padding: 10px 24px;">Continue to Career Info <i class="bi bi-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <!-- SECTION 2: PROFESSIONAL -->
+    <div id="educationSection" class="section" style="display: none;">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-mortarboard"></i></div>
+        <div>
+          <div class="section-title">Career & Academic Profile</div>
+          <div class="section-sub">Previous experience, education and specialized skills</div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-3">
+        <div class="field">
+          <label class="field-label">Highest Qualification</label>
+          <select id="candidateEducationLevelInput" name="highest_education_level">
+            <option value="">Select Level</option>
+            {% for item in education_level_options %}
+            <option value="{{ item }}" {% if form_data.highest_education_level == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field col-span-2">
+          <label class="field-label">Degree Specialization</label>
+          <input id="candidateDegreeInput" type="text" name="degree_name" value="{{ form_data.degree_name|default:'' }}" placeholder="e.g. Master of Business Administration">
+        </div>
+        <div class="field col-span-2">
+          <label class="field-label">Last University / Institute Attended</label>
+          <input id="candidateInstituteInput" type="text" name="institute_name" value="{{ form_data.institute_name|default:'' }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Graduation Year</label>
+          <input id="candidateYearInput" type="text" name="year_of_passing" value="{{ form_data.year_of_passing|default:'' }}" placeholder="YYYY">
+        </div>
+        <div class="field">
+          <label class="field-label">Relevant Experience (Years)</label>
+          <input id="candidateExperienceInput" type="text" name="experience" value="{{ form_data.experience|default:'' }}" placeholder="e.g. 4.5">
+        </div>
+        <div class="field col-span-2">
+          <label class="field-label">Technical Skills & Tools (Comma separated)</label>
+          <input id="candidateSkillsInput" type="text" name="skills" value="{{ form_data.skills|default:'' }}" placeholder="React, Node.js, TypeScript, Figma...">
+        </div>
+        <div class="field col-span-3">
+          <label class="field-label">Professional Summary / Work History</label>
+          <textarea id="candidateEmploymentHistoryInput" name="employment_history" rows="6" placeholder="Describe your key achievements and previous roles...">{{ form_data.employment_history|default:'' }}</textarea>
+        </div>
+      </div>
+
+      <div style="margin-top: 40px; display: flex; justify-content: space-between; align-items: center; background: var(--surface2); padding: 24px; border-radius: 16px; border: 1px solid var(--border);">
+        <button id="backToPersonalBtn" type="button" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Go Back</button>
+        <div style="display: flex; gap: 12px;">
+          <button type="submit" class="btn btn-primary" style="padding: 10px 24px;"><i class="bi bi-check-circle"></i> Submit Candidate Profile</button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/registration.js"></script>
+<script>
+  document.getElementById('toEducationBtn').addEventListener('click', () => {
+    document.getElementById('personalSection').style.display = 'none';
+    document.getElementById('educationSection').style.display = 'block';
+    document.getElementById('stepPersonal').classList.remove('active');
+    document.getElementById('stepPersonal').classList.add('done');
+    document.getElementById('stepEducation').classList.add('active');
+    document.querySelector('.form-shell').scrollIntoView({ behavior: 'smooth' });
+  });
+  document.getElementById('backToPersonalBtn').addEventListener('click', () => {
+    document.getElementById('educationSection').style.display = 'none';
+    document.getElementById('personalSection').style.display = 'block';
+    document.getElementById('stepEducation').classList.remove('active');
+    document.getElementById('stepPersonal').classList.remove('done');
+    document.getElementById('stepPersonal').classList.add('active');
+    document.querySelector('.form-shell').scrollIntoView({ behavior: 'smooth' });
+  });
+</script>
+{% endblock %}

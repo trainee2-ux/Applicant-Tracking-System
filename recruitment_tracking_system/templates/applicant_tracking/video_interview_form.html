@@ -1,0 +1,292 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Video Interview{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=5">{% endblock %}
+{% block nav_interviews %}active{% endblock %}
+{% block header %}Interviews &gt; Video Interview Form{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="form-shell" style="max-width: 1000px; margin: 0 auto;">
+  <div class="page-header mb-4">
+    <div>
+      <h2 class="page-title">Schedule Video Interview</h2>
+      <p class="page-subtitle">Configure the virtual synchronization parameters for the candidate.</p>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    {% if form_data.record_id %}
+    <input type="hidden" name="record_id" value="{{ form_data.record_id }}">
+    {% endif %}
+
+    <!-- Section 1: Candidate Information -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-person-badge"></i></div>
+        <div>
+          <div class="section-title">Candidate Information</div>
+          <div class="section-sub">Essential details for the talent evaluation protocol.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Manpower Requisition ID</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-hash field-icon"></i>
+            <input class="premium-input-v2" type="text" value="MPR0001" readonly>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Candidate Name</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-person field-icon"></i>
+            <select id="videoCandidateSelect" class="premium-input-v2" name="candidate_name" required>
+              <option value="">Select Candidate</option>
+              {% for item in candidate_options %}
+              <option value="{{ item.id }}" data-posting="{{ item.posting }}" {% if form_data.candidate_name == item.id %}selected{% endif %}>{{ item.id }} - {{ item.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Target Position</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-briefcase field-icon"></i>
+            <select id="videoPostingTitle" class="premium-input-v2" name="posting_title" required>
+              <option value="">Select Position...</option>
+              {% for item in posting_options %}
+              <option value="{{ item }}" {% if form_data.posting_title == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Process Round</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-diagram-3 field-icon"></i>
+            <select class="premium-input-v2" name="interview_process_name" required>
+              <option value="">Select Round...</option>
+              {% for item in process_options %}
+              <option value="{{ item }}" {% if form_data.interview_process_name == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Virtual Connectivity -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-broadcast"></i></div>
+        <div>
+          <div class="section-title">Virtual Connectivity</div>
+          <div class="section-sub">Configure the communication provider and access links.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Meeting Provider</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-headset field-icon"></i>
+            <select class="premium-input-v2" name="provider" required>
+              <option value="">Select Provider</option>
+              {% for row in enabled_integrations %}
+              <option value="{{ row.provider_key }}" {% if form_data.provider == row.provider_key %}selected{% endif %}>{{ row.provider_label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Manual Meeting Link (Optional)</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-link-45deg field-icon"></i>
+            <input class="premium-input-v2" name="manual_meeting_link" type="url" placeholder="https://meet.google.com/..." value="{{ form_data.manual_meeting_link|default:'' }}">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Timing & Logistics -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-clock"></i></div>
+        <div>
+          <div class="section-title">Timing & Logistics</div>
+          <div class="section-sub">Define the synchronization window and ownership.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Sequence Date</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-calendar3 field-icon"></i>
+            <input class="premium-input-v2" name="date" type="date" value="{{ form_data.date|default:'' }}" required>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Time Window (From - To)</label>
+          <div class="d-flex gap-2">
+            <div class="input-icon-wrap flex-fill">
+              <i class="bi bi-clock field-icon"></i>
+              <input class="premium-input-v2" name="from_time" type="time" value="{{ form_data.from_time|default:'' }}" required>
+            </div>
+            <div class="input-icon-wrap flex-fill">
+              <i class="bi bi-clock-history field-icon"></i>
+              <input class="premium-input-v2" name="to_time" type="time" value="{{ form_data.to_time|default:'' }}" required>
+            </div>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Interviewer Lead</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-person-check field-icon"></i>
+            <select class="premium-input-v2" name="interviewer_name" required>
+              <option value="">Select Interviewer</option>
+              {% for item in interviewer_options %}
+              <option value="{{ item }}" {% if form_data.interviewer_name == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Sequence Directives</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-chat-left-dots field-icon"></i>
+            <input class="premium-input-v2" name="schedule_comments" type="text" value="{{ form_data.schedule_comments|default:'' }}" placeholder="Special instructions...">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Stakeholder Inclusion -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-people"></i></div>
+        <div>
+          <div class="section-title">Stakeholder Inclusion</div>
+          <div class="section-sub">Notify and include additional team members in the protocol.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Internal Attendees (Select Multiple)</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-person-plus field-icon" style="top: 15px;"></i>
+            <select class="premium-input-v2" name="cc_emails_multi" multiple style="height: 120px; padding-top: 10px;">
+              {% for group in cc_role_options %}
+              <optgroup label="{{ group.role }}">
+                {% for user in group.users %}
+                <option value="{{ user.email }}" {% if user.email in form_data.cc_emails_list %}selected{% endif %}>{{ user.name }}</option>
+                {% endfor %}
+              </optgroup>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Other Stakeholder Emails</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-envelope-plus field-icon"></i>
+            <textarea class="premium-input-v2" name="cc_emails_manual" rows="4" placeholder="Separate emails with commas...">{{ form_data.cc_emails_manual|default:'' }}</textarea>
+          </div>
+          <div class="form-text mt-2" style="font-size: 11px; color: var(--text3);">Add external or cross-department emails.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-end gap-3 mt-5">
+      <a href="{% url 'applicant_tracking:video_interview' %}" class="btn btn-secondary" style="padding: 12px 32px; border-radius: 12px;">Cancel</a>
+      <button type="submit" class="btn btn-primary" style="padding: 12px 48px; border-radius: 12px; box-shadow: 0 8px 20px var(--accentbg);">
+        {% if form_data.record_id %}Update Protocol{% else %}Schedule Video Interview{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+
+<style>
+  .input-icon-wrap { position: relative; display: flex; align-items: center; width: 100%; }
+  .field-icon { position: absolute; left: 14px; color: var(--text3); font-size: 1rem; pointer-events: none; }
+  .premium-input-v2 { 
+    width: 100%;
+    height: 48px;
+    padding-left: 42px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13.5px;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.2s;
+  }
+  textarea.premium-input-v2 { height: auto; padding-top: 12px; }
+  .premium-input-v2:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accentbg); }
+  .premium-input-v2[readonly] { opacity: 0.7; cursor: not-allowed; }
+  
+  .section { transition: transform 0.2s; }
+  .section:hover { transform: translateY(-2px); }
+</style>
+
+<style>
+  .input-icon-wrap { position: relative; display: flex; align-items: center; }
+  .field-icon { position: absolute; left: 16px; color: var(--text3); font-size: 1.1rem; pointer-events: none; }
+  .premium-input { 
+    height: 52px !important; 
+    padding-left: 48px !important; 
+    border-radius: 14px !important; 
+    background: var(--surface) !important; 
+    border: 1.5px solid var(--border) !important; 
+    color: var(--text) !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    transition: all 0.2s !important;
+  }
+  .premium-input:focus { 
+    border-color: var(--accent) !important; 
+    box-shadow: 0 0 0 4px var(--accentbg) !important; 
+    transform: translateY(-1px);
+  }
+  .custom-field-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text3);
+    margin-bottom: 6px;
+    display: block;
+    margin-left: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const candidateSelect = document.getElementById("videoCandidateSelect");
+    const postingSelect = document.getElementById("videoPostingTitle");
+    if (candidateSelect && postingSelect) {
+      candidateSelect.addEventListener("change", function () {
+        const selected = candidateSelect.options[candidateSelect.selectedIndex];
+        const posting = selected && selected.dataset ? selected.dataset.posting : "";
+        if (!posting) return;
+        let matched = Array.from(postingSelect.options).find(function (opt) {
+          return opt.value === posting || opt.text === posting;
+        });
+        if (!matched) {
+          matched = document.createElement("option");
+          matched.value = posting;
+          matched.textContent = posting;
+          postingSelect.appendChild(matched);
+        }
+        postingSelect.value = matched.value;
+      });
+    }
+  });
+</script>
+{% endblock %}

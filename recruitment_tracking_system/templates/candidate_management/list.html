@@ -1,0 +1,150 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Candidate List{% endblock %}
+{% block nav_candidate_management %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Candidate Directory</div>
+    <div class="page-subtitle">Search and manage your global talent pool</div>
+  </div>
+  <div class="header-actions">
+    <a href="/candidate-management/registration/" class="btn btn-primary btn-sm"><i class="bi bi-person-plus"></i> Add New Candidate</a>
+    <a href="{% url 'app_settings:bulk_upload' %}" class="btn btn-secondary btn-sm"><i class="bi bi-upload"></i> Bulk Upload</a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom: 24px; background: var(--surface); border: 1px solid var(--border);">
+  <form id="candidateFilters" method="get" style="padding: 4px;">
+    <div class="field-grid grid-4" style="gap: 16px;">
+      <div class="field">
+        <label class="field-label">Name Search</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3);"><i class="bi bi-search"></i></span>
+          <input type="text" name="name" value="{{ filters.name|default:'' }}" placeholder="Search by name..." style="padding-left: 36px;">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Email Filter</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3);"><i class="bi bi-envelope"></i></span>
+          <input type="text" name="email" value="{{ filters.email|default:'' }}" placeholder="candidate@email.com" style="padding-left: 36px;">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Experience</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3);"><i class="bi bi-briefcase"></i></span>
+          <input type="text" name="experience" value="{{ filters.experience|default:'' }}" placeholder="e.g. 5+ Years" style="padding-left: 36px;">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Hiring Status</label>
+        <select name="status">
+          <option value="">All Statuses</option>
+          {% for status in status_options %}
+          <option value="{{ status }}" {% if filters.status == status %}selected{% endif %}>{{ status }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 10px;">
+      <a href="/candidate-management/list/" class="btn btn-ghost btn-sm">Reset Filters</a>
+      <button type="submit" class="btn btn-secondary btn-sm"><i class="bi bi-funnel"></i> Apply Filter</button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+    <div class="card-title">Talent Pool <span style="font-weight: 400; font-size: 12px; margin-left: 8px; color: var(--text3);">{{ records|length }} candidates found</span></div>
+  </div>
+  
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate Profile</th>
+          <th>Contact Info</th>
+          <th>Applied For</th>
+          <th>Hiring Status</th>
+          <th>Match %</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in records %}
+        <tr>
+          <td class="primary">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div class="user-avatar" style="width: 36px; height: 36px; background: var(--surface2); border: 1px solid var(--border2); color: var(--accent2);">{{ row.name|slice:":1"|upper }}</div>
+              <div>
+                <a href="/candidate-management/profile/?candidate_id={{ row.id }}" style="color: var(--text); text-decoration: none; font-weight: 700; font-size: 13.5px;">{{ row.name }}</a>
+                <div style="font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 1px;">ID: #{{ row.id }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text2);">{{ row.email }}</div>
+            <div style="font-size: 11px; color: var(--text3);">{{ row.phone }}</div>
+          </td>
+          <td>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-size: 12.5px; font-weight: 600; color: var(--text);">{{ row.job_title|default:row.position }}</span>
+              <span style="font-size: 10px; color: var(--accent2); font-weight: 700; text-transform: uppercase;">{{ row.job_id|default:"GEN" }}</span>
+            </div>
+          </td>
+          <td>
+            <form method="post" style="margin: 0;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_status">
+              <input type="hidden" name="candidate_id" value="{{ row.id }}">
+              <select name="status" onchange="this.form.submit()" style="padding: 6px 10px; font-size: 11px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border2); height: 30px; width: auto;">
+                {% for status in status_options %}
+                <option value="{{ status }}" {% if row.status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td>
+            {% if row.resume_score %}
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: var(--accentbg); color: var(--accent2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; border: 1px solid rgba(108,99,255,0.2);">{{ row.resume_score }}%</div>
+            </div>
+            {% else %}
+            <span style="font-size: 11px; color: var(--text3);">—</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <a href="/candidate-management/profile/?candidate_id={{ row.id }}" class="icon-btn" title="Edit Profile"><i class="bi bi-pencil"></i></a>
+              {% if row.resume_url %}
+              <a href="{{ row.resume_url }}" target="_blank" class="icon-btn" title="View Resume"><i class="bi bi-file-earmark-person"></i></a>
+              {% endif %}
+              <a href="/candidate-management/delete/{{ row.id }}/" class="icon-btn" style="color: var(--red); border-color: var(--redbg);" title="Delete"><i class="bi bi-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align: center; padding: 80px; color: var(--text3);">
+          <div style="font-size: 48px; opacity: 0.1; margin-bottom: 16px;"><i class="bi bi-people"></i></div>
+          <div>No candidates found in the talent pool.</div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div style="padding: 16px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.02);">
+    <div style="font-size: 12px; color: var(--text3);">Showing <strong>{{ records|length }}</strong> results</div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-ghost btn-sm" disabled><i class="bi bi-chevron-left"></i> Previous</button>
+      <button class="btn btn-secondary btn-sm" style="min-width: 32px; padding: 4px;">1</button>
+      <button class="btn btn-ghost btn-sm">Next <i class="bi bi-chevron-right"></i></button>
+    </div>
+  </div>
+</div>
+{% endblock %}

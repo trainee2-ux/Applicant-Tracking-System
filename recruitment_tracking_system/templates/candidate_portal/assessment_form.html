@@ -1,0 +1,257 @@
+{% extends "layouts/app_shell.html" %}
+{% load dict_extras %}
+
+{% block title %}Assessment - {{ form.name }}{% endblock %}
+
+{% block page_css %}
+<style>
+  /* ── Proctoring consent banner ── */
+  .proctor-consent-banner {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(79, 70, 229, 0.08));
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    border-radius: 16px;
+    padding: 18px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .proctor-consent-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .proctor-consent-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text, #f1f5f9);
+    margin-bottom: 4px;
+    letter-spacing: 0.2px;
+  }
+
+  .proctor-consent-desc {
+    font-size: 12.5px;
+    color: var(--text3, #94a3b8);
+    line-height: 1.6;
+  }
+
+  .proctor-consent-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .proctor-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #a78bfa;
+  }
+
+  .assessment-shell {
+    max-width: 980px;
+  }
+
+  .assessment-card {
+    border-radius: 22px;
+  }
+
+  .assessment-question {
+    padding: 18px;
+    border-radius: 16px;
+    background: color-mix(in oklab, var(--surface2) 75%, transparent);
+    border: 1px solid var(--border);
+  }
+
+  .assessment-question .form-label {
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .assessment-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .assessment-options .form-check {
+    padding: 12px 14px 12px 44px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    margin: 0;
+  }
+
+  .assessment-options .form-check-input {
+    margin-left: -26px;
+    margin-top: 0.2rem;
+  }
+
+  .assessment-options .form-check-label {
+    font-weight: 700;
+    color: var(--text2);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container assessment-shell">
+  <div class="card shadow-sm border-0 assessment-card">
+    <div class="card-body p-4 p-md-5">
+
+      {# ── Proctoring consent notice ── #}
+      <div class="proctor-consent-banner">
+        <div class="proctor-consent-icon"><i class="bi bi-shield-lock-fill"></i></div>
+        <div>
+          <div class="proctor-consent-title">This assessment is proctored</div>
+          <div class="proctor-consent-desc">
+            Your webcam, tab activity, and browser behaviour will be monitored throughout this session.
+            Violations such as switching tabs, opening DevTools, or exiting fullscreen will be logged and may result in
+            your session being terminated.
+          </div>
+          <div class="proctor-consent-pills">
+            <span class="proctor-pill"><i class="bi bi-camera-video-fill"></i> Webcam Active</span>
+            <span class="proctor-pill"><i class="bi bi-fullscreen"></i> Fullscreen Required</span>
+            <span class="proctor-pill"><i class="bi bi-window-stack"></i> Tab Switching Detected</span>
+            <span class="proctor-pill"><i class="bi bi-code-slash"></i> DevTools Monitored</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <h2 class="mb-1" style="font-weight: 800;">{{ form.name }}</h2>
+          {% if form.description %}<div class="text-muted">{{ form.description }}</div>{% endif %}
+          <div class="mt-2 small text-muted">
+            Candidate: <strong>{{ candidate.full_name }}</strong>
+          </div>
+          <div class="mt-2 d-flex flex-wrap gap-2">
+            {% if form.time_limit_minutes %}
+            <span class="badge bg-light text-dark border">Time limit: {{ form.time_limit_minutes }} min</span>
+            {% endif %}
+            {% if form.passing_score_percent != None %}
+            <span class="badge bg-light text-dark border">Passing: {{ form.passing_score_percent }}%</span>
+            {% endif %}
+          </div>
+          {% if form.instructions %}
+          <div class="mt-3 p-3 rounded-3" style="background: var(--surface2); border: 1px solid var(--border);">
+            <div class="text-muted small" style="font-weight: 800;">Instructions</div>
+            <div class="small">{{ form.instructions }}</div>
+          </div>
+          {% endif %}
+        </div>
+        <div class="text-end small text-muted">
+          Status: <strong>{{ assignment.status }}</strong>
+        </div>
+      </div>
+
+      <hr class="my-4" />
+
+      <form id="assessmentForm" method="post" novalidate>
+        {% csrf_token %}
+        {# Hidden field — proctor session token is injected by JS before submit #}
+        <input type="hidden" name="proctor_session_token" id="proctorSessionTokenField" value="">
+
+        <div class="row g-4">
+          {% for f in fields %}
+          <div class="col-12">
+            <div class="assessment-question">
+              <label class="form-label" for="{{ f.field_name }}">
+                {{ f.label }}
+                {% if f.required %}<span class="text-danger">*</span>{% endif %}
+              </label>
+
+              {% if f.field_type == "textarea" %}
+              <textarea class="form-control {% if errors|get_item:f.field_name %}is-invalid{% endif %}"
+                id="{{ f.field_name }}" name="{{ f.field_name }}" rows="4">{{ answers|get_item:f.field_name }}</textarea>
+              {% elif f.field_type == "select" %}
+              <select class="form-select {% if errors|get_item:f.field_name %}is-invalid{% endif %}" id="{{ f.field_name }}" name="{{ f.field_name }}">
+                <option value="">Select</option>
+                {% for opt in f.options_list %}
+                <option value="{{ opt }}" {% if answers|get_item:f.field_name == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+              </select>
+              {% elif f.field_type == "radio" %}
+              <div class="assessment-options" role="radiogroup" aria-label="{{ f.label }}">
+                {% for opt in f.options_list %}
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" id="{{ f.field_name }}_{{ forloop.counter }}" name="{{ f.field_name }}" value="{{ opt }}" {% if answers|get_item:f.field_name == opt %}checked{% endif %}>
+                  <label class="form-check-label" for="{{ f.field_name }}_{{ forloop.counter }}">{{ opt }}</label>
+                </div>
+                {% endfor %}
+              </div>
+              {% elif f.field_type == "checkbox" %}
+              <div class="assessment-options" role="group" aria-label="{{ f.label }}">
+                {% with selected=answers|get_item:f.field_name %}
+                {% for opt in f.options_list %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="{{ f.field_name }}_{{ forloop.counter }}" name="{{ f.field_name }}" value="{{ opt }}" {% if selected and opt in selected %}checked{% endif %}>
+                  <label class="form-check-label" for="{{ f.field_name }}_{{ forloop.counter }}">{{ opt }}</label>
+                </div>
+                {% endfor %}
+                {% endwith %}
+              </div>
+              {% else %}
+              {% if f.field_type == "datetime" %}
+              {% with itype="datetime-local" %}
+              <input class="form-control {% if errors|get_item:f.field_name %}is-invalid{% endif %}" id="{{ f.field_name }}" name="{{ f.field_name }}" type="{{ itype }}"
+                value="{{ answers|get_item:f.field_name }}" />
+              {% endwith %}
+              {% else %}
+              <input class="form-control {% if errors|get_item:f.field_name %}is-invalid{% endif %}" id="{{ f.field_name }}" name="{{ f.field_name }}" type="{{ f.field_type }}"
+                value="{{ answers|get_item:f.field_name }}" />
+              {% endif %}
+              {% endif %}
+
+              {% if errors|get_item:f.field_name %}
+              <div class="text-danger small mt-2">{{ errors|get_item:f.field_name }}</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button class="btn btn-primary px-4" type="submit" id="assessmentSubmitBtn">Submit Assessment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/proctor.js?v=1"></script>
+<script>
+  (function () {
+    const TOKEN = "{{ proctor_session_token|default:'' }}";
+    const MAX_WARN = parseInt("{{ proctor_max_warnings|default:'3' }}", 10) || 3;
+
+    if (!TOKEN) return;   // No session token → proctoring not configured for this attempt
+
+    // Inject token into the hidden form field before submit
+    const tokenField = document.getElementById("proctorSessionTokenField");
+    if (tokenField) tokenField.value = TOKEN;
+
+    // Start the proctoring engine
+    window._aankhProctor = new AankhProctor({
+      sessionToken: TOKEN,
+      maxWarnings: MAX_WARN,
+      enableWebcam: true,
+      enableFullscreen: true,
+      formSelector: "#assessmentForm",
+    });
+    window._aankhProctor.start();
+  })();
+</script>
+{% endblock %}

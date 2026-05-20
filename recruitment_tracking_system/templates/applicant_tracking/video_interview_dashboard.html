@@ -1,0 +1,415 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Video Interview{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=5">{% endblock %}
+{% block nav_interviews %}active{% endblock %}
+{% block header %}Interviews &gt; Video Interview{% endblock %}
+
+{% block content %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+{% endfor %}
+{% endif %}
+
+<div class="dashboard-container">
+  <div class="row g-4">
+    <!-- Main Content: Stats and Table -->
+    <div class="col-xl-8">
+      <div class="page-header mb-4">
+        <div>
+          <h2 class="page-title">Video Interview Dashboard</h2>
+          <p class="page-subtitle">Coordinate and track virtual synchronization protocols.</p>
+        </div>
+        <a href="{% url 'applicant_tracking:video_interview' %}?create=1" class="btn btn-primary"
+          style="padding: 10px 24px; border-radius: 10px;">
+          <i class="bi bi-plus-lg me-2"></i> Schedule Protocol
+        </a>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stat-grid mb-4">
+        <div class="stat-card">
+          <div class="stat-icon blue"><i class="bi bi-camera-video"></i></div>
+          <div class="stat-value">{{ rows|length }}</div>
+          <div class="stat-label">Total Syncs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple"><i class="bi bi-broadcast"></i></div>
+          <div class="stat-value">Active</div>
+          <div class="stat-label">Virtual Infrastructure</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="bi bi-shield-check"></i></div>
+          <div class="stat-value">Encrypted</div>
+          <div class="stat-label">Connection Status</div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm main-card">
+        <div class="card-header bg-transparent border-bottom p-4">
+          <h3 class="card-title m-0">Virtual Protocol Queue</h3>
+        </div>
+        <div class="table-wrap">
+          <table class="table-premium">
+            <thead>
+              <tr>
+                <th>Req ID</th>
+                <th>Candidate</th>
+                <th>Round</th>
+                <th>Provider</th>
+                <th>Schedule</th>
+                <th>Access</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+              <tr>
+                <td class="font-mono text-xs">{{ row.manpower_requisition_id }}</td>
+                <td>
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="avatar-sm grad-blue text-white">{{ row.candidate_name|slice:":1" }}</div>
+                    <div>
+                      <div class="fw-bold text-dark">{{ row.candidate_name }}</div>
+                      <div class="text-muted text-xs">{{ row.posting_title }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-pill pill-purple">{{ row.interview_process_name|default:"-" }}</span>
+                </td>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-headset text-muted"></i>
+                    <span class="text-sm fw-medium">{{ row.provider|default:"Direct" }}</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="text-dark fw-semibold text-xs">{{ row.date }}</div>
+                  <div class="text-muted text-xs">{{ row.from_time }} - {{ row.to_time }}</div>
+                </td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <a href="{{ row.meeting_link }}" target="_blank" rel="noopener noreferrer"
+                      class="btn btn-sm btn-ghost auto-recording-link" style="font-size: 10px; padding: 2px 8px;"
+                      data-interview-id="{{ row.id }}" data-candidate-pk="{{ row.candidate_db_id }}"
+                      data-candidate-id="{{ row.candidate_id }}" data-candidate-name="{{ row.candidate_name }}"
+                      data-interviewer="{{ row.interviewer_name }}" data-date="{{ row.date|date:'Y-m-d' }}"
+                      data-from-time="{{ row.from_time|time:'H:i' }}" data-to-time="{{ row.to_time|time:'H:i' }}"
+                      data-meeting-link="{{ row.meeting_link }}" data-host-link="{{ row.host_link|default:'' }}">
+                      Join
+                    </a>
+                  </div>
+                  <div class="small text-muted mt-1 recording-status" id="recording-status-{{ row.id }}"
+                    style="font-size: 9px;"></div>
+                </td>
+                <td>
+                  <div class="d-flex justify-content-end gap-1">
+                    <a href="{% url 'applicant_tracking:video_interview' %}?edit_id={{ row.id }}" class="icon-btn-sm"><i
+                        class="bi bi-pencil-square"></i></a>
+                    <a href="{% url 'applicant_tracking:video_interview_delete_confirm' row.id %}"
+                      class="icon-btn-sm text-danger"><i class="bi bi-trash3"></i></a>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" class="text-center py-5">
+                  <div class="py-4">
+                    <i class="bi bi-camera-video-off text-muted mb-3" style="font-size: 3rem;"></i>
+                    <h4 class="text-muted fw-bold">No Active Protocols</h4>
+                    <p class="text-muted text-sm">Your digital evaluation queue is currently clear.</p>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar: Recording Library and Storage -->
+
+
+    <style>
+      :root {
+        --grad-blue: linear-gradient(135deg, #3b82f6, #2563eb);
+        --grad-purple: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      }
+
+      .dashboard-container {
+        padding: 20px 0;
+      }
+
+      .main-card {
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        overflow: hidden;
+      }
+
+      .table-premium {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+
+      .table-premium th {
+        background: var(--surface2);
+        padding: 14px 20px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text3);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .table-premium td {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+        transition: all 0.2s;
+      }
+
+      .table-premium tr:hover td {
+        background: var(--surface2);
+      }
+
+      .avatar-sm {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 13px;
+      }
+
+      .grad-blue {
+        background: var(--grad-blue);
+      }
+
+      .grad-purple {
+        background: var(--grad-purple);
+      }
+
+      .icon-btn-sm {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        background: var(--surface2);
+        color: var(--text2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.2s;
+        font-size: 12px;
+      }
+
+      .icon-btn-sm:hover {
+        background: var(--surface3);
+        color: var(--text);
+        transform: scale(1.1);
+      }
+
+      .icon-btn-sm.text-danger:hover {
+        background: var(--redbg);
+        color: var(--red);
+      }
+
+      /* Sidebar Styles */
+      .sidebar-sticky {
+        position: sticky;
+        top: 20px;
+      }
+
+      .sidebar-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 4px;
+      }
+
+      .sidebar-subtitle {
+        font-size: 0.85rem;
+        color: var(--text3);
+      }
+
+      .recording-card-v2 {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        transition: all 0.2s;
+      }
+
+      .recording-card-v2:hover {
+        border-color: var(--accent);
+        transform: translateX(-4px);
+        box-shadow: var(--shadow);
+      }
+
+      .rec-thumb {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: var(--surface2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--accent);
+        font-size: 1.2rem;
+      }
+
+      .rec-name {
+        font-weight: 700;
+        color: var(--text);
+        font-size: 0.9rem;
+      }
+
+      .rec-meta {
+        font-size: 0.75rem;
+        color: var(--text3);
+      }
+
+      .rec-date {
+        font-size: 0.7rem;
+        color: var(--text3);
+      }
+
+      .rec-link {
+        text-decoration: none;
+        color: var(--accent);
+        font-weight: 600;
+        font-size: 0.75rem;
+      }
+
+      .rec-badge {
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 9px;
+        font-weight: 700;
+        color: white;
+        text-transform: uppercase;
+      }
+
+      .bg-green {
+        background: #10b981;
+      }
+
+      .bg-blue {
+        background: #3b82f6;
+      }
+
+      .bg-purple {
+        background: #8b5cf6;
+      }
+
+      .storage-card-v2 {
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+      }
+
+      .storage-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .st-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+      }
+
+      .st-icon.blue {
+        background: var(--bluebg);
+        color: var(--blue);
+      }
+
+      .st-icon.purple {
+        background: var(--purplebg);
+        color: var(--purple);
+      }
+
+      .empty-sidebar {
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        color: var(--text3);
+        font-size: 0.85rem;
+      }
+
+      .empty-sidebar i {
+        font-size: 1.5rem;
+        opacity: 0.5;
+        display: block;
+      }
+
+      .text-xs {
+        font-size: 0.7rem;
+      }
+
+      .font-mono {
+        font-family: var(--mono);
+      }
+    </style>
+
+    {% endblock %}
+
+    {% block page_js %}
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        function setStatus(interviewId, message, isError) {
+          const node = document.getElementById("recording-status-" + interviewId);
+          if (!node) return;
+          node.textContent = message;
+          node.style.color = isError ? "#ef4444" : "#10b981";
+        }
+
+        async function startRecording(btn) {
+          if (!window.api || !window.api.startInterviewRecording) {
+            return { ok: false, error: "Desktop bridge is not available. Use ATS desktop app." };
+          }
+          return window.api.startInterviewRecording({
+            interviewId: btn.dataset.interviewId,
+            candidatePk: btn.dataset.candidatePk,
+            candidateId: btn.dataset.candidateId,
+            candidateName: btn.dataset.candidateName,
+            interviewer: btn.dataset.interviewer,
+            date: btn.dataset.date,
+            fromTime: btn.dataset.fromTime,
+            toTime: btn.dataset.toTime,
+            meetingLink: btn.dataset.meetingLink,
+            hostLink: btn.dataset.hostLink
+          });
+        }
+
+        document.querySelectorAll(".auto-recording-link").forEach(function (link) {
+          link.addEventListener("click", async function (event) {
+            if (!window.api || !window.api.startInterviewRecording) {
+              return;
+            }
+            event.preventDefault();
+            setStatus(link.dataset.interviewId, "Starting meeting and OBS recording...", false);
+            const result = await startRecording(link);
+            if (result && result.ok) {
+              setStatus(link.dataset.interviewId, "Recording started. It will auto-stop at interview end time.", false);
+              window.open(link.href, '_blank');
+              return;
+            }
+            setStatus(link.dataset.interviewId, (result && result.error) || "Failed to start recording.", true);
+            window.open(link.href, '_blank');
+          });
+        });
+      });
+    </script>
+    {% endblock %}

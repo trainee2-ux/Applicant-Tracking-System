@@ -1,0 +1,65 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Assign Assessment{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=5">{% endblock %}
+{% block nav_interviews %}active{% endblock %}
+{% block header %}Interviews &gt; Assessments{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="page-header mb-4">
+  <div>
+    <h2 class="page-title">Assign Assessment</h2>
+    <p class="page-subtitle">Send a form link to a candidate for completion in their portal.</p>
+  </div>
+  <a href="{% url 'applicant_tracking:assessment_assignments' %}" class="btn btn-light" style="padding: 10px 24px; border-radius: 10px;">
+    <i class="bi bi-arrow-left me-2"></i> Back
+  </a>
+</div>
+
+<div class="card shadow-sm" style="border-radius: 16px;">
+  <div class="card-body p-4 p-md-5">
+    <form method="post" class="row g-4">
+      {% csrf_token %}
+
+      <div class="col-md-6">
+        <label class="form-label">Candidate <span class="text-danger">*</span></label>
+        <select class="form-select" name="candidate_id" required>
+          <option value="">Select candidate</option>
+          {% for item in candidate_options %}
+            <option value="{{ item.id }}">{{ item.id }} - {{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Assessment Form <span class="text-danger">*</span></label>
+        <select class="form-select" name="assessment_form_id" required>
+          <option value="">Select assessment form</option>
+          {% for f in assessment_forms %}
+            <option value="{{ f.id }}" {% if not f.is_published %}disabled{% endif %}>
+              {{ f.name }} {% if f.is_published %}(Published){% else %}(Draft){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+        <div class="text-muted small mt-1">Tip: set correct answers and points in Settings → Assessments Wizard.</div>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Due Date (optional)</label>
+        <input class="form-control" type="datetime-local" name="due_at"/>
+      </div>
+
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <a href="{% url 'applicant_tracking:assessment_assignments' %}" class="btn btn-light px-4">Cancel</a>
+        <button type="submit" class="btn btn-primary px-4">Assign &amp; Send Link</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

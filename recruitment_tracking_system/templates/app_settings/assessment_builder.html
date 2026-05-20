@@ -1,0 +1,285 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Assessment Builder{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=15">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Assessment Builder{% endblock %}
+
+{% block content %}
+<div class="settings-layout builder-pro-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  
+  <div class="settings-main">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="h4 fw-800 text-main mb-1">Assessment Builder</h2>
+        <p class="text-muted small mb-0">Assessment creation is now handled only in Assessment Wizard.</p>
+      </div>
+      <a href="{% url 'app_settings:assessment_wizard' %}" class="btn btn-accent rounded-pill px-4 shadow-sm">
+        <i class="bi bi-plus-lg me-2"></i>Create Assessment
+      </a>
+    </div>
+
+    <div class="settings-grid">
+      <!-- Library Sidebar -->
+      <div class="settings-panel border-0 shadow-sm">
+        <div class="d-flex align-items-center mb-3">
+          <h6 class="m-0 fw-bold text-label small uppercase letter-spacing-1">Form Library</h6>
+        </div>
+        <div class="assessment-library">
+          {% for form in forms %}
+            <div class="library-card {% if selected_form.id == form.id %}active{% endif %}">
+              <a href="{% url 'app_settings:assessment_wizard' form.id %}?step=1" class="library-link">
+                <div class="library-icon-box {% if form.form_type == 'feedback' %}bg-info-subtle text-info{% else %}bg-accent-subtle text-accent{% endif %}">
+                  <i class="bi {% if form.form_type == 'feedback' %}bi-chat-left-text{% else %}bi-journal-check{% endif %}"></i>
+                </div>
+                <div class="library-content">
+                  <div class="library-name text-truncate">{{ form.name }}</div>
+                  <div class="library-sub">{{ form.form_type|title }} • {{ form.fields_count|default:0 }} Fields</div>
+                </div>
+              </a>
+              <div class="library-actions">
+                <a href="{% url 'app_settings:assessment_delete_confirm' form.id %}" class="text-danger opacity-50 hover-opacity-100" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-center py-5 text-muted small italic opacity-50">
+              No templates found.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Main Canvas -->
+      <div class="settings-panel border-0 shadow-sm h-100 min-h-600">
+        {% if selected_form %}
+          <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom flex-wrap gap-2">
+            <div>
+              <h5 class="m-0 fw-bold">{{ selected_form.name }}</h5>
+              <div class="text-muted smaller">{{ selected_form.get_form_type_display }} Template</div>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="{% url 'app_settings:assessment_fill' selected_form.id %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-eye me-1"></i>Preview
+              </a>
+              <a href="{% url 'app_settings:assessment_wizard' selected_form.id %}?step=2" class="btn btn-accent btn-sm rounded-pill px-3">
+                <i class="bi bi-pencil-square me-1"></i>Edit in Wizard
+              </a>
+            </div>
+          </div>
+
+          <div class="canvas-content">
+            <!-- Form Settings -->
+            <div class="form-card mb-3">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                  <div class="fw-800">Form Settings</div>
+                  <div class="text-muted small">Title, type, and description shown to candidates.</div>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" id="toggleEditFormBtn">
+                  <i class="bi bi-pencil-square me-1"></i>Edit
+                </button>
+              </div>
+              <div id="editFormWrap" class="d-none mt-3">
+                <form method="post" class="row g-3">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="update_form">
+                  <input type="hidden" name="form_id" value="{{ selected_form.id }}">
+                  <div class="col-md-5">
+                    <label class="settings-kv-label mb-1">Title</label>
+                    <input type="text" class="form-control" name="name" value="{{ selected_form.name }}" required>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="settings-kv-label mb-1">Type</label>
+                    <select class="form-select" name="form_type">
+                      <option value="assessment" {% if selected_form.form_type == 'assessment' %}selected{% endif %}>Assessment</option>
+                      <option value="feedback" {% if selected_form.form_type == 'feedback' %}selected{% endif %}>Feedback</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label class="settings-kv-label mb-1">Description</label>
+                    <input type="text" class="form-control" name="description" value="{{ selected_form.description }}">
+                  </div>
+                  <div class="col-12 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-accent btn-sm rounded-pill px-4">Save</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4" onclick="document.getElementById('editFormWrap').classList.add('d-none')">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Questions -->
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+              <div>
+                <div class="fw-800">Questions</div>
+                <div class="text-muted small">Add, edit, and remove questions like a Google Form.</div>
+              </div>
+              <div class="text-muted small">{{ selected_form_fields|length }} questions</div>
+            </div>
+
+            <div class="question-list">
+              {% for field in selected_form_fields %}
+              <div class="question-card">
+                <div class="question-card-top">
+                  <div class="question-meta">
+                    <div class="question-label">{{ field.label }}</div>
+                    <div class="question-sub text-muted small">
+                      <span class="me-2"><i class="bi bi-key me-1"></i>{{ field.field_name }}</span>
+                      <span class="me-2"><i class="bi bi-ui-checks-grid me-1"></i>{{ field.get_field_type_display }}</span>
+                      {% if field.required %}
+                        <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle">Required</span>
+                      {% else %}
+                        <span class="badge rounded-pill bg-light text-muted border">Optional</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  <div class="question-actions">
+                    <button type="button" class="icon-pill" onclick="openEditField('{{ field.id }}')" title="Edit"><i class="bi bi-pencil-square"></i></button>
+                    <form method="post" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_field">
+                      <input type="hidden" name="form_id" value="{{ selected_form.id }}">
+                      <input type="hidden" name="field_id" value="{{ field.id }}">
+                      <button type="submit" class="icon-pill danger" title="Remove"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </div>
+                </div>
+
+                {% if field.options %}
+                <div class="text-muted small mt-2">
+                  <i class="bi bi-list-check me-1"></i>Options: {{ field.options }}
+                </div>
+                {% endif %}
+
+                <div id="editFieldWrap-{{ field.id }}" class="d-none mt-3">
+                  <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_field">
+                    <input type="hidden" name="form_id" value="{{ selected_form.id }}">
+                    <input type="hidden" name="field_id" value="{{ field.id }}">
+                    <div class="col-md-6">
+                      <label class="settings-kv-label mb-1">Label</label>
+                      <input type="text" class="form-control" name="label" value="{{ field.label }}" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="settings-kv-label mb-1">Options</label>
+                      <input type="text" class="form-control" name="options" value="{{ field.options }}" placeholder="Option A|1, Option B|0">
+                      <div class="text-muted small mt-1">Tip: for auto-score, use <code>Option|points</code> format.</div>
+                    </div>
+                    <div class="col-12 d-flex align-items-center justify-content-between">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="required" id="req-{{ field.id }}" {% if field.required %}checked{% endif %}>
+                        <label class="form-check-label small fw-bold text-muted" for="req-{{ field.id }}">Required</label>
+                      </div>
+                      <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-accent btn-sm rounded-pill px-4">Save</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-4" onclick="openEditField('{{ field.id }}')">Cancel</button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+              {% empty %}
+                <div class="text-center py-5 text-muted italic">No questions yet. Click “Add Question”.</div>
+              {% endfor %}
+            </div>
+          </div>
+        {% else %}
+          <div class="empty-builder-hero">
+            <div class="hero-icon-blob mb-4">
+              <i class="bi bi-stack"></i>
+            </div>
+            <h4 class="fw-bold">Assessment Template Builder</h4>
+            <p class="text-muted small max-w-400 mx-auto">Select a form from the library on the left to start adding fields or create a new template to begin.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .builder-pro-layout { background: var(--bg); min-height: 100vh; }
+  .uppercase { text-transform: uppercase; }
+  .letter-spacing-1 { letter-spacing: 0.5px; }
+  .fw-800 { font-weight: 800; }
+  .max-w-400 { max-width: 400px; }
+  
+  /* Library Card Styling */
+  .library-card { 
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; border-radius: 12px; margin-bottom: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .library-card:hover { border-color: var(--accent); transform: translateX(4px); background: var(--surface3); }
+  .library-card.active { border-color: var(--accent); background: var(--accentbg); }
+  
+  .library-link { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; flex-grow: 1; min-width: 0; }
+  .library-icon-box { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .library-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .library-sub { font-size: 11px; color: var(--text3); }
+  
+  .library-actions { opacity: 0; transition: opacity 0.2s; }
+  .library-card:hover .library-actions { opacity: 1; }
+  
+  /* Canvas Hero Styling */
+  .empty-builder-hero { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; }
+  .hero-icon-blob { width: 80px; height: 80px; background: var(--accentbg); color: var(--accent); border-radius: 24px; display: flex; align-items: center; justify-content: center; font-size: 32px; transform: rotate(-8deg); }
+  
+  /* General UI Polish */
+  .border-accent-soft { border: 1px solid var(--accent-border) !important; }
+  .hover-opacity-100:hover { opacity: 1 !important; }
+  .min-h-600 { min-height: 600px; }
+
+  /* Form / question cards (Google-form style) */
+  .form-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .question-list { display: flex; flex-direction: column; gap: 12px; }
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .question-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .question-label { font-weight: 800; color: var(--text); }
+  .question-actions { display: flex; align-items: center; gap: 8px; }
+  .icon-pill {
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    width: 36px; height: 36px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text2);
+    transition: all .2s ease;
+  }
+  .icon-pill:hover { border-color: var(--accent); color: var(--accent); background: var(--accentbg); }
+  .icon-pill.danger:hover { border-color: var(--red); color: var(--red); background: rgba(239,68,68,.08); }
+</style>
+
+<script>
+  function openEditField(fieldId) {
+    const el = document.getElementById('editFieldWrap-' + fieldId);
+    if (el) el.classList.toggle('d-none');
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('toggleEditFormBtn');
+    const wrap = document.getElementById('editFormWrap');
+    if (btn && wrap) btn.addEventListener('click', () => wrap.classList.toggle('d-none'));
+  });
+</script>
+{% endblock %}
+
+{% block page_js %}
+{% endblock %}

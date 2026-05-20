@@ -1,0 +1,28 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Delete Log In Interview{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=5">{% endblock %}
+{% block nav_applicant_tracking %}active{% endblock %}
+{% block header %}Applicant Tracking &gt; Interview Scheduling &gt; Log In Interview{% endblock %}
+
+{% block content %}
+<div class="interview-wrap">
+  <section class="interview-form-panel">
+    <div class="interview-panel-head">
+      <h3 class="applicant-panel-title mb-2">Delete Log In Interview</h3>
+      <p class="text-muted mb-3">Are you sure you want to delete this interview schedule?</p>
+    </div>
+    <div class="mb-3">
+      <div><strong>Candidate:</strong> {{ record.candidate.full_name }}</div>
+      <div><strong>Date:</strong> {{ record.date }}</div>
+      <div><strong>Time:</strong> {{ record.from_time }} - {{ record.to_time }}</div>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <button class="btn btn-outline-danger" type="submit" name="action" value="confirm_delete">Delete</button>
+      <a class="btn btn-outline-secondary" href="{% url 'applicant_tracking:login_interview' %}">Cancel</a>
+    </form>
+  </section>
+</div>
+{% endblock %}
+

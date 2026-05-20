@@ -1,0 +1,448 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Create Assessment{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=15">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Assessments &gt; Create Assessment{% endblock %}
+
+{% block content %}
+<div class="settings-layout builder-pro-layout">
+  {% include "app_settings/_settings_menu.html" %}
+
+  <div class="settings-main">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+      <div>
+        <h2 class="h3 fw-800 text-main mb-1">Create Assessment</h2>
+        <p class="text-muted mb-0">Build a comprehensive assessment to evaluate candidates.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{% url 'app_settings:assessment_wizard' %}" class="btn btn-outline-secondary rounded-pill px-4">Back to Assessments</a>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Stepper -->
+    <div class="wizard-steps mb-4">
+      <div class="wizard-step {% if step == 1 %}active{% elif step > 1 %}done{% endif %}">
+        <div class="wizard-dot">1</div>
+        <div>
+          <div class="wizard-title">Basic Details</div>
+          <div class="wizard-sub">Assessment information and settings</div>
+        </div>
+      </div>
+      <div class="wizard-step {% if step == 2 %}active{% elif step > 2 %}done{% endif %}">
+        <div class="wizard-dot">2</div>
+        <div>
+          <div class="wizard-title">Questions</div>
+          <div class="wizard-sub">Add and configure questions</div>
+        </div>
+      </div>
+      <div class="wizard-step {% if step == 3 %}active{% elif step > 3 %}done{% endif %}">
+        <div class="wizard-dot">3</div>
+        <div>
+          <div class="wizard-title">Additional</div>
+          <div class="wizard-sub">Additional settings and configuration</div>
+        </div>
+      </div>
+      <div class="wizard-step {% if step == 4 %}active{% elif step > 4 %}done{% endif %}">
+        <div class="wizard-dot">4</div>
+        <div>
+          <div class="wizard-title">Review</div>
+          <div class="wizard-sub">Review and publish assessment</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0" style="border-radius: 18px;">
+      <div class="card-body p-4 p-md-5">
+
+        {% if step == 1 %}
+          <form method="post" class="row g-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_basic">
+
+            <div class="col-12">
+              <label class="form-label fw-bold">Assessment Title <span class="text-danger">*</span></label>
+              <input type="text" class="form-control form-control-lg" name="name" placeholder="e.g. JavaScript Developer Assessment" value="{{ selected_form.name|default:'' }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Form Type</label>
+              <select class="form-select" name="form_type">
+                <option value="assessment" {% if selected_form.form_type == 'assessment' or not selected_form %}selected{% endif %}>Assessment</option>
+                <option value="feedback" {% if selected_form.form_type == 'feedback' %}selected{% endif %}>Feedback</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-bold">Description</label>
+              <textarea class="form-control" rows="4" name="description" placeholder="Describe what this assessment evaluates and its purpose...">{{ selected_form.description|default:'' }}</textarea>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Department</label>
+              <select class="form-select" name="department">
+                <option value="">Select Department</option>
+                {% if selected_form.department and selected_form.department not in department_options %}
+                  <option value="{{ selected_form.department }}" selected>{{ selected_form.department }}</option>
+                {% endif %}
+                {% for dept in department_options %}
+                  <option value="{{ dept }}" {% if selected_form.department == dept %}selected{% endif %}>{{ dept }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Difficulty Level</label>
+              <select class="form-select" name="difficulty_level">
+                <option value="">Select Difficulty</option>
+                <option value="Easy" {% if selected_form.difficulty_level == 'Easy' %}selected{% endif %}>Easy</option>
+                <option value="Medium" {% if selected_form.difficulty_level == 'Medium' %}selected{% endif %}>Medium</option>
+                <option value="Hard" {% if selected_form.difficulty_level == 'Hard' %}selected{% endif %}>Hard</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Time Limit (minutes)</label>
+              <input type="number" min="1" class="form-control" name="time_limit_minutes" value="{{ selected_form.time_limit_minutes|default:'' }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Passing Score (%)</label>
+              <input type="number" min="0" max="100" class="form-control" name="passing_score_percent" value="{{ selected_form.passing_score_percent|default:'' }}">
+            </div>
+
+            <div class="col-12 d-flex justify-content-end">
+              <button type="submit" class="btn btn-primary px-4 py-2">Next</button>
+            </div>
+          </form>
+        {% endif %}
+
+        {% if step == 2 %}
+          {% if not selected_form %}
+            <div class="text-muted">Please complete Basic Details first.</div>
+          {% else %}
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+              <div>
+                <div class="fw-800">{{ selected_form.name }}</div>
+                <div class="text-muted small">Add questions with points and correct answer (candidate will not see the answer).</div>
+              </div>
+            </div>
+
+            <div class="form-card mb-3">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="fw-800">Add Question</div>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" id="toggleAddQuestionBtn">
+                  <i class="bi bi-plus-lg me-1"></i>New
+                </button>
+              </div>
+              <div id="addQuestionWrap" class="d-none mt-3">
+                <form method="post" class="row g-3">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="add_field">
+                  <div class="col-md-6">
+                    <label class="settings-kv-label mb-1">Question Label</label>
+                    <input type="text" name="label" class="form-control" placeholder="e.g. Which JavaScript method is used to parse JSON?" required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="settings-kv-label mb-1">Type</label>
+                    <select name="field_type" class="form-select" id="wizardFieldType">
+                      <option value="text">Single Line Text</option>
+                      <option value="textarea">Long Text</option>
+                      <option value="number">Number</option>
+                      <option value="select">Dropdown</option>
+                      <option value="radio">Single Choice (Radio)</option>
+                      <option value="checkbox">Multiple Choice (Checkbox)</option>
+                      <option value="date">Date</option>
+                      <option value="email">Email</option>
+                    </select>
+                  </div>
+                  <div class="col-12 d-none" id="wizardOptionsWrap">
+                    <label class="settings-kv-label mb-1">Options (comma separated)</label>
+                    <input type="text" name="options" class="form-control" placeholder="Option A, Option B, Option C, Option D">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="settings-kv-label mb-1">Points</label>
+                    <input type="number" step="0.5" min="0" name="points" class="form-control" value="1">
+                  </div>
+                  <div class="col-md-8" id="wizardCorrectWrap">
+                    <label class="settings-kv-label mb-1">Correct Answer (not visible to candidate)</label>
+                    <input type="text" name="correct_answer" class="form-control" placeholder="For checkbox use comma-separated: Option A, Option C">
+                  </div>
+                  <div class="col-12 d-flex align-items-center justify-content-between">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" name="required" id="wizardReq">
+                      <label class="form-check-label small fw-bold text-muted" for="wizardReq">Required</label>
+                    </div>
+                    <div class="d-flex gap-2">
+                      <button type="submit" class="btn btn-primary rounded-pill px-4">Add</button>
+                      <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="document.getElementById('addQuestionWrap').classList.add('d-none')">Cancel</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div class="form-card mb-3">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                  <div class="fw-800">AI Question Generator</div>
+                  <div class="text-muted small">Generate questions using Title, Description, Department, and Difficulty.</div>
+                </div>
+              </div>
+              <div class="mt-3">
+                <form method="post" class="row g-2 align-items-end" onsubmit="return confirm('Generate questions with Gemini and add them to this assessment?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="generate_ai_questions">
+                  <div class="col-sm-4 col-md-3">
+                    <label class="settings-kv-label mb-1">Questions</label>
+                    <input type="number" class="form-control" name="questions_count" value="20" min="1" max="50" required>
+                  </div>
+                  <div class="col-sm-8 col-md-9 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary rounded-pill px-4">
+                      <i class="bi bi-stars me-1"></i>Generate with Gemini
+                    </button>
+                    <div class="small text-muted align-self-center">This will append new questions (no existing questions are deleted).</div>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div class="question-list">
+              {% for field in selected_form_fields %}
+              <div class="question-card">
+                <div class="question-card-top">
+                  <div>
+                    <div class="question-label">{{ field.label }}</div>
+                    <div class="text-muted small">
+                      <span class="me-2"><i class="bi bi-ui-checks-grid me-1"></i>{{ field.get_field_type_display }}</span>
+                      {% if field.required %}<span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle">Required</span>{% else %}<span class="badge rounded-pill bg-light text-muted border">Optional</span>{% endif %}
+                      <span class="badge rounded-pill bg-light text-muted border">Points: {{ field.points|default:1 }}</span>
+                    </div>
+                  </div>
+                  <div class="question-actions">
+                    <button type="button" class="icon-pill" onclick="openEditField('{{ field.id }}')"><i class="bi bi-pencil-square"></i></button>
+                    <form method="post" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_field">
+                      <input type="hidden" name="field_id" value="{{ field.id }}">
+                      <button type="submit" class="icon-pill danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </div>
+                </div>
+
+                {% if field.options %}
+                  <div class="text-muted small mt-2"><i class="bi bi-list-check me-1"></i>{{ field.options }}</div>
+                {% endif %}
+                {% if field.correct_answer %}
+                  <div class="text-muted small mt-2"><i class="bi bi-check2-circle me-1"></i>Correct: {{ field.correct_answer }}</div>
+                {% endif %}
+
+                <div id="editFieldWrap-{{ field.id }}" class="d-none mt-3">
+                  <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_field">
+                    <input type="hidden" name="field_id" value="{{ field.id }}">
+                    <div class="col-md-6">
+                      <label class="settings-kv-label mb-1">Label</label>
+                      <input type="text" class="form-control" name="label" value="{{ field.label }}" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="settings-kv-label mb-1">Options</label>
+                      <input type="text" class="form-control" name="options" value="{{ field.options }}" placeholder="Option A, Option B, Option C">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="settings-kv-label mb-1">Points</label>
+                      <input type="number" step="0.5" min="0" class="form-control" name="points" value="{{ field.points|default:1 }}">
+                    </div>
+                    <div class="col-md-8">
+                      <label class="settings-kv-label mb-1">Correct Answer</label>
+                      <input type="text" class="form-control" name="correct_answer" value="{{ field.correct_answer }}" placeholder="Option A (or Option A, Option C)">
+                    </div>
+                    <div class="col-12 d-flex align-items-center justify-content-between">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" name="required" id="wiz-req-{{ field.id }}" {% if field.required %}checked{% endif %}>
+                        <label class="form-check-label small fw-bold text-muted" for="wiz-req-{{ field.id }}">Required</label>
+                      </div>
+                      <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">Save</button>
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" onclick="openEditField('{{ field.id }}')">Cancel</button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+              {% empty %}
+                <div class="text-center text-muted py-5">No questions yet.</div>
+              {% endfor %}
+            </div>
+
+            <div class="wizard-actions">
+              <a class="btn btn-outline-secondary px-4" href="{% url 'app_settings:assessment_wizard' selected_form.id %}?step=1">Back</a>
+              <a class="btn btn-primary px-4" href="{% url 'app_settings:assessment_wizard' selected_form.id %}?step=3">Next</a>
+            </div>
+          {% endif %}
+        {% endif %}
+
+        {% if step == 3 %}
+          {% if not selected_form %}
+            <div class="text-muted">Please complete Basic Details first.</div>
+          {% else %}
+            <form method="post" class="row g-4">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="save_additional">
+
+              <div class="col-12">
+                <label class="form-label fw-bold">Instructions (shown to candidate)</label>
+                <textarea class="form-control" rows="4" name="instructions" placeholder="e.g. Please answer all questions. Do not refresh the page.">{{ selected_form.instructions|default:'' }}</textarea>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" name="shuffle_questions" id="shuffleQuestions" {% if selected_form.shuffle_questions %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="shuffleQuestions">Shuffle questions</label>
+                </div>
+                <div class="text-muted small">Randomize order (when enabled).</div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" name="show_score_to_candidate" id="showScore" {% if selected_form.show_score_to_candidate %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="showScore">Show score to candidate</label>
+                </div>
+                <div class="text-muted small">If enabled, candidate sees score after submit.</div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" name="allow_multiple_attempts" id="multiAttempt" {% if selected_form.allow_multiple_attempts %}checked{% endif %}>
+                  <label class="form-check-label fw-bold" for="multiAttempt">Allow multiple attempts</label>
+                </div>
+                <div class="text-muted small">If disabled, only one submission per candidate.</div>
+              </div>
+
+              <div class="col-12">
+                <div class="wizard-actions">
+                  <a class="btn btn-outline-secondary px-4" href="{% url 'app_settings:assessment_wizard' selected_form.id %}?step=2">Back</a>
+                  <button type="submit" class="btn btn-primary px-4">Next</button>
+                </div>
+              </div>
+            </form>
+          {% endif %}
+        {% endif %}
+
+        {% if step == 4 %}
+          {% if not selected_form %}
+            <div class="text-muted">Please complete Basic Details first.</div>
+          {% else %}
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div>
+                <div class="fw-800">Review</div>
+                <div class="text-muted small">Confirm details and publish assessment.</div>
+              </div>
+            </div>
+
+            <hr class="my-4"/>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="p-3 rounded-3" style="background: var(--surface2); border: 1px solid var(--border);">
+                  <div class="text-muted small">Title</div>
+                  <div class="fw-800">{{ selected_form.name }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded-3" style="background: var(--surface2); border: 1px solid var(--border);">
+                  <div class="text-muted small">Questions</div>
+                  <div class="fw-800">{{ selected_form_fields|length }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded-3" style="background: var(--surface2); border: 1px solid var(--border);">
+                  <div class="text-muted small">Type</div>
+                  <div class="fw-800">{{ selected_form.get_form_type_display }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded-3" style="background: var(--surface2); border: 1px solid var(--border);">
+                  <div class="text-muted small">Difficulty</div>
+                  <div class="fw-800">{{ selected_form.difficulty_level|default:"-" }}</div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="p-3 rounded-3" style="background: var(--surface2); border: 1px solid var(--border);">
+                  <div class="text-muted small">Time Limit</div>
+                  <div class="fw-800">{% if selected_form.time_limit_minutes %}{{ selected_form.time_limit_minutes }} min{% else %}-{% endif %}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wizard-actions">
+              <a class="btn btn-outline-secondary px-4" href="{% url 'app_settings:assessment_wizard' selected_form.id %}?step=3">Back</a>
+              {% if selected_form.is_published %}
+                <span class="badge bg-success px-3 py-2 align-self-center">Published</span>
+              {% else %}
+                <form method="post" class="m-0">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="publish">
+                  <button type="submit" class="btn btn-primary px-4 py-2">Publish</button>
+                </form>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .wizard-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .wizard-step { display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface); }
+  .wizard-step.active { border-color: var(--accent); background: var(--accentbg); }
+  .wizard-step.done { border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.06); }
+  .wizard-dot { width: 34px; height: 34px; border-radius: 12px; display:flex; align-items:center; justify-content:center; font-weight: 800; background: var(--surface2); border: 1px solid var(--border); color: var(--text2); }
+  .wizard-step.active .wizard-dot { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .wizard-step.done .wizard-dot { background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.35); color: #16a34a; }
+  .wizard-title { font-weight: 800; }
+  .wizard-sub { font-size: 12px; color: var(--text3); }
+  .wizard-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+  .form-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+  .question-list { display: flex; flex-direction: column; gap: 12px; }
+  .question-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: var(--shadow-sm); }
+  .question-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; }
+  .question-label { font-weight: 800; }
+  .question-actions { display:flex; align-items:center; gap: 8px; }
+  .icon-pill { border: 1px solid var(--border); background: var(--surface2); width: 36px; height: 36px; border-radius: 12px; display:inline-flex; align-items:center; justify-content:center; color: var(--text2); transition: all .2s ease; }
+  .icon-pill:hover { border-color: var(--accent); color: var(--accent); background: var(--accentbg); }
+  .icon-pill.danger:hover { border-color: var(--red); color: var(--red); background: rgba(239,68,68,.08); }
+  @media (max-width: 992px) { .wizard-steps { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .wizard-steps { grid-template-columns: 1fr; } }
+</style>
+
+{% endblock %}
+
+{% block page_js %}
+<script>
+  (function () {
+    const btn = document.getElementById('toggleAddQuestionBtn');
+    const wrap = document.getElementById('addQuestionWrap');
+    if (btn && wrap) btn.addEventListener('click', () => wrap.classList.toggle('d-none'));
+
+    const typeEl = document.getElementById('wizardFieldType');
+    const optionsWrap = document.getElementById('wizardOptionsWrap');
+    if (typeEl && optionsWrap) {
+      const toggle = () => {
+        const v = (typeEl.value || '').toLowerCase();
+        optionsWrap.classList.toggle('d-none', !['select', 'radio', 'checkbox'].includes(v));
+      };
+      typeEl.addEventListener('change', toggle);
+      toggle();
+    }
+  })();
+
+  function openEditField(fieldId) {
+    const el = document.getElementById('editFieldWrap-' + fieldId);
+    if (el) el.classList.toggle('d-none');
+  }
+</script>
+{% endblock %}

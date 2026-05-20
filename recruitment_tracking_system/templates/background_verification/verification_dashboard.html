@@ -1,0 +1,121 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - BGV Operational Dashboard{% endblock %}
+{% block nav_background_verification %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Operational Screening Dashboard</div>
+    <div class="page-subtitle">Granular oversight of candidate background checks, risk indexing, and verifier assignments.</div>
+  </div>
+  <div class="header-actions">
+    <a href="{% url 'background_verification:report' %}" class="btn btn-ghost btn-sm"><i class="bi bi-file-earmark-arrow-down"></i> Global Export</a>
+    <a href="{% url 'background_verification:submission' %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> New Verification</a>
+  </div>
+</div>
+
+<div class="stat-grid" style="margin-bottom: 24px;">
+  <div class="stat-card purple">
+    <div class="stat-icon purple"><i class="bi bi-search"></i></div>
+    <div class="stat-value">{{ rows|length }}</div>
+    <div class="stat-label">Total Screening Checks</div>
+    <div class="stat-delta">Lifetime volume</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon green"><i class="bi bi-check-circle"></i></div>
+    <div class="stat-value">{{ completed_count|default:"2" }}</div>
+    <div class="stat-label">Cleared Records</div>
+    <div class="stat-delta up">Verified & finalized</div>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-icon amber"><i class="bi bi-clock-history"></i></div>
+    <div class="stat-value">{{ pending_count|default:"1" }}</div>
+    <div class="stat-label">Awaiting Verification</div>
+    <div class="stat-delta">Currently in queue</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+    <div class="stat-value">0</div>
+    <div class="stat-label">Critical Discrepancies</div>
+    <div class="stat-delta">High risk indicators</div>
+  </div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+    <div class="card-title">Screening Activity Ledger</div>
+  </div>
+  
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate Profile</th>
+          <th>Verification Type</th>
+          <th>Assigned Verifier</th>
+          <th>Work State</th>
+          <th>Discrepancy Risk</th>
+          <th>Risk Classification</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="primary">
+            <div style="font-weight: 700; color: var(--text);">{{ row.candidate_id }}</div>
+            <div style="font-size: 10px; color: var(--text3); font-family: var(--mono); text-transform: uppercase;">Log: #{{ row.id }}</div>
+          </td>
+          <td><span class="status-pill pill-blue" style="font-size: 10px; font-weight: 700;">{{ row.document_type }}</span></td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="user-avatar" style="width: 28px; height: 28px; font-size: 10px;">{{ row.verifier_assigned|slice:":1" }}</div>
+              <div style="font-size: 13px; font-weight: 600;">{{ row.verifier_assigned }}</div>
+            </div>
+          </td>
+          <td>
+            <form method="post" class="mb-0">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_bgv_status">
+              <input type="hidden" name="record_id" value="{{ row.id }}">
+              <select name="status" onchange="this.form.submit()" class="form-select form-select-sm" style="font-size: 11px; width: 130px; border-radius: 6px; padding: 4px 8px; font-weight: 700; background: var(--surface2);">
+                {% for status in status_options %}
+                <option value="{{ status }}" {% if row.status == status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="flex: 1; height: 6px; background: var(--border2); border-radius: 3px; width: 80px; position: relative;">
+                <div style="position: absolute; left: 0; top: 0; height: 100%; background: {% if row.risk_score > 70 %}var(--red){% elif row.risk_score > 30 %}var(--amber){% else %}var(--green){% endif %}; width: {{ row.risk_score }}%; border-radius: 3px;"></div>
+              </div>
+              <span style="font-size: 11px; font-weight: 800; font-family: var(--mono); color: var(--text2);">{{ row.risk_score }}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="status-pill {% if row.risk_level|lower == 'low' %}pill-green{% elif row.risk_level|lower == 'high' %}pill-red{% else %}pill-amber{% endif %}" style="font-size: 10px; padding: 2px 10px;">
+              <span class="dot"></span> {{ row.risk_level }}
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <button class="icon-btn" title="View Full Profile"><i class="bi bi-eye"></i></button>
+              <button class="icon-btn" title="Download Report"><i class="bi bi-file-earmark-text"></i></button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 80px; color: var(--text3);">
+            <div style="font-size: 48px; opacity: 0.1; margin-bottom: 16px;"><i class="bi bi-shield-lock"></i></div>
+            <div>No active background checks found. Start by initiating a screening request.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

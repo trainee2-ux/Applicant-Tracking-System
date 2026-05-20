@@ -1,0 +1,145 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Interview Evaluation Panel{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/interview_evaluation.css?v=3">
+<link rel="stylesheet" href="/static/css/interview_recording.css?v=2">
+{% endblock %}
+{% block nav_interview_evaluation %}active{% endblock %}
+{% block header %}Interview Evaluation &gt; Interview Panel{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="interview-record-actions mb-3">
+  <a id="openPanelFormBtn" href="/interview-evaluation/panel/?create=1" class="btn btn-primary btn-sm rounded-pill px-3">Create</a>
+</div>
+
+<div id="panelFormWrap" class="interview-record-card mb-3 {% if not show_form %}d-none{% endif %}">
+  <div class="interview-record-card-title">Interview Panel Form</div>
+  <form method="post" class="interview-record-form-grid">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="{% if form_mode == 'edit' %}update_panel{% else %}create_panel{% endif %}">
+    <input type="hidden" name="record_id" value="{{ form_data.record_id|default:'' }}">
+    <div>
+      <label class="form-label">Candidate</label>
+      <select class="form-select" name="candidate" required>
+        <option value="">Select Candidate</option>
+        {% for c in candidate_options %}
+        <option value="{{ c.candidate_id }}" {% if form_data.candidate == c.candidate_id %}selected{% endif %}>
+          {{ c.candidate_id }} - {{ c.full_name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label">Interviewers</label>
+      {% with current_interviewer=form_data.interviewers|default:"" %}
+      <select class="form-select" name="interviewers" required>
+        <option value="">Select Interviewer</option>
+        {% if current_interviewer and current_interviewer not in interviewer_name_list %}
+        <option value="{{ current_interviewer }}" selected>{{ current_interviewer }}</option>
+        {% endif %}
+        {% for option in interviewer_options %}
+        <option value="{{ option.full_name }}" {% if current_interviewer == option.full_name %}selected{% endif %}>
+          {{ option.full_name }}
+        </option>
+        {% endfor %}
+      </select>
+      {% endwith %}
+    </div>
+    <div>
+      <label class="form-label">Date</label>
+      <input class="form-control" type="date" name="date" value="{{ form_data.date|default:'' }}" required>
+    </div>
+    <div>
+      <label class="form-label">Time</label>
+      <input class="form-control" type="time" name="time" value="{{ form_data.time|default:'' }}" required>
+    </div>
+    <div>
+      <label class="form-label">Mode</label>
+      <select
+        class="form-select"
+        name="mode"
+        required
+        data-open-on-change="true"
+        data-inperson-url="/applicant-tracking/interview-scheduling/in-person/?create=1"
+        data-video-url="/applicant-tracking/interview-scheduling/video/?create=1"
+      >
+        <option value="">Select</option>
+        <option {% if form_data.mode == 'In Person' %}selected{% endif %}>In Person</option>
+        <option {% if form_data.mode == 'Video' %}selected{% endif %}>Video</option>
+      </select>
+    </div>
+    <div>
+      <label class="form-label">Video Link</label>
+      <input class="form-control" type="url" name="video_link" value="{{ form_data.video_link|default:'' }}" placeholder="https://">
+    </div>
+    <div class="interview-record-actions-row">
+      <button class="btn btn-primary btn-sm rounded-pill px-3" type="submit">{% if form_mode == 'edit' %}Update{% else %}Save{% endif %}</button>
+      <a id="cancelPanelFormBtn" href="/interview-evaluation/panel/" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<div class="interview-record-card mb-3">
+  <div class="interview-record-card-title">Interview Panel Schedule Dashboard</div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0 interview-record-table">
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Interviewers</th>
+          <th>Date/Time</th>
+          <th>Mode</th>
+          <th>Video Link</th>
+          <th>Created At</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in panel_records %}
+        <tr>
+          <td>{{ row.candidate }}</td>
+          <td>{{ row.interviewers }}</td>
+          <td>{{ row.date }} {{ row.time }}</td>
+          <td>{{ row.mode }}</td>
+          <td>{% if row.video_link %}<a href="{{ row.video_link }}" target="_blank" rel="noopener">Open Link</a>{% else %}-{% endif %}</td>
+          <td>{{ row.created_at }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              {% if row.is_editable %}
+                <a href="/interview-evaluation/panel/?edit_id={{ row.id }}" class="btn btn-outline-primary btn-sm py-0 px-2">Modify</a>
+                <a href="{% url 'interview_evaluation:panel_delete_confirm' row.id %}" class="btn btn-outline-danger btn-sm py-0 px-2">Delete</a>
+              {% elif row.source == "video" %}
+                <a href="{% url 'applicant_tracking:video_interview' %}?edit_id={{ row.source_id }}" class="btn btn-outline-primary btn-sm py-0 px-2">Modify</a>
+                {% if request.session.login_user_role|lower == "admin" or request.session.login_user_role|lower == "super admin" or request.session.login_user_role|lower == "administrator" %}
+                <a href="{% url 'applicant_tracking:video_interview_delete_confirm' row.source_id %}" class="btn btn-outline-danger btn-sm py-0 px-2">Delete</a>
+                {% endif %}
+              {% elif row.source == "inperson" %}
+                <a href="{% url 'applicant_tracking:in_person_interview' %}?edit_id={{ row.source_id }}" class="btn btn-outline-primary btn-sm py-0 px-2">Modify</a>
+                {% if request.session.login_user_role|lower == "admin" or request.session.login_user_role|lower == "super admin" or request.session.login_user_role|lower == "administrator" %}
+                <a href="{% url 'applicant_tracking:in_person_interview_delete_confirm' row.source_id %}" class="btn btn-outline-danger btn-sm py-0 px-2">Delete</a>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">Managed in Applicant Tracking</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-3">No panel schedules available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/interview_recording_forms.js?v=2"></script>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Hiring Command Center{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .hero-card {
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    border-radius: 24px; padding: 40px; margin-bottom: 32px; color: #fff;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 10px 30px rgba(108, 99, 255, 0.3);
+  }
+  .hero-title { font-size: 32px; font-weight: 900; letter-spacing: -1px; }
+  .hero-sub { font-size: 16px; opacity: 0.9; margin-top: 8px; font-weight: 500; }
+  
+  .trend-bar { 
+    flex: 1; background: var(--accentbg); border-radius: 6px 6px 0 0; 
+    transition: all 0.3s ease; position: relative;
+  }
+  .trend-bar:hover { background: var(--accent); transform: scaleY(1.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-card">
+  <div>
+    <div class="hero-title">Good Evening, {{ request.session.login_user_name|default:"Administrator" }} 👋</div>
+    <div class="hero-sub">The hiring ecosystem is performing at optimal throughput today.</div>
+  </div>
+  <div style="display: flex; gap: 12px;">
+    <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); padding: 12px 20px; border-radius: 16px; text-align: center;">
+      <div style="font-size: 24px; font-weight: 900;">{{ candidate_metrics.total|default:"0" }}</div>
+      <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Active Talent</div>
+    </div>
+    <div style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); padding: 12px 20px; border-radius: 16px; text-align: center;">
+      <div style="font-size: 24px; font-weight: 900;">{{ job_metrics.total|default:"0" }}</div>
+      <div style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Open Nodes</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stat Grid -->
+<div class="stat-grid" style="margin-bottom: 32px; gap: 24px;">
+  <div class="stat-card" style="border-left: 4px solid var(--accent);">
+    <div class="stat-icon purple" style="background: var(--accentbg); color: var(--accent2);"><i class="bi bi-people-fill"></i></div>
+    <div class="stat-value">{{ candidate_metrics.total|default:"0" }}</div>
+    <div class="stat-label">Total Candidate Payload</div>
+    <div class="stat-delta up">▲ 12% vs Phase 0</div>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid var(--green);">
+    <div class="stat-icon green" style="background: var(--greenbg); color: var(--green);"><i class="bi bi-briefcase-fill"></i></div>
+    <div class="stat-value">{{ job_metrics.total|default:"0" }}</div>
+    <div class="stat-label">Active Requisitions</div>
+    <div class="stat-delta up">▲ {{ job_metrics.pending|default:"0" }} Synchronizing</div>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid var(--amber);">
+    <div class="stat-icon amber" style="background: var(--amberbg); color: var(--amber);"><i class="bi bi-calendar-check-fill"></i></div>
+    <div class="stat-value">{{ candidate_metrics.scheduled|default:"0" }}</div>
+    <div class="stat-label">Interviews Scheduled</div>
+    <div class="stat-delta up">▲ 3 Priority Rounds</div>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid var(--blue);">
+    <div class="stat-icon blue" style="background: var(--bluebg); color: var(--blue);"><i class="bi bi-shield-lock-fill"></i></div>
+    <div class="stat-value">{{ candidate_metrics.bgv_completed|default:"0" }}</div>
+    <div class="stat-label">Verified Personnel</div>
+    <div class="stat-delta up">▲ 5% Security Level</div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; margin-bottom: 32px;">
+  <!-- Pipeline summary -->
+  <div class="card" style="border-radius: 28px; padding: 32px;">
+    <div class="card-header" style="margin-bottom: 32px;">
+      <div class="card-title" style="font-size: 20px; font-weight: 900;">Pipeline Throughput</div>
+      <a href="/applicant-tracking/application-pipeline/" class="btn btn-ghost btn-sm" style="border-radius: 12px;">Board Access <i class="bi bi-arrow-right"></i></a>
+    </div>
+    
+    <div style="display: flex; gap: 20px; margin-bottom: 40px;">
+      <div style="flex: 1; background: var(--surface2); border-radius: 20px; padding: 24px; text-align: center; border: 1px solid var(--border);">
+        <div style="font-size: 32px; font-weight: 900; color: var(--text);">{{ candidate_metrics.total|default:"0" }}</div>
+        <div style="font-size: 11px; color: var(--text3); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px;">Discovery</div>
+      </div>
+      <div style="flex: 1; background: var(--surface2); border-radius: 20px; padding: 24px; text-align: center; border: 1px solid var(--border);">
+        <div style="font-size: 32px; font-weight: 900; color: var(--blue);">{{ candidate_metrics.scheduled|default:"0" }}</div>
+        <div style="font-size: 11px; color: var(--text3); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px;">Assessment</div>
+      </div>
+      <div style="flex: 1; background: var(--surface2); border-radius: 20px; padding: 24px; text-align: center; border: 1px solid var(--border);">
+        <div style="font-size: 32px; font-weight: 900; color: var(--green);">{{ candidate_metrics.bgv_completed|default:"0" }}</div>
+        <div style="font-size: 11px; color: var(--text3); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px;">Finalized</div>
+      </div>
+    </div>
+    
+    <div class="card-title" style="font-size: 14px; margin-bottom: 16px; font-weight: 800;">Talent Acquisition Velocity</div>
+    <div style="height: 140px; display: flex; align-items: flex-end; gap: 10px; padding: 0 10px;">
+      <div class="trend-bar" style="height: 40%;"></div>
+      <div class="trend-bar" style="height: 60%;"></div>
+      <div class="trend-bar" style="height: 45%;"></div>
+      <div class="trend-bar" style="height: 70%;"></div>
+      <div class="trend-bar" style="height: 90%;"></div>
+      <div class="trend-bar" style="height: 65%;"></div>
+      <div class="trend-bar" style="height: 80%;"></div>
+      <div class="trend-bar" style="height: 55%;"></div>
+      <div class="trend-bar" style="height: 75%;"></div>
+      <div class="trend-bar" style="height: 100%; background: var(--accent);"></div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="card" style="border-radius: 28px; padding: 32px;">
+    <div class="card-header" style="margin-bottom: 32px;">
+      <div class="card-title" style="font-size: 20px; font-weight: 900;">Intelligence Feed</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+      {% for record in panel_records|slice:":5" %}
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="width: 44px; height: 44px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--accent2); font-size: 18px; flex-shrink: 0;"><i class="bi bi-cpu-fill"></i></div>
+        <div>
+          <div style="font-size: 14px; color: var(--text2); line-height: 1.4;">
+            <strong>{{ record.candidate }}</strong> assessment phase synchronized with hiring panel
+          </div>
+          <div style="font-size: 11px; color: var(--text3); font-weight: 700; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;">
+            <i class="bi bi-clock-history"></i> {{ record.date }} · {{ record.time }}
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div style="text-align: center; padding: 40px 0; color: var(--text3);">
+        <i class="bi bi-inbox" style="font-size: 32px; opacity: 0.2;"></i>
+        <div style="font-size: 13px; font-weight: 700; margin-top: 12px;">No incoming telemetry</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Recent Candidates table -->
+<div class="card" style="padding: 0; overflow: hidden; border-radius: 28px;">
+  <div class="card-header" style="padding: 24px 32px; border-bottom: 1px solid var(--border);">
+    <div class="card-title" style="font-size: 18px; font-weight: 900;">Talent Ingestion Log</div>
+    <a href="/candidate-management/" class="btn btn-ghost btn-sm" style="border-radius: 10px;">Archive Access <i class="bi bi-database"></i></a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="padding-left: 32px;">Candidate Node</th>
+          <th>Applied Sector</th>
+          <th>Operational Status</th>
+          <th>Round Schedule</th>
+          <th>Security Level</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in candidate_rows|slice:":6" %}
+        <tr>
+          <td class="primary" style="padding-left: 32px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div class="user-avatar" style="width: 38px; height: 38px; font-size: 12px; font-weight: 800; border-radius: 12px;">{{ row.candidate_id|slice:"-2:" }}</div>
+              <div>
+                <div style="font-weight: 800; font-size: 14.5px;">{{ row.candidate_id }}</div>
+                <div style="font-size: 10px; color: var(--text3); text-transform: uppercase; font-weight: 700;">Talent Node</div>
+              </div>
+            </div>
+          </td>
+          <td style="font-weight: 700; color: var(--text2);">{{ row.job_applied }}</td>
+          <td>
+            <span class="status-pill {% if row.status|lower == 'applied' %}pill-purple{% elif row.status|lower == 'shortlisted' %}pill-blue{% elif row.status|lower == 'rejected' %}pill-red{% else %}pill-amber{% endif %}" style="padding: 4px 12px; border-radius: 12px;">
+              <span class="dot"></span> {{ row.status }}
+            </span>
+          </td>
+          <td>
+            {% if row.interview_schedule %}
+            <span style="color: var(--green); font-size: 12px; font-weight: 700;"><i class="bi bi-calendar-check-fill"></i> {{ row.interview_schedule }}</span>
+            {% else %}
+            <span style="color: var(--text3); font-size: 12px; font-weight: 600; opacity: 0.6;">Standby Mode</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if row.bgv_status %}
+            <span class="status-pill {% if row.bgv_status|lower == 'completed' %}pill-green{% else %}pill-amber{% endif %}" style="padding: 4px 10px; border-radius: 10px; font-weight: 800; font-size: 10px;">
+              {{ row.bgv_status|upper }}
+            </span>
+            {% else %}
+            <span style="color: var(--text3); font-weight: 600;">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 60px; color: var(--text3);">Talent directory currently empty.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

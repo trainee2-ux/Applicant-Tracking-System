@@ -1,0 +1,112 @@
+{% extends "super_admin/base.html" %}
+{% block title %}Super Admin - Companies{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/super_admin.css?v=2">{% endblock %}
+{% block header %}Super Admin &gt; Companies{% endblock %}
+{% block nav_super_admin_companies %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2 superadmin-page">
+  <div class="sa-head">
+    <div>
+      <p class="sa-subtitle">Create companies and manage their lifecycle.</p>
+      <h2 class="sa-title">Companies</h2>
+    </div>
+    <div class="sa-actions">
+      <a class="btn btn-sm btn-primary" href="/super-admin/subscriptions/">
+        <i class="bi bi-stars me-1"></i> Assign Subscription
+      </a>
+    </div>
+  </div>
+
+  <div class="sa-card p-3 mb-3">
+    <div class="sa-card-head">
+      <h3 class="sa-card-title">Create Company</h3>
+    </div>
+    <form method="post" class="row g-2 align-items-end">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <div class="col-md-5">
+        <label class="form-label">Company Name</label>
+        <input class="form-control" name="company_name" placeholder="Acme Inc">
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-plus-lg me-1"></i> Create
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="sa-card p-0">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Agreement</th>
+            <th>Status</th>
+            <th>Service From</th>
+            <th>Service To</th>
+            <th style="width: 260px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in companies %}
+          <tr>
+            <td>{{ c.company_name }}</td>
+            <td>
+              {% if c.agreement_status == "completed" %}
+                <span class="badge text-bg-success">completed</span>
+              {% else %}
+                <span class="badge text-bg-warning">pending</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if c.status == "active" %}
+                <span class="badge text-bg-success">active</span>
+              {% elif c.status == "suspended" %}
+                <span class="badge text-bg-danger">suspended</span>
+              {% elif c.status == "expired" %}
+                <span class="badge text-bg-secondary">expired</span>
+              {% else %}
+                <span class="badge text-bg-light border">inactive</span>
+              {% endif %}
+            </td>
+            <td>{{ c.service_from|default:"-" }}</td>
+            <td>{{ c.service_to|default:"-" }}</td>
+            <td>
+              <div class="d-flex gap-2 flex-wrap align-items-center">
+              <form method="post" class="d-inline-flex align-items-center gap-2">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_status">
+                <input type="hidden" name="company_id" value="{{ c.id }}">
+                <select name="status" class="form-select form-select-sm" style="width: 140px;">
+                  <option value="active" {% if c.status == "active" %}selected{% endif %}>active</option>
+                  <option value="inactive" {% if c.status == "inactive" %}selected{% endif %}>inactive</option>
+                  <option value="suspended" {% if c.status == "suspended" %}selected{% endif %}>suspended</option>
+                  <option value="expired" {% if c.status == "expired" %}selected{% endif %}>expired</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary" type="submit">
+                  <i class="bi bi-save me-1"></i> Save
+                </button>
+              </form>
+              <form method="post" class="d-inline-flex">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="set_agreement_pending">
+                <input type="hidden" name="company_id" value="{{ c.id }}">
+                <button class="btn btn-sm btn-outline-warning" type="submit">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i> Reset Agreement
+                </button>
+              </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-center text-muted py-4">No companies yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

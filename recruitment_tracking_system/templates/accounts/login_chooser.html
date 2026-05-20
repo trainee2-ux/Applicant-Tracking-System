@@ -1,0 +1,153 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ultimatix ATS - Authentication</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v=18">
+  <style>
+    :root {
+      --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --border: #334155;
+      --text: #f8fafc; --text2: #cbd5e1; --text3: #94a3b8;
+      --accent: #6366f1; --accentbg: rgba(99, 102, 241, 0.15); --accent2: #818cf8;
+      --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+    body {
+      background: var(--bg);
+      background-image: 
+        radial-gradient(circle at 15% 50%, rgba(99, 102, 241, 0.08), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.08), transparent 25%);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+    .auth-container {
+      width: 100%;
+      max-width: 900px;
+      padding: 2rem;
+    }
+    
+    .logo-block { text-align: center; margin-bottom: 3rem; }
+    .logo-icon { 
+      width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, var(--accent), #a855f7);
+      display: inline-flex; align-items: center; justify-content: center; font-size: 28px; color: #fff;
+      margin-bottom: 1rem; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+    }
+    .logo-text { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; margin: 0; }
+    
+    .chooser-pill {
+      display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px;
+      border-radius: 20px; background: var(--accentbg); color: var(--accent2);
+      font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 1rem;
+    }
+    
+    .page-title { font-size: 32px; font-weight: 900; margin-bottom: 8px; letter-spacing: -1px; }
+    .page-sub { font-size: 15px; color: var(--text3); font-weight: 500; }
+    
+    .grid-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-top: 3rem; }
+    
+    .auth-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 28px;
+      padding: 40px 32px; text-decoration: none; display: flex; flex-direction: column;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;
+    }
+    .auth-card:hover { border-color: var(--accent); transform: translateY(-8px); box-shadow: var(--shadow-lg); }
+    .auth-card::before {
+      content: ''; position: absolute; top: 0; right: 0; width: 150px; height: 150px;
+      background: linear-gradient(135deg, var(--accent) 0%, transparent 70%);
+      opacity: 0.05; border-radius: 0 0 0 100%; transition: all 0.5s;
+    }
+    .auth-card:hover::before { opacity: 0.15; transform: scale(1.1); }
+    
+    .auth-icon {
+      width: 64px; height: 64px; border-radius: 20px; background: var(--surface2);
+      display: flex; align-items: center; justify-content: center; font-size: 28px; color: var(--text2);
+      margin-bottom: 24px; border: 1px solid var(--border); transition: all 0.3s;
+    }
+    .auth-card:hover .auth-icon { background: var(--accent); color: #fff; border-color: var(--accent); }
+    
+    .auth-card-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 12px; }
+    .auth-card-desc { font-size: 13px; color: var(--text3); font-weight: 500; line-height: 1.6; margin-bottom: 32px; flex: 1; }
+    
+    .btn-auth {
+      background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+      padding: 14px 24px; border-radius: 14px; font-weight: 700; font-size: 14px;
+      text-align: center; text-decoration: none; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    }
+    .btn-auth:hover { background: var(--text); color: var(--bg); }
+    .btn-auth-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-auth-primary:hover { background: var(--accent2); color: #fff; border-color: var(--accent2); box-shadow: 0 8px 20px var(--accentbg); }
+
+    @media (max-width: 768px) {
+      .grid-cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container">
+    <div class="logo-block">
+      <div class="logo-icon"><img src="{% static 'images/ultimatix_logo.jpg' %}" alt="U" onerror="this.src='https://ui-avatars.com/api/?name=Ultimatix&background=6366f1&color=fff'"></div>
+      <h1 class="logo-text">Ultimatix ATS</h1>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} py-2" style="background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 12px; text-align: center; font-weight: 600;">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="text-center">
+      <div class="chooser-pill"><i class="bi bi-shield-lock-fill"></i> Authentication Portal</div>
+      <h2 class="page-title">Welcome to the Grid</h2>
+      <div class="page-sub">Select your operational clearance level to initialize session.</div>
+    </div>
+
+    <div class="grid-cards">
+      <!-- Corporate User / Admin -->
+      <div class="auth-card">
+        <div class="auth-icon"><i class="bi bi-buildings-fill"></i></div>
+        <div class="auth-card-title">Corporate Access</div>
+        <div class="auth-card-desc">Authenticate to access enterprise talent pipelines, interview scheduling, and global candidate databases.</div>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <a class="btn-auth btn-auth-primary" href="/login/">Initialize Login <i class="bi bi-arrow-right"></i></a>
+          
+          {% if sso_enabled %}
+          <a class="btn-auth" href="{% url 'accounts:sso_login' %}">
+            <i class="bi bi-microsoft"></i> Login via {{ sso_provider_label }}
+          </a>
+          {% endif %}
+        </div>
+        
+        <div class="mt-4 text-center">
+          <a href="{{ CAREERS_URL }}" class="btn btn-link text-decoration-none" style="color: var(--text3); font-size: 13px; font-weight: 600;" target="_blank" rel="noopener noreferrer">Explore Public Opportunities</a>
+        </div>
+      </div>
+
+      <!-- Platform Super Admin -->
+      <div class="auth-card">
+        <div class="auth-icon"><i class="bi bi-cpu-fill"></i></div>
+        <div class="auth-card-title">System Administrator</div>
+        <div class="auth-card-desc">Master terminal access for managing global infrastructure, tenant configurations, and billing cycles.</div>
+        
+        <div style="margin-top: auto;">
+          <a class="btn-auth" href="/super-admin/login/">Root Access <i class="bi bi-terminal-fill"></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

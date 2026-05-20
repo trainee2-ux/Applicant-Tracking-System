@@ -1,0 +1,476 @@
+{% extends "layouts/app_shell.html" %}
+{% block title %}Ultimatix ATS - Candidate Notes & Activities{% endblock %}
+{% block nav_candidate_management %}active{% endblock %}
+{% block header %}Candidate Management › Notes & Activities{% endblock %}
+
+{% block page_css %}
+<style>
+/* ── Activity Action Bar ─────────────────────────── */
+.act-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:24px; }
+.act-btn {
+  display:inline-flex; align-items:center; gap:8px;
+  padding:10px 20px; border-radius:10px; font-size:13px; font-weight:600;
+  cursor:pointer; border:1px solid var(--border); background:var(--surface2);
+  color:var(--text2); transition:all .18s; font-family:inherit;
+}
+.act-btn:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,.3); }
+.act-btn.call  { border-color:rgba(34,211,165,.3); }
+.act-btn.call:hover  { background:var(--greenbg); color:var(--green); border-color:var(--green); }
+.act-btn.email { border-color:rgba(96,165,250,.3); }
+.act-btn.email:hover { background:var(--bluebg);  color:var(--blue);  border-color:var(--blue); }
+.act-btn.meeting { border-color:rgba(108,99,255,.3); }
+.act-btn.meeting:hover { background:var(--accentbg); color:var(--accent2); border-color:var(--accent); }
+.act-btn.todo { border-color:rgba(245,158,11,.3); }
+.act-btn.todo:hover { background:var(--amberbg); color:var(--amber); border-color:var(--amber); }
+.act-btn.document { border-color:rgba(245,101,101,.3); }
+.act-btn.document:hover { background:var(--redbg); color:var(--red); border-color:var(--red); }
+
+/* ── Modal Overlay ───────────────────────────────── */
+.act-modal-bg {
+  display:none; position:fixed; inset:0; z-index:999;
+  background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
+  align-items:center; justify-content:center;
+}
+.act-modal-bg.open { display:flex; }
+.act-modal {
+  background:var(--surface); border:1px solid var(--border2);
+  border-radius:16px; padding:28px; width:100%; max-width:480px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5); animation:slideUp .2s ease;
+}
+@keyframes slideUp { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+.act-modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.act-modal-title { font-size:16px; font-weight:800; color:var(--text); }
+.act-modal-close {
+  width:30px; height:30px; border-radius:50%; background:var(--surface2);
+  border:1px solid var(--border); color:var(--text2); cursor:pointer;
+  font-size:18px; display:flex; align-items:center; justify-content:center;
+}
+.act-modal-close:hover { background:var(--surface3); color:var(--text); }
+.act-modal-field { margin-bottom:16px; }
+.act-modal-field label { display:block; font-size:11px; font-weight:700; color:var(--text3); margin-bottom:6px; text-transform:uppercase; letter-spacing:.6px; }
+.act-modal-field input, .act-modal-field textarea, .act-modal-field select {
+  width:100%; background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:10px 14px; color:var(--text);
+  font-family:inherit; font-size:13px; outline:none;
+}
+.act-modal-field input:focus, .act-modal-field textarea:focus { border-color:var(--accent); }
+.act-modal-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.act-modal-footer { display:flex; justify-content:flex-end; gap:10px; margin-top:20px; }
+
+/* ── Timeline ────────────────────────────────────── */
+.act-timeline { display:flex; flex-direction:column; gap:10px; }
+.act-item {
+  display:grid; grid-template-columns:40px 1fr auto;
+  gap:14px; align-items:flex-start;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:14px 16px; transition:all .15s;
+}
+.act-item:hover { border-color:var(--border2); box-shadow:0 4px 16px rgba(0,0,0,.2); }
+.act-icon {
+  width:40px; height:40px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;
+}
+.act-icon.call    { background:var(--greenbg);  color:var(--green); }
+.act-icon.email   { background:var(--bluebg);   color:var(--blue); }
+.act-icon.meeting { background:var(--accentbg); color:var(--accent2); }
+.act-icon.todo    { background:var(--amberbg);  color:var(--amber); }
+.act-icon.document{ background:var(--redbg);    color:var(--red); }
+.act-body { min-width:0; }
+.act-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:3px; }
+.act-meta  { font-size:11px; color:var(--text3); display:flex; gap:10px; flex-wrap:wrap; }
+.act-desc  { font-size:12px; color:var(--text2); margin-top:4px; }
+.act-status {
+  font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap;
+}
+.act-status.Scheduled { background:var(--accentbg); color:var(--accent2); }
+.act-status.Done      { background:var(--greenbg);  color:var(--green); }
+.act-status.Cancelled { background:var(--redbg);    color:var(--red); }
+.act-actions { display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+
+/* ── Notes ───────────────────────────────────────── */
+.notes-table-wrap { max-height:320px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; }
+.notes-table { min-width:700px; }
+
+/* ── Section card ────────────────────────────────── */
+.act-section {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:14px; padding:22px; margin-bottom:22px;
+}
+.act-section-hdr { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+.act-section-icon { width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; }
+.act-section-title { font-size:15px; font-weight:700; color:var(--text); }
+.act-section-sub   { font-size:11px; color:var(--text3); margin-top:2px; }
+
+.empty-state { text-align:center; padding:30px 0; color:var(--text3); font-size:13px; }
+.empty-state i { font-size:32px; display:block; margin-bottom:10px; opacity:.4; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2 mb-3">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+{% if selected_candidate %}
+<!-- ── Candidate Header ──────────────────────────────────── -->
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+  <div>
+    <div style="font-size:20px; font-weight:800; color:var(--text);">{{ selected_candidate.full_name }}</div>
+    <div style="font-size:12px; color:var(--text3);">{{ selected_candidate.candidate_id }}{% if selected_candidate_title %} · {{ selected_candidate_title }}{% endif %}</div>
+  </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <a href="/candidate-management/profile/?candidate_id={{ selected_candidate.candidate_id }}" class="btn btn-secondary btn-sm"><i class="bi bi-person"></i> Profile</a>
+    <a href="/candidate-management/list/" class="btn btn-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to List</a>
+  </div>
+</div>
+
+<!-- ── Activity Action Bar ──────────────────────────────── -->
+<div class="act-bar">
+  <button class="act-btn call"     onclick="openModal('callModal')">    <i class="bi bi-telephone-fill"></i> Log Call</button>
+  <button class="act-btn email"    onclick="openModal('emailModal')">   <i class="bi bi-envelope-fill"></i>  Schedule Email</button>
+  <a class="act-btn meeting" href="/applicant-tracking/interview-scheduling/?candidate_id={{ selected_candidate.candidate_id }}">
+    <i class="bi bi-calendar-event-fill"></i> Schedule Meeting
+  </a>
+  <button class="act-btn todo"     onclick="openModal('todoModal')">    <i class="bi bi-check2-square"></i>  Add Todo</button>
+  <button class="act-btn document" onclick="openModal('docModal')">     <i class="bi bi-paperclip"></i>      Upload Document</button>
+</div>
+
+<!-- ── Activity Timeline ────────────────────────────────── -->
+<div class="act-section">
+  <div class="act-section-hdr">
+    <div class="act-section-icon" style="background:var(--accentbg); color:var(--accent2);"><i class="bi bi-lightning-charge-fill"></i></div>
+    <div>
+      <div class="act-section-title">Activity Timeline</div>
+      <div class="act-section-sub">Calls, emails, meetings, todos &amp; documents for this candidate.</div>
+    </div>
+  </div>
+
+  {% if activities %}
+  <div class="act-timeline">
+    {% for act in activities %}
+    <div class="act-item">
+      <div class="act-icon {{ act.activity_type }}">
+        {% if act.activity_type == 'call' %}<i class="bi bi-telephone-fill"></i>
+        {% elif act.activity_type == 'email' %}<i class="bi bi-envelope-fill"></i>
+        {% elif act.activity_type == 'meeting' %}<i class="bi bi-calendar-event-fill"></i>
+        {% elif act.activity_type == 'todo' %}<i class="bi bi-check2-square"></i>
+        {% else %}<i class="bi bi-paperclip"></i>{% endif %}
+      </div>
+      <div class="act-body">
+        <div class="act-title">{{ act.title }}</div>
+        <div class="act-meta">
+          {% if act.scheduled_at %}<span><i class="bi bi-clock"></i> {{ act.scheduled_at|date:"M d, Y h:i A" }}</span>{% endif %}
+          {% if act.created_by %}<span><i class="bi bi-person"></i> {{ act.created_by }}</span>{% endif %}
+          {% if act.document %}<span><i class="bi bi-paperclip"></i> <a href="{{ act.document.url }}" target="_blank" style="color:var(--accent2);">View File</a></span>{% endif %}
+        </div>
+        {% if act.description %}<div class="act-desc">{{ act.description }}</div>{% endif %}
+      </div>
+      <div class="act-actions">
+        <span class="act-status {{ act.status }}">{{ act.status }}</span>
+        {% if act.status != 'Done' %}
+        <button type="button" class="btn btn-sm" style="font-size:11px; padding:4px 10px; background:var(--bluebg); color:var(--blue); border:1px solid rgba(96,165,250,.3);"
+                data-id="{{ act.id }}"
+                data-title="{{ act.title }}"
+                data-date="{{ act.scheduled_at|date:'Y-m-d' }}"
+                data-time="{{ act.scheduled_at|date:'H:i' }}"
+                onclick="triggerReschedule(this)">
+          <i class="bi bi-calendar-event"></i> Reschedule
+        </button>
+        <form method="post" style="margin:0;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update_activity_status">
+          <input type="hidden" name="candidate_id" value="{{ selected_candidate.candidate_id }}">
+          <input type="hidden" name="activity_id" value="{{ act.id }}">
+          <input type="hidden" name="status" value="Done">
+          <button type="submit" class="btn btn-sm" style="font-size:11px; padding:4px 10px; background:var(--greenbg); color:var(--green); border:1px solid rgba(34,211,165,.3);">
+            <i class="bi bi-check-lg"></i> Done
+          </button>
+        </form>
+        {% endif %}
+        <form method="post" style="margin:0;" onsubmit="return confirm('Delete this activity?')">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete_activity">
+          <input type="hidden" name="candidate_id" value="{{ selected_candidate.candidate_id }}">
+          <input type="hidden" name="activity_id" value="{{ act.id }}">
+          <button type="submit" class="btn btn-sm" style="font-size:11px; padding:4px 10px; background:var(--redbg); color:var(--red); border:1px solid rgba(245,101,101,.3);">
+            <i class="bi bi-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state"><i class="bi bi-lightning-charge"></i>No activities yet. Use the buttons above to log a call, email, or schedule a meeting.</div>
+  {% endif %}
+</div>
+
+<!-- ── Text Notes ────────────────────────────────────────── -->
+<div class="act-section">
+  <div class="act-section-hdr">
+    <div class="act-section-icon" style="background:var(--amberbg); color:var(--amber);"><i class="bi bi-journal-text"></i></div>
+    <div>
+      <div class="act-section-title">Text Notes</div>
+      <div class="act-section-sub">Free-form recruiter and admin notes.</div>
+    </div>
+  </div>
+
+  {% if request.GET.complete_activity %}
+  <div class="alert alert-info py-2 mb-3" style="display: flex; align-items: center; justify-content: space-between; border-left: 4px solid var(--accent); background: var(--accentbg); color: var(--accent2); font-size: 13px; font-weight: 600;">
+    <span>
+      <i class="bi bi-info-circle-fill"></i> &nbsp;
+      You are completing a scheduled activity. Please write an outcome note below to mark it as <strong>Done</strong>.
+    </span>
+    <a href="?candidate_id={{ selected_candidate.candidate_id }}" class="btn-close" style="font-size: 16px; text-decoration: none; color: var(--text3); margin-left: 10px;">&times;</a>
+  </div>
+  {% endif %}
+
+  <form id="noteEditorForm" method="post" class="mb-3">
+    {% csrf_token %}
+    <input id="noteActionInput" type="hidden" name="action" value="add_note">
+    <input type="hidden" name="candidate_id" value="{{ selected_candidate.candidate_id }}">
+    <input id="noteIdInput" type="hidden" name="note_id" value="">
+    <input id="completeActivityInput" type="hidden" name="complete_activity_id" value="{{ request.GET.complete_activity|default:'' }}">
+    <label id="noteFormLabel" class="field-label">Add Note</label>
+    <textarea id="noteTextInput" name="note_text" rows="3" placeholder="Add a recruiter/admin note..." required style="margin-bottom:10px;"></textarea>
+    <div style="display:flex; gap:8px;">
+      <button id="noteSaveBtn" type="submit" class="btn btn-primary btn-sm">Save Note</button>
+      <button id="noteCancelBtn" type="button" class="btn btn-secondary btn-sm d-none">Cancel Edit</button>
+    </div>
+  </form>
+
+  <div class="notes-table-wrap">
+    <table class="table table-sm notes-table">
+      <thead>
+        <tr><th style="width:65%">Note</th><th>Created By</th><th>Date</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for item in notes %}
+        <tr>
+          <td>
+            {% if item.activity_title %}
+            <div style="margin-bottom: 6px;">
+              <span class="status-badge" style="background: var(--surface2); border: 1px solid var(--border); font-size: 10px; font-weight: 700; color: var(--text2); display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; text-transform: capitalize; border-radius: 6px; letter-spacing: 0.2px;">
+                {% if item.activity_type == 'call' %}<i class="bi bi-telephone-fill" style="color: var(--green);"></i> Call
+                {% elif item.activity_type == 'email' %}<i class="bi bi-envelope-fill" style="color: var(--blue);"></i> Email
+                {% elif item.activity_type == 'meeting' %}<i class="bi bi-calendar-event-fill" style="color: var(--accent);"></i> Meeting
+                {% elif item.activity_type == 'todo' %}<i class="bi bi-check2-square" style="color: var(--amber);"></i> Todo
+                {% else %}<i class="bi bi-file-earmark-arrow-down-fill" style="color: var(--red);"></i> Document{% endif %}
+                &bull; {{ item.activity_title }}
+              </span>
+            </div>
+            {% endif %}
+            <div style="font-size: 13.5px; color: var(--text); line-height: 1.45; white-space: pre-wrap;">{{ item.note }}</div>
+          </td>
+          <td>{{ item.created_by|default:"Recruiter/Admin" }}</td>
+          <td style="white-space:nowrap; font-size:11px;">{{ item.created_at|date:"M d, Y H:i" }}</td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn btn-sm note-edit-btn" style="font-size:11px; padding:3px 10px;"
+                data-note-id="{{ item.id }}" data-note-text="{{ item.note|escapejs }}">Modify</button>
+              <form method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_note">
+                <input type="hidden" name="candidate_id" value="{{ selected_candidate.candidate_id }}">
+                <input type="hidden" name="note_id" value="{{ item.id }}">
+                <button type="submit" class="btn btn-sm" style="font-size:11px; padding:3px 10px; background:var(--redbg); color:var(--red); border:1px solid rgba(245,101,101,.3);" onclick="return confirm('Delete this note?')">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="text-center text-muted py-3">No notes added yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="act-section"><div class="empty-state"><i class="bi bi-people"></i>No candidate selected. <a href="/candidate-management/list/">Browse candidates</a></div></div>
+{% endif %}
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- Call Modal -->
+<div class="act-modal-bg" id="callModal">
+  <div class="act-modal">
+    <div class="act-modal-header">
+      <div class="act-modal-title" style="color:var(--green);"><i class="bi bi-telephone-fill"></i> &nbsp;Log / Schedule Call</div>
+      <button class="act-modal-close" onclick="closeModal('callModal')">×</button>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_activity">
+      <input type="hidden" name="candidate_id" value="{{ selected_candidate.candidate_id }}">
+      <input type="hidden" name="activity_type" value="call">
+      <div class="act-modal-field">
+        <label>Title / Subject</label>
+        <input type="text" name="title" placeholder="e.g. Initial screening call">
+      </div>
+      <div class="act-modal-row">
+        <div class="act-modal-field">
+          <label>Date</label>
+          <input type="date" name="scheduled_date" id="callDate">
+        </div>
+        <div class="act-modal-field">
+          <label>Time</label>
+          <input type="time" name="scheduled_time" value="10:00">
+        </div>
+      </div>
+      <div class="act-modal-field">
+        <label>Notes</label>
+        <textarea name="description" rows="3" placeholder="Call agenda or outcome..."></textarea>
+      </div>
+      <div class="act-modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('callModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-telephone-fill"></i> Schedule Call</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Email Modal -->
+<div class="act-modal-bg" id="emailModal">
+  <div class="act-modal">
+    <div class="act-modal-header">
+      <div class="act-modal-title" style="color:var(--blue);"><i class="bi bi-envelope-fill"></i> &nbsp;Schedule Email</div>
+      <button class="act-modal-close" onclick="closeModal('emailModal')">×</button>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_activity">
+      <input type="hidden" name="candidate_id" value="{{ selected_candidate.candidate_id }}">
+      <input type="hidden" name="activity_type" value="email">
+      <div class="act-modal-field">
+        <label>Subject</label>
+        <input type="text" name="title" placeholder="e.g. Follow-up on application">
+      </div>
+      <div class="act-modal-row">
+        <div class="act-modal-field">
+          <label>Send Date</label>
+          <input type="date" name="scheduled_date" id="emailDate">
+        </div>
+        <div class="act-modal-field">
+          <label>Time</label>
+          <input type="time" name="scheduled_time" value="09:00">
+        </div>
+      </div>
+      <div class="act-modal-field">
+        <label>Body / Notes</label>
+        <textarea name="description" rows="3" placeholder="Email content or key points..."></textarea>
+      </div>
+      <div class="act-modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('emailModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-envelope-fill"></i> Schedule Email</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Todo Modal -->
+<div class="act-modal-bg" id="todoModal">
+  <div class="act-modal">
+    <div class="act-modal-header">
+      <div class="act-modal-title" style="color:var(--amber);"><i class="bi bi-check2-square"></i> &nbsp;Add Todo</div>
+      <button class="act-modal-close" onclick="closeModal('todoModal')">×</button>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_activity">
+      <input type="hidden" name="candidate_id" value="{{ selected_candidate.candidate_id }}">
+      <input type="hidden" name="activity_type" value="todo">
+      <div class="act-modal-field">
+        <label>Task</label>
+        <input type="text" name="title" placeholder="e.g. Send offer letter">
+      </div>
+      <div class="act-modal-row">
+        <div class="act-modal-field">
+          <label>Due Date</label>
+          <input type="date" name="scheduled_date" id="todoDate">
+        </div>
+        <div class="act-modal-field">
+          <label>Due Time</label>
+          <input type="time" name="scheduled_time" value="17:00">
+        </div>
+      </div>
+      <div class="act-modal-field">
+        <label>Details</label>
+        <textarea name="description" rows="2" placeholder="Additional details..."></textarea>
+      </div>
+      <div class="act-modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('todoModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-check2-square"></i> Add Todo</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Document Modal -->
+<div class="act-modal-bg" id="docModal">
+  <div class="act-modal">
+    <div class="act-modal-header">
+      <div class="act-modal-title" style="color:var(--red);"><i class="bi bi-paperclip"></i> &nbsp;Upload Document</div>
+      <button class="act-modal-close" onclick="closeModal('docModal')">×</button>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_activity">
+      <input type="hidden" name="candidate_id" value="{{ selected_candidate.candidate_id }}">
+      <input type="hidden" name="activity_type" value="document">
+      <div class="act-modal-field">
+        <label>Document Title</label>
+        <input type="text" name="title" placeholder="e.g. Offer Letter Draft">
+      </div>
+      <div class="act-modal-field">
+        <label>File</label>
+        <input type="file" name="document_file" accept=".pdf,.doc,.docx,.png,.jpg,.xlsx">
+      </div>
+      <div class="act-modal-field">
+        <label>Notes</label>
+        <textarea name="description" rows="2" placeholder="Document description..."></textarea>
+      </div>
+      <div class="act-modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('docModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-paperclip"></i> Upload</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div class="act-modal-bg" id="rescheduleModal">
+  <div class="act-modal">
+    <div class="act-modal-header">
+      <div class="act-modal-title" style="color:var(--accent2);"><i class="bi bi-calendar-event"></i> &nbsp;Reschedule Activity</div>
+      <button class="act-modal-close" onclick="closeModal('rescheduleModal')">×</button>
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reschedule_activity">
+      <input type="hidden" name="candidate_id" value="{{ selected_candidate.candidate_id }}">
+      <input type="hidden" name="activity_id" id="rescheduleActivityId">
+      <div class="act-modal-field">
+        <label>Activity Title</label>
+        <input type="text" id="rescheduleActivityTitle" readonly style="opacity:0.8; background:var(--surface2);">
+      </div>
+      <div class="act-modal-row">
+        <div class="act-modal-field">
+          <label>New Date</label>
+          <input type="date" name="scheduled_date" id="rescheduleDate" required>
+        </div>
+        <div class="act-modal-field">
+          <label>New Time</label>
+          <input type="time" name="scheduled_time" id="rescheduleTime" required>
+        </div>
+      </div>
+      <div class="act-modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('rescheduleModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-calendar-event"></i> Update Schedule</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

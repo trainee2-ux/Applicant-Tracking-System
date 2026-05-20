@@ -1,0 +1,43 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Confirm Delete{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/delete_confirm.css">{% endblock %}
+{% block nav_candidate_management %}active{% endblock %}
+{% block header %}Candidate Management &gt; Delete Confirmation{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="delete-confirm-wrap">
+  <div class="delete-confirm-card">
+    <div class="delete-confirm-badge">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+    <h2 class="delete-confirm-title">Delete Candidate?</h2>
+    <p class="delete-confirm-subtitle">
+      You are about to remove this candidate record from the system.
+    </p>
+
+    <div class="delete-confirm-details">
+      <div><strong>Candidate ID:</strong> {{ candidate.candidate_id }}</div>
+      <div><strong>Name:</strong> {{ candidate.full_name }}</div>
+      <div><strong>Email:</strong> {{ candidate.email }}</div>
+    </div>
+
+    <p class="delete-confirm-warning">This action cannot be undone.</p>
+
+    <div class="delete-confirm-actions">
+      <a href="/candidate-management/list/" class="btn btn-outline-secondary">Cancel</a>
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm_delete">
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

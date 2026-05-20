@@ -1,0 +1,244 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - BGV Screening Requests{% endblock %}
+{% block nav_background_verification %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Screening Requests</div>
+    <div class="page-subtitle">Initiate background verification sequences and manage document submissions for finalized candidates.</div>
+  </div>
+  <div class="header-actions">
+    <button id="openBgvSubmissionFormBtn" type="button" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> New Submission</button>
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="bgvQuickSubmissionFormWrap" class="card {% if not form_data %}d-none{% endif %}" style="margin-bottom: 32px; border-top: 4px solid var(--accent);">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="{% if form_mode == 'edit' %}update_submission{% else %}create_submission{% endif %}">
+  <input type="hidden" name="record_id" value="{{ form_data.record_id|default:'' }}">
+  
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-shield-check"></i> {% if form_data.record_id %}Modify{% else %}Initiate{% endif %} Screening Sequence</div>
+  </div>
+
+  <div style="padding: 24px;">
+    <div class="field-grid grid-2" style="gap: 20px;">
+      <div class="field">
+        <label class="field-label">Candidate ID <span class="required-star">*</span></label>
+        <select id="bgvCandidateId" name="candidate_id" required style="background: var(--surface2);">
+          <option value="">Select Candidate ID</option>
+          {% for c in candidates %}
+          <option value="{{ c.candidate_id }}" data-name="{{ c.full_name }}" data-email="{{ c.email }}" data-phone="{{ c.contact_number }}" {% if form_data.candidate_id == c.candidate_id %}selected{% endif %}>
+            {{ c.candidate_id }} - {{ c.full_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Candidate Name</label>
+        <input id="bgvCandidateName" type="text" readonly style="opacity: 0.6; background: var(--surface2);" placeholder="Auto-filled">
+      </div>
+      
+      <div class="field">
+        <label class="field-label">Candidate Email</label>
+        <input id="bgvCandidateEmail" type="text" readonly style="opacity: 0.6; background: var(--surface2);" placeholder="Auto-filled">
+      </div>
+      <div class="field">
+        <label class="field-label">Candidate Phone</label>
+        <input id="bgvCandidatePhone" type="text" readonly style="opacity: 0.6; background: var(--surface2);" placeholder="Auto-filled">
+      </div>
+
+      <div class="field">
+        <label class="field-label">ID Proof Type</label>
+        <select name="id_proof_type">
+          <option value="">Select ID Proof</option>
+          {% for item in id_proof_options %}
+          <option value="{{ item }}" {% if form_data.id_proof_type == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">ID Proof Upload (PDF)</label>
+        <input type="file" name="id_proof_file" accept=".pdf" class="form-control-sm">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Address Proof Type</label>
+        <select name="address_proof_type">
+          <option value="">Select Address Proof</option>
+          {% for item in address_proof_options %}
+          <option value="{{ item }}" {% if form_data.address_proof_type == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Address Proof Upload (PDF)</label>
+        <input type="file" name="address_proof_file" accept=".pdf" class="form-control-sm">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Education Certificate Type</label>
+        <select name="education_certificates_type">
+          <option value="">Select Education Proof</option>
+          {% for item in education_proof_options %}
+          <option value="{{ item }}" {% if form_data.education_certificates_type == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Education Certificate Upload (PDF)</label>
+        <input type="file" name="education_certificates_file" accept=".pdf" class="form-control-sm">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Employment Proof Type</label>
+        <select name="employment_proof_type">
+          <option value="">Select Employment Proof</option>
+          {% for item in employment_proof_options %}
+          <option value="{{ item }}" {% if form_data.employment_proof_type == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Employment Proof Upload (PDF)</label>
+        <input type="file" name="employment_proof_file" accept=".pdf" class="form-control-sm">
+      </div>
+
+      <div class="field">
+        <label class="field-label">Reference Contacts</label>
+        <input type="text" name="reference_contacts" value="{{ form_data.reference_contacts|default:'' }}" placeholder="Name, Title, Contact Info">
+      </div>
+      <div class="field">
+        <label class="field-label">Discrepancies</label>
+        <input type="text" name="discrepancies" value="{{ form_data.discrepancies|default:'' }}" placeholder="Note any immediate red flags">
+      </div>
+
+      <div class="field col-span-2">
+        <label class="field-label">Comments</label>
+        <textarea name="comments" rows="3" placeholder="Additional screening instructions or notes...">{{ form_data.comments|default:'' }}</textarea>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border); padding-top: 24px;">
+      <button id="closeBgvQuickSubmissionFormBtn" type="button" class="btn btn-ghost">Cancel</button>
+      <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Save Submission <i class="bi bi-check2-circle"></i></button>
+    </div>
+  </div>
+</form>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+    <div class="card-title">Archived & Active Submissions</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate ID</th>
+          <th>ID Proof</th>
+          <th>ID File</th>
+          <th>Address Proof</th>
+          <th>Address File</th>
+          <th>Education Certificates</th>
+          <th>Education File</th>
+          <th>Employment Proof</th>
+          <th>Employment File</th>
+          <th>Reference Contacts</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="primary">
+            <div style="font-weight: 700; color: var(--text);">{{ row.candidate_id }}</div>
+          </td>
+          <td><div style="font-size: 11px; font-weight: 600;">{{ row.id_proof|default:"-" }}</div></td>
+          <td>
+            {% if row.id_proof_file_url %}
+              <a href="{{ row.id_proof_file_url }}" target="_blank" class="status-pill pill-blue" style="text-decoration: none; font-size: 9px;"><i class="bi bi-file-earmark-pdf"></i> View</a>
+            {% else %}-{% endif %}
+          </td>
+          <td><div style="font-size: 11px; font-weight: 600;">{{ row.address_proof|default:"-" }}</div></td>
+          <td>
+            {% if row.address_proof_file_url %}
+              <a href="{{ row.address_proof_file_url }}" target="_blank" class="status-pill pill-purple" style="text-decoration: none; font-size: 9px;"><i class="bi bi-file-earmark-pdf"></i> View</a>
+            {% else %}-{% endif %}
+          </td>
+          <td><div style="font-size: 11px; color: var(--text3); font-weight: 600;">{{ row.education_certificates|default:"—" }}</div></td>
+          <td>
+            {% if row.education_certificates_file_url %}
+              <a href="{{ row.education_certificates_file_url }}" target="_blank" class="status-pill pill-green" style="text-decoration: none; font-size: 9px;"><i class="bi bi-file-earmark-pdf"></i> View</a>
+            {% else %}-{% endif %}
+          </td>
+          <td><div style="font-size: 11px; color: var(--text3); font-weight: 600;">{{ row.employment_proof|default:"—" }}</div></td>
+          <td>
+            {% if row.employment_proof_file_url %}
+              <a href="{{ row.employment_proof_file_url }}" target="_blank" class="status-pill pill-amber" style="text-decoration: none; font-size: 9px;"><i class="bi bi-file-earmark-pdf"></i> View</a>
+            {% else %}-{% endif %}
+          </td>
+          <td><div style="font-size: 10px; color: var(--text3); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ row.reference_contacts|default:"-" }}</div></td>
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <a href="?edit_id={{ row.id }}" class="icon-btn" title="Edit Request"><i class="bi bi-pencil-square"></i></a>
+              <a href="{% url 'background_verification:submission_delete_confirm' row.id %}" class="icon-btn" style="color: var(--red); border-color: var(--redbg);" title="Archive Record"><i class="bi bi-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="11" style="text-align: center; padding: 80px; color: var(--text3);">
+            <div style="font-size: 48px; opacity: 0.1;"><i class="bi bi-file-earmark-arrow-up"></i></div>
+            <div style="margin-top: 16px;">No screening requests documented.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const openBtn = document.getElementById("openBgvSubmissionFormBtn");
+    const quickForm = document.getElementById("bgvQuickSubmissionFormWrap");
+    const closeBtn = document.getElementById("closeBgvQuickSubmissionFormBtn");
+    const candidateSelect = document.getElementById("bgvCandidateId");
+    
+    const candidateName = document.getElementById("bgvCandidateName");
+    const candidateEmail = document.getElementById("bgvCandidateEmail");
+    const candidatePhone = document.getElementById("bgvCandidatePhone");
+
+    if (openBtn && quickForm) {
+      openBtn.addEventListener("click", () => {
+        quickForm.classList.remove("d-none");
+        quickForm.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+    if (closeBtn && quickForm) {
+      closeBtn.addEventListener("click", () => quickForm.classList.add("d-none"));
+    }
+
+    if (candidateSelect && candidateName) {
+      const update = () => {
+        const sel = candidateSelect.options[candidateSelect.selectedIndex];
+        if (sel && sel.value) {
+          candidateName.value = sel.dataset.name || "";
+          candidateEmail.value = sel.dataset.email || "";
+          candidatePhone.value = sel.dataset.phone || "";
+        } else {
+          candidateName.value = "";
+          candidateEmail.value = "";
+          candidatePhone.value = "";
+        }
+      };
+      candidateSelect.addEventListener("change", update);
+      update();
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "super_admin/base.html" %}
+{% block title %}Super Admin - Dashboard{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/super_admin.css?v=2">{% endblock %}
+{% block header %}Super Admin &gt; Dashboard{% endblock %}
+{% block nav_super_admin_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2 superadmin-page">
+  <div class="sa-head">
+    <div>
+      <p class="sa-subtitle">Platform overview</p>
+      <h2 class="sa-title">Dashboard</h2>
+    </div>
+    <div class="sa-actions">
+      <a class="btn btn-sm btn-primary" href="/super-admin/companies/">
+        <i class="bi bi-building me-1"></i> Manage Companies
+      </a>
+      <a class="btn btn-sm btn-primary" href="/super-admin/subscriptions/">
+        <i class="bi bi-stars me-1"></i> Assign Subscription
+      </a>
+    </div>
+  </div>
+  <div class="row g-3">
+    <div class="col-md-3">
+      <div class="sa-card p-3">
+        <div class="text-muted small">Total Companies</div>
+        <div class="fs-2 fw-bold">{{ company_count }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="sa-card p-3">
+        <div class="text-muted small">Active Companies</div>
+        <div class="fs-2 fw-bold">{{ active_companies }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="sa-card p-3">
+        <div class="text-muted small">Pending Agreements</div>
+        <div class="fs-2 fw-bold">{{ pending_agreements }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="sa-card p-3">
+        <div class="text-muted small">Active Subscriptions</div>
+        <div class="fs-2 fw-bold">{{ active_subscriptions }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

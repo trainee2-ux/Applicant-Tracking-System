@@ -1,0 +1,251 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Candidate Intelligence Dashboard{% endblock %}
+{% block nav_candidate_management %}active{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 32px;">
+  <div>
+    <div class="page-title">Candidate Intelligence Dashboard</div>
+    <div class="page-subtitle">Aggregate scoring telemetry and behavioral assessments for all active talent.</div>
+  </div>
+  <div class="header-actions">
+    <a href="/candidate-management/evaluation/?create=1" class="btn btn-primary" style="height: 48px; padding: 0 24px; border-radius: 14px; font-weight: 700;">
+      <i class="bi bi-plus-circle-fill"></i> New Intelligence Log
+    </a>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} mb-4" style="border-radius: 12px; font-weight: 600;">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<!-- Key Metrics Section -->
+<div class="stat-grid" style="margin-bottom: 32px; gap: 20px;">
+  <div class="stat-card" style="border-left: 4px solid var(--accent);">
+    <div class="stat-icon purple" style="background: var(--accentbg); color: var(--accent2);"><i class="bi bi-cpu"></i></div>
+    <div class="stat-value">{{ avg_technical|default:"0.0" }}</div>
+    <div class="stat-label">Avg Technical Index</div>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid var(--amber);">
+    <div class="stat-icon amber" style="background: var(--amberbg); color: var(--amber);"><i class="bi bi-broadcast"></i></div>
+    <div class="stat-value">{{ avg_communication|default:"0.0" }}</div>
+    <div class="stat-label">Avg Comm Quotient</div>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid var(--green);">
+    <div class="stat-icon green" style="background: var(--greenbg); color: var(--green);"><i class="bi bi-activity"></i></div>
+    <div class="stat-value">{{ avg_cultural|default:"0.0" }}</div>
+    <div class="stat-label">Avg Cultural Synergy</div>
+  </div>
+  <div class="stat-card" style="border-left: 4px solid var(--blue);">
+    <div class="stat-icon blue" style="background: var(--bluebg); color: var(--blue);"><i class="bi bi-robot"></i></div>
+    <div class="stat-value">{{ avg_overall|default:"0.0" }}</div>
+    <div class="stat-label">AI Consensus Rating</div>
+  </div>
+</div>
+
+{% if show_form %}
+<div class="card" style="margin-bottom: 40px; border-radius: 24px; border-top: 6px solid var(--accent); overflow: hidden;">
+  <div class="card-header" style="padding: 24px 32px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+    <div class="card-title" style="font-size: 18px; font-weight: 800;"><i class="bi bi-shield-check text-grad me-2"></i> {% if initial_evaluation_id %}Modify{% else %}Record{% endif %} Talent Intelligence</div>
+  </div>
+  
+  <form method="post" style="padding: 32px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_evaluation">
+    <input type="hidden" name="evaluation_id" value="{{ initial_evaluation_id }}">
+    
+    <div class="field-grid grid-4" style="gap: 24px; margin-bottom: 24px;">
+      <div class="field col-span-4" style="background: var(--surface2); padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Target Profile Reference</label>
+        <select id="candidatePrefillSelect" class="form-select" style="height: 52px; border-radius: 12px; font-weight: 700;">
+          <option value="">Select Candidate Number</option>
+          {% for option in candidate_options %}
+          <option value="{{ option.id }}" {% if selected_candidate_id == option.id %}selected{% endif %}>{{ option.id }} - {{ option.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="field">
+        <label class="field-label">Candidate ID</label>
+        <input id="candidateIdInput" type="text" name="candidate_id" value="{{ initial_candidate_id }}" required style="height: 48px; border-radius: 12px; background: var(--surface2); opacity: 0.8; font-weight: 700;">
+      </div>
+      <div class="field">
+        <label class="field-label">Full Name</label>
+        <input id="candidateNameInput" type="text" name="candidate_name" value="{{ initial_candidate_name }}" required style="height: 48px; border-radius: 12px; font-weight: 700;">
+      </div>
+      <div class="field">
+        <label class="field-label">Phone Contact</label>
+        <input id="candidatePhoneInput" type="text" name="candidate_phone" value="{{ initial_candidate_phone }}" required style="height: 48px; border-radius: 12px;">
+      </div>
+      <div class="field">
+        <label class="field-label">Email Endpoint</label>
+        <input id="candidateEmailInput" type="email" name="candidate_email" value="{{ initial_candidate_email }}" required style="height: 48px; border-radius: 12px;">
+      </div>
+      
+      <div class="field">
+        <label class="field-label">Posting Title</label>
+        <input id="postingTitleInput" type="text" name="posting_title" value="{{ initial_posting_title }}" required style="height: 48px; border-radius: 12px;">
+      </div>
+      <div class="field">
+        <label class="field-label">Lead Interviewer</label>
+        <select name="interviewed_by" required style="height: 48px; border-radius: 12px;">
+          <option value="">Select Official</option>
+          {% for option in interviewer_options %}
+          <option value="{{ option.full_name }}" {% if initial_interviewed_by == option.full_name %}selected{% endif %}>{{ option.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Round Tier</label>
+        <select id="candidateInterviewRound" name="interview_round" required style="height: 48px; border-radius: 12px;">
+          <option value="">Select Phase</option>
+          {% for option in interview_round_options %}
+          <option value="{{ option }}" {% if initial_interview_round == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Operational Status</label>
+        <select id="evaluationStatus" name="status" required style="height: 48px; border-radius: 12px;">
+          <option value="" {% if not initial_status %}selected{% endif %}>Select Status</option>
+          <option value="Hired" {% if initial_status == 'Hired' %}selected{% endif %}>Hired</option>
+          <option value="On-Hold" {% if initial_status == 'On-Hold' %}selected{% endif %}>On-Hold</option>
+          <option value="Strong Hire" {% if initial_status == 'Strong Hire' %}selected{% endif %}>Strong Hire</option>
+          <option value="Shortlist" {% if initial_status == 'Shortlist' %}selected{% endif %}>Shortlist</option>
+          <option value="Wait-List" {% if initial_status == 'Wait-List' %}selected{% endif %}>Wait-List</option>
+          <option value="Move to Next Round" {% if initial_status == 'Move to Next Round' %}selected{% endif %}>Move to Next Round</option>
+          <option value="__custom__" {% if initial_status == '__custom__' %}selected{% endif %}>Add New Value</option>
+        </select>
+      </div>
+
+      <div class="field col-span-4" style="background: rgba(255,255,255,0.01); padding: 24px; border-radius: 20px; border: 1px solid var(--border);">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+          <div>
+            <label class="field-label" style="font-size: 10px; color: var(--accent2);">Tech Index (0-10)</label>
+            <input type="number" min="0" max="10" step="0.01" name="technical_score" value="{{ initial_technical_score }}" required style="height: 44px; border-radius: 10px; font-weight: 800; font-family: var(--mono);">
+          </div>
+          <div>
+            <label class="field-label" style="font-size: 10px; color: var(--amber);">Comm Index (0-10)</label>
+            <input type="number" min="0" max="10" step="0.01" name="communication_score" value="{{ initial_communication_score }}" required style="height: 44px; border-radius: 10px; font-weight: 800; font-family: var(--mono);">
+          </div>
+          <div>
+            <label class="field-label" style="font-size: 10px; color: var(--green);">Synergy Index (0-10)</label>
+            <input type="number" min="0" max="10" step="0.01" name="cultural_fit_score" value="{{ initial_cultural_fit_score }}" required style="height: 44px; border-radius: 10px; font-weight: 800; font-family: var(--mono);">
+          </div>
+          <div>
+            <label class="field-label" style="font-size: 10px; color: var(--blue);">Final Quotient (0-10)</label>
+            <input type="number" min="0" max="10" step="0.01" name="overall_rating" value="{{ initial_overall_rating }}" required style="height: 44px; border-radius: 10px; font-weight: 800; font-family: var(--mono);">
+          </div>
+        </div>
+      </div>
+
+      <div class="field col-span-4">
+        <label class="field-label">Intelligence Feedback & Qualitative Analysis</label>
+        <textarea name="interviewer_comments" rows="3" placeholder="Document critical strengths, operational risks, and behavioral signals..." style="border-radius: 16px; padding: 16px;">{{ initial_interviewer_comments }}</textarea>
+      </div>
+      
+      <div class="field col-span-2">
+        <label class="field-label">Assessment Logic Template</label>
+        <select id="assessmentFormSelect" name="assessment_form_id" style="height: 48px; border-radius: 12px;">
+          <option value="">Select Logic Template</option>
+          {% for form in assessment_form_options %}
+          <option value="{{ form.id }}" {% if initial_assessment_form_id == form.id|stringformat:"s" %}selected{% endif %}>{{ form.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field col-span-2">
+        <label class="field-label">Contextual Feedback Protocol</label>
+        <select id="feedbackFormSelect" name="feedback_form_id" style="height: 48px; border-radius: 12px;">
+          <option value="">Select Feedback Protocol</option>
+          {% for form in feedback_form_options %}
+          <option value="{{ form.id }}" {% if initial_feedback_form_id == form.id|stringformat:"s" %}selected{% endif %}>{{ form.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div id="assessmentDynamicFields" class="field col-span-4"></div>
+      <div id="feedbackDynamicFields" class="field col-span-4"></div>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border); padding-top: 24px;">
+      <a href="/candidate-management/evaluation/" class="btn btn-ghost" style="height: 52px; padding: 0 32px; border-radius: 16px;">Discard Protocol</a>
+      <button type="submit" class="btn btn-primary" style="height: 52px; padding: 0 40px; border-radius: 16px; font-weight: 800; box-shadow: 0 10px 20px var(--accentbg);">Commit Intelligence Log <i class="bi bi-check2-all ms-2"></i></button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<!-- Results Table -->
+<div class="card" style="border-radius: 24px; overflow: hidden;">
+  <div class="card-header" style="padding: 24px 32px; border-bottom: 1px solid var(--border);">
+    <div class="card-title" style="font-size: 18px; font-weight: 800;"><i class="bi bi-database-fill-gear me-2" style="color: var(--accent2);"></i> Candidate Intelligence Matrix</div>
+  </div>
+  <div class="table-wrap">
+    <table style="min-width: 1400px;">
+      <thead>
+        <tr>
+          <th style="padding-left: 32px;">Profile ID</th>
+          <th>Name</th>
+          <th>Phase</th>
+          <th>Tech Index</th>
+          <th>Comm Index</th>
+          <th>Synergy</th>
+          <th>Final Rating</th>
+          <th>Logic/Feedback</th>
+          <th>Status</th>
+          <th style="text-align: right; padding-right: 32px;">Operations</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in records %}
+        <tr>
+          <td style="padding-left: 32px; font-weight: 700; font-family: var(--mono); color: var(--text2);">#{{ item.candidate_id }}</td>
+          <td class="primary">{{ item.candidate_name }}</td>
+          <td><span class="status-pill pill-blue" style="font-size: 10px; font-weight: 700;">{{ item.interview_round }}</span></td>
+          <td style="font-weight: 800; font-family: var(--mono); color: var(--accent2);">{{ item.technical_score }}</td>
+          <td style="font-weight: 800; font-family: var(--mono); color: var(--amber);">{{ item.communication_score }}</td>
+          <td style="font-weight: 800; font-family: var(--mono); color: var(--green);">{{ item.cultural_fit_score }}</td>
+          <td style="font-weight: 900; font-family: var(--mono); color: var(--text); font-size: 15px;">{{ item.overall_rating }}</td>
+          <td>
+            <div style="font-size: 11px; font-weight: 600; color: var(--text3);">
+              <div><i class="bi bi-braces"></i> {{ item.assessment_form_name|default:"Standard" }}</div>
+              <div><i class="bi bi-chat-text"></i> {{ item.feedback_form_name|default:"General" }}</div>
+            </div>
+          </td>
+          <td>
+            <span class="status-pill {% if item.status == 'Hired' %}pill-green{% elif item.status == 'Strong Hire' %}pill-purple{% else %}pill-amber{% endif %}">
+              <span class="dot"></span> {{ item.status }}
+            </span>
+          </td>
+          <td style="text-align: right; padding-right: 32px;">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <a href="/candidate-management/evaluation/?create=1&edit_id={{ item.id }}" class="icon-btn" style="width: 36px; height: 36px;"><i class="bi bi-sliders"></i></a>
+              <form method="post" class="mb-0" onsubmit="return confirm('Purge intelligence record?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_evaluation">
+                <input type="hidden" name="evaluation_id" value="{{ item.id }}">
+                <button type="submit" class="icon-btn" style="color: var(--red); width: 36px; height: 36px;"><i class="bi bi-trash3"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="10" style="text-align: center; padding: 100px; color: var(--text3);">Intelligence protocol history empty.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+{{ candidate_options|json_script:"candidatePrefillData" }}
+{{ evaluation_form_map|json_script:"evaluationFormMapData" }}
+{{ initial_assessment_form_values|json_script:"initialAssessmentFormValuesData" }}
+{{ initial_feedback_form_values|json_script:"initialFeedbackFormValuesData" }}
+{{ candidate_round_map|json_script:"candidateRoundMapData" }}
+<script src="/static/js/candidate_evaluation.js?v=4"></script>
+{% endblock %}

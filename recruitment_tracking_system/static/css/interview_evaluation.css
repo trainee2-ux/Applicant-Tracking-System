@@ -1,0 +1,104 @@
+.interview-eval-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.interview-eval-title {
+  margin: 0;
+  color: #1D4ED8;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.interview-eval-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  align-items: flex-start;
+  justify-content: flex-start;
+  margin-bottom: 1rem;
+}
+
+.interview-eval-tile {
+  width: 168px;
+  height: 128px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
+  color: #fff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0.55rem;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.interview-eval-tile:hover {
+  color: #fff;
+  filter: brightness(1.04);
+}
+
+.interview-eval-card {
+  background: #fff;
+  border: 1px solid rgba(229, 231, 235, 0.3);
+  border-radius: 14px;
+  padding: 0.85rem;
+}
+
+.interview-eval-card-title {
+  font-weight: 700;
+  color: #1D4ED8;
+  font-size: 0.88rem;
+  margin-bottom: 0.6rem;
+}
+
+.interview-eval-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.interview-span-all {
+  grid-column: 1 / -1;
+}
+
+.interview-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.interview-table thead th {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.interview-table tbody td {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 900px) {
+  .interview-eval-tiles {
+    gap: 0.8rem;
+  }
+
+  .interview-eval-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* === NEW DESIGN TOKEN OVERRIDES === */
+[class*="bgv-"],[class*="eval-"],[class*="recording-"],[class*="team-"],[class*="task-"],[class*="portal-"],[class*="profile-"] {
+  color: inherit;
+}
+.profile-form-card,.registration-box { background:var(--surface)!important; border:1px solid var(--border)!important; border-radius:var(--radius)!important; }
+.profile-form-title { color:var(--accent2)!important; }
+.profile-form-subtitle { color:var(--text3)!important; }

@@ -1,0 +1,56 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Job Dashboard{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/job_requisition.css?v=3">{% endblock %}
+{% block nav_jobs %}active{% endblock %}
+{% block header %}Requisition Management &gt; Job Dashboard{% endblock %}
+
+{% block content %}
+<div class="job-panel">
+  <div class="job-dashboard-head">
+    <h3 class="job-panel-title">Job Dashboard</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm job-dashboard-table align-middle mb-0">
+      <thead>
+        <tr>
+          <th class="col-job-id">Job ID</th>
+          <th class="col-title">Title</th>
+          <th class="col-department">Department</th>
+          <th class="col-openings">Openings</th>
+          <th class="col-applications">Applications Received</th>
+          <th class="col-status">Status</th>
+          <th class="col-public-url">Public URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="col-job-id"><span class="job-mono">{{ row.job_id }}</span></td>
+          <td class="col-title">
+            <div class="text-truncate" title="{{ row.title }}">{{ row.title }}</div>
+          </td>
+          <td class="col-department">
+            <div class="text-truncate" title="{{ row.department }}">{{ row.department }}</div>
+          </td>
+          <td class="col-openings">{{ row.openings }}</td>
+          <td class="col-applications">{{ row.applications_received }}</td>
+          <td class="col-status"><span class="job-status">{{ row.status }}</span></td>
+          <td class="col-public-url">
+            {% if row.public_url %}
+            <a class="job-link" href="{% url 'candidate_portal:public_job_detail' row.job_id %}" target="_blank" rel="noopener">Open</a>
+            {% else %}
+            <span class="text-muted">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center text-muted py-4">No records to display.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

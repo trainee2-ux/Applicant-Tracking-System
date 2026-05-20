@@ -1,0 +1,49 @@
+<aside class="settings-side">
+  <div class="settings-side-title">Settings Menu</div>
+  <a href="{% url 'app_settings:assessment_wizard' %}" class="settings-side-link {% if settings_menu_active == 'assessment_form' %}active{% endif %}">
+    <i class="bi bi-ui-checks"></i> Assessments
+  </a>
+  <a href="{% url 'app_settings:masters' %}" class="settings-side-link {% if settings_menu_active == 'masters' %}active{% endif %}">
+    <i class="bi bi-grid"></i> Masters
+  </a>
+  <a href="{% url 'app_settings:members' %}" class="settings-side-link {% if settings_menu_active == 'members' %}active{% endif %}">
+    <i class="bi bi-people"></i> Members
+  </a>
+  <a href="{% url 'app_settings:global_audit_logs' %}" class="settings-side-link {% if settings_menu_active == 'global_audit_logs' %}active{% endif %}">
+    <i class="bi bi-shield-check"></i> Global Audit Logs
+  </a>
+  <a href="{% url 'app_settings:email_templates' %}" class="settings-side-link {% if settings_menu_active == 'email_templates' %}active{% endif %}">
+    <i class="bi bi-envelope-paper"></i> Email Templates
+  </a>
+  <a href="{% url 'app_settings:bulk_upload' %}" class="settings-side-link {% if settings_menu_active == 'bulk_upload' %}active{% endif %}">
+    <i class="bi bi-upload"></i> Bulk Upload
+  </a>
+  <a href="{% url 'app_settings:integration' %}" class="settings-side-link {% if settings_menu_active == 'integration' %}active{% endif %}">
+    <i class="bi bi-plug"></i> Integration
+  </a>
+  <!--<a href="{% url 'app_settings:workflow' %}" class="settings-side-link {% if settings_menu_active == 'workflow' %}active{% endif %}">Workflow</a>-->
+  <a href="{% url 'app_settings:data_export' %}" class="settings-side-link {% if settings_menu_active == 'data_export' %}active{% endif %}">
+    <i class="bi bi-download"></i> Data Export
+  </a>
+  <a href="{% url 'app_settings:subscription_billing' %}" class="settings-side-link {% if settings_menu_active == 'subscription_billing' %}active{% endif %}">
+    <i class="bi bi-receipt"></i> Subscription &amp; Billing
+  </a>
+  <a href="{% url 'app_settings:company' %}" class="settings-side-link {% if settings_menu_active == 'company' %}active{% endif %}">
+    <i class="bi bi-building"></i> Company Master
+  </a>
+  <a href="{% url 'app_settings:role' %}" class="settings-side-link {% if settings_menu_active == 'role' %}active{% endif %}">
+    <i class="bi bi-person-gear"></i> Role Master
+  </a>
+  <a href="{% url 'app_settings:user_master' %}" class="settings-side-link {% if settings_menu_active == 'user_master' %}active{% endif %}">
+    <i class="bi bi-person-vcard"></i> User Master
+  </a>
+  <a href="{% url 'app_settings:permission_management' %}" class="settings-side-link {% if settings_menu_active == 'permission_management' %}active{% endif %}">
+    <i class="bi bi-shield-lock"></i> Permission Master
+  </a>
+  <a href="{% url 'app_settings:task_sla_settings' %}" class="settings-side-link {% if settings_menu_active == 'task_sla_settings' %}active{% endif %}">
+    <i class="bi bi-stopwatch"></i> Task SLA
+  </a>
+  <a href="{% url 'app_settings:onboarding_audit_logs' %}" class="settings-side-link {% if settings_menu_active == 'onboarding_audit_logs' %}active{% endif %}">
+    <i class="bi bi-journal-text"></i> Onboarding Audit Logs
+  </a>
+</aside>

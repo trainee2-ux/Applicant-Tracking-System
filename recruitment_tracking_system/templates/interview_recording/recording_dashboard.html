@@ -1,0 +1,317 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Session Recordings{% endblock %}
+{% block nav_interview_recording %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Session Recordings</div>
+    <div class="page-subtitle">Historical archive of candidate interviews with AI-generated transcripts, sentiment analysis, and emotional summaries.</div>
+  </div>
+  <div class="header-actions">
+    <a id="openRecordingFormBtn" href="/interview-recording/recording/?create=1" class="btn btn-primary btn-sm"><i class="bi bi-camera-video"></i> Upload Session</a>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2" style="margin-bottom: 24px; border-radius: 12px; border: none; background: var(--accentbg); color: var(--accent2); font-weight: 600;">
+      <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div id="recordingFormWrap" class="card {% if not show_form %}d-none{% endif %}" style="margin-bottom: 32px; border-top: 4px solid var(--accent);">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-plus-circle"></i> {% if form_mode == 'edit' %}Modify{% else %}Archive{% endif %} Interview Session</div>
+  </div>
+  <form method="post" enctype="multipart/form-data" style="padding: 24px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="{% if form_mode == 'edit' %}update_recording{% else %}create_recording{% endif %}">
+    <input type="hidden" name="record_id" value="{{ form_data.record_id|default:'' }}">
+    
+    <div class="field-grid grid-3" style="gap: 20px;">
+      <div class="field">
+        <label class="field-label">Candidate Profile <span class="required-star">*</span></label>
+        <select name="candidate" required>
+          <option value="">Select Candidate</option>
+          {% for c in candidate_options %}
+          <option value="{{ c.candidate_id }}" {% if form_data.candidate == c.candidate_id %}selected{% endif %}>
+            {{ c.candidate_id }} - {{ c.full_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Lead Interviewer <span class="required-star">*</span></label>
+        {% with current_interviewer=form_data.interviewer|default:"" %}
+        <select name="interviewer" required>
+          <option value="">Select Evaluator</option>
+          {% if current_interviewer and current_interviewer not in interviewer_name_list %}
+          <option value="{{ current_interviewer }}" selected>{{ current_interviewer }}</option>
+          {% endif %}
+          {% for option in interviewer_options %}
+          <option value="{{ option.full_name }}" {% if current_interviewer == option.full_name %}selected{% endif %}>
+            {{ option.full_name }}
+          </option>
+          {% endfor %}
+        </select>
+        {% endwith %}
+      </div>
+      <div class="field">
+        <label class="field-label">Video Source File <span class="required-star">*</span></label>
+        <input type="file" name="video_file" accept=".mp4,.mov,.avi,.mkv" {% if form_mode != 'edit' %}required{% endif %} class="form-control-sm">
+      </div>
+      <div class="field" style="grid-column: span 2;">
+        <label class="field-label">Transcription Text</label>
+        <textarea name="transcript" rows="2" placeholder="Leave blank for AI auto-transcription...">{{ form_data.transcript|default:'' }}</textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">Sentiment Index (0-10)</label>
+        <input type="number" min="0" max="10" step="0.01" name="sentiment_score" value="{{ form_data.sentiment_score|default:'' }}" placeholder="AI Calculated">
+      </div>
+      <!-- Microsoft Presidio PII Shield is enforced server-side (always enabled). -->
+    </div>
+
+    <div style="margin-top: 32px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border); padding-top: 24px;">
+      <a id="cancelRecordingFormBtn" href="/interview-recording/recording/" class="btn btn-ghost">Discard</a>
+      <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Upload & Analyze <i class="bi bi-cpu"></i></button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+    <div class="card-title">Archive Ledger <span style="font-weight: 400; font-size: 12px; margin-left: 8px; color: var(--text3);">{{ recording_records|length }} recordings found</span></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Lead Evaluator</th>
+          <th>Source Media</th>
+          <th>Transcript</th>
+          <th>Sentiment Score</th>
+          <th>Dominant Emotion</th>
+          <th>Emotion Summary</th>
+          <th>Created At</th>
+          <th style="text-align: right;">Operations</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in recording_records %}
+        <tr>
+          <td class="primary">
+            <div style="font-weight: 700; color: var(--text);">{{ row.candidate }}</div>
+            <div style="font-size: 10px; color: var(--text3); text-transform: uppercase;">Reference Profile</div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="user-avatar" style="width: 28px; height: 28px; font-size: 10px;">{{ row.interviewer|slice:":1" }}</div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text2);">{{ row.interviewer }}</div>
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 12px; font-weight: 700; color: var(--text3); font-family: var(--mono); margin-bottom: 4px;">{{ row.video_file_name|truncatechars:20 }}</div>
+            <button
+              type="button"
+              class="status-pill pill-blue open-recorded-video"
+              data-video-file-name="{{ row.video_file_name }}"
+              data-video-url="{{ row.video_url|default:'' }}"
+              style="border: none; cursor: pointer;"
+            >
+              <i class="bi bi-play-circle"></i> Play Session
+            </button>
+          </td>
+          <td>
+            <div style="max-width: 360px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; gap: 8px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text2);">Transcript</div>
+                {% if row.pii_redacted %}
+                  <span class="status-pill pill-green" style="font-size: 9px; padding: 2px 6px; font-weight: 700; border-radius: 6px; letter-spacing: 0.5px; border: none;">
+                    <i class="bi bi-shield-lock-fill"></i> Presidio Protected
+                  </span>
+                {% endif %}
+              </div>
+
+              {% if row.pii_redacted %}
+                <div class="pii-toggle-btn-group" style="display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 6px; background: rgba(255, 255, 255, 0.05); padding: 2px;">
+                  <button type="button" class="btn-pii-toggle active" data-target="redacted-{{ row.id }}" style="background: var(--accent); color: #fff; border: none; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">Redacted</button>
+                  <button type="button" class="btn-pii-toggle" data-target="original-{{ row.id }}" style="background: transparent; color: var(--text3); border: none; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">Original</button>
+                </div>
+
+                <div id="redacted-{{ row.id }}" class="transcript-content" style="font-size: 12px; color: var(--text3); line-height: 1.4;">
+                  {{ row.anonymized_transcript|truncatechars:160 }}
+                </div>
+                <div id="original-{{ row.id }}" class="transcript-content d-none" style="font-size: 12px; color: var(--text3); line-height: 1.4; opacity: 0.8;">
+                  {{ row.transcript|truncatechars:160 }}
+                </div>
+              {% else %}
+                <div style="font-size: 12px; color: var(--text3); line-height: 1.4;">
+                  {% if row.transcript %}
+                    {{ row.transcript|truncatechars:160 }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="width: 36px; height: 36px; border-radius: 10px; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: var(--accent2);">
+                {{ row.sentiment_score|default:"—" }}
+              </div>
+              <div style="font-size: 10px; color: var(--text3); font-weight: 700; text-transform: uppercase;">Score</div>
+            </div>
+          </td>
+          <td>
+            <span class="status-pill {% if row.dominant_emotion|lower == 'positive' or row.dominant_emotion|lower == 'joy' %}pill-green{% elif row.dominant_emotion|lower == 'neutral' %}pill-blue{% else %}pill-amber{% endif %}" style="font-size: 10px;">
+              {{ row.dominant_emotion|default:"Analyzing..." }}
+            </span>
+          </td>
+          <td>
+            <div style="max-width: 320px; font-size: 12px; color: var(--text3); line-height: 1.4;">
+              {% if row.emotion_summary %}
+                {{ row.emotion_summary|truncatechars:120 }}
+              {% elif row.emotion_error %}
+                <span style="color: var(--red);">{{ row.emotion_error|truncatechars:120 }}</span>
+              {% else %}
+                —
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 12px; color: var(--text3); font-weight: 700;">{{ row.created_at|default:"-" }}</div>
+          </td>
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <a href="/interview-recording/recording/?edit_id={{ row.id }}" class="icon-btn" title="Modify Record"><i class="bi bi-pencil-square"></i></a>
+              <a href="{% url 'interview_recording:recording_delete_confirm' row.id %}" class="icon-btn" style="color: var(--red); border-color: var(--redbg);" title="Archive Record"><i class="bi bi-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 80px; color: var(--text3);">
+            <div style="font-size: 48px; opacity: 0.1;"><i class="bi bi-camera-video-off"></i></div>
+            <div style="margin-top: 16px;">No archived session recordings detected.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<div id="recordingPlayerModal" class="d-none" style="position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 24px;">
+  <div style="width: min(980px, 96vw); background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border);">
+      <div style="font-weight: 800; color: var(--text2); font-size: 13px;">
+        <i class="bi bi-camera-video"></i> Recording Preview
+      </div>
+      <button type="button" id="closeRecordingPlayerModal" class="icon-btn" style="border-color: var(--border);">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div style="padding: 16px;">
+      <video id="recordingVideoPlayer" controls playsinline style="width: 100%; max-height: 70vh; background: #000; border-radius: 12px;"></video>
+      <div id="recordingPlayerHint" class="d-none" style="margin-top: 10px; font-size: 12px; color: var(--text3);">
+        This recording can’t be previewed in the browser. If you’re using ATS Desktop, click Play Session again to open it locally.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const openBtn = document.getElementById("openRecordingFormBtn");
+    const recordingForm = document.getElementById("recordingFormWrap");
+    
+    if (openBtn && recordingForm) {
+      openBtn.addEventListener("click", (e) => {
+        if (recordingForm.classList.contains("d-none")) {
+          e.preventDefault();
+          recordingForm.classList.remove("d-none");
+          recordingForm.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
+
+    const modal = document.getElementById("recordingPlayerModal");
+    const closeModalBtn = document.getElementById("closeRecordingPlayerModal");
+    const player = document.getElementById("recordingVideoPlayer");
+    const hint = document.getElementById("recordingPlayerHint");
+
+    function closeModal() {
+      if (!modal) return;
+      modal.classList.add("d-none");
+      if (player) {
+        try { player.pause(); } catch (e) {}
+        player.removeAttribute("src");
+        player.load();
+      }
+      if (hint) hint.classList.add("d-none");
+    }
+
+    if (closeModalBtn) closeModalBtn.addEventListener("click", closeModal);
+    if (modal) modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
+
+    document.querySelectorAll(".open-recorded-video").forEach(function (btn) {
+      btn.addEventListener("click", async function () {
+        const url = (btn.dataset.videoUrl || "").trim();
+        if (url && modal && player) {
+          player.src = url;
+          modal.classList.remove("d-none");
+          return;
+        }
+
+        // Fallback: ATS Desktop local file open.
+        if (hint) hint.classList.remove("d-none");
+        if (modal) modal.classList.remove("d-none");
+
+        if (window.api && window.api.openRecordedVideoFile) {
+          const result = await window.api.openRecordedVideoFile(btn.dataset.videoFileName);
+          if (!result || !result.ok) {
+            alert((result && result.error) || "Failed to open video file.");
+          }
+        }
+      });
+    });
+
+    // PII Transcript Toggles
+    document.querySelectorAll(".btn-pii-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const group = btn.closest("td");
+        // Remove active class from all buttons in this td
+        group.querySelectorAll(".btn-pii-toggle").forEach(b => {
+          b.classList.remove("active");
+          b.style.background = "transparent";
+          b.style.color = "var(--text3)";
+          b.style.fontWeight = "600";
+        });
+        
+        // Add active class to clicked button
+        btn.classList.add("active");
+        btn.style.background = "var(--accent)";
+        btn.style.color = "#fff";
+        btn.style.fontWeight = "700";
+        
+        // Hide all transcript contents in this td
+        group.querySelectorAll(".transcript-content").forEach(c => c.classList.add("d-none"));
+        
+        // Show target transcript content
+        const targetId = btn.dataset.target;
+        const target = document.getElementById(targetId);
+        if (target) {
+          target.classList.remove("d-none");
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

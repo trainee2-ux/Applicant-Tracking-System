@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Onboarding Document Request</title>
+  </head>
+  <body style="margin:0; padding:0; background:#f8fafc;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f8fafc;">
+      <tr>
+        <td style="padding: 22px 12px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 680px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 14px;">
+            <tr>
+              <td style="padding: 18px 18px 8px; font-family: Arial, Helvetica, sans-serif;">
+                <div style="font-size: 13px; color:#64748b; font-weight: 700;">{{ company_name|default:"Ultimatix ATS" }}</div>
+                <div style="font-size: 18px; color:#0f172a; font-weight: 900; margin-top: 6px;">Onboarding Documents</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 18px 10px; font-family: Arial, Helvetica, sans-serif; color:#0f172a; font-size: 14px; line-height: 1.6;">
+                {{ body_html|safe }}
+              </td>
+            </tr>
+            {% if document_requirements %}
+            <tr>
+              <td style="padding: 0 18px 10px; font-family: Arial, Helvetica, sans-serif;">
+                <div style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color:#64748b; font-weight: 800; margin: 0 0 8px;">Documents to upload</div>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#f8fafc; border: 1px solid #e5e7eb; border-radius: 12px;">
+                  <tr>
+                    <td style="padding: 12px 14px; font-family: Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.65; color:#0f172a;">
+                      {% for doc in document_requirements %}
+                        <div style="padding: 4px 0; color:#374151; font-weight: 700;">• {{ doc }}</div>
+                      {% endfor %}
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            {% endif %}
+            <tr>
+              <td style="padding: 6px 18px 18px; font-family: Arial, Helvetica, sans-serif;">
+                <a href="{{ onboarding_url }}" target="_blank" rel="noopener noreferrer" style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding: 11px 14px; border-radius: 10px; font-weight: 800; font-size: 13px;">Upload Documents</a>
+                <div style="margin-top: 10px; font-size: 12px; color:#64748b;">
+                  If the button doesn’t work, open: <span style="color:#2563eb;">{{ onboarding_url }}</span>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <div style="max-width: 680px; margin: 10px auto 0; font-family: Arial, Helvetica, sans-serif; font-size: 11px; color:#94a3b8;">
+            This is an automated message. Please do not reply.
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

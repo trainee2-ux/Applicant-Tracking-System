@@ -1,0 +1,133 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Issue Offer{% endblock %}
+{% block nav_onboarding %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Issue Official Offer</div>
+    <div class="page-subtitle">Configure and dispatch the formal offer letter to <strong>{{ candidate.full_name }}</strong>.</div>
+  </div>
+  <div class="header-actions">
+    <a href="/onboarding/board/" class="btn btn-ghost btn-sm"><i class="bi bi-arrow-left"></i> Workflow Board</a>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 400px; gap: 24px;">
+  
+  <!-- LEFT: Email Composition -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-envelope-paper"></i> Offer Communication</div>
+    </div>
+    
+    <div style="padding: 24px;">
+      <!-- Template Selector -->
+      <form method="get" style="margin-bottom: 24px; background: var(--surface2); padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
+        <label class="field-label">Pre-defined Template</label>
+        <div style="display: flex; gap: 10px;">
+          <select class="form-select" name="email_template_id" style="flex: 1;">
+            <option value="">Manual Composition</option>
+            {% for t in email_templates %}
+              <option value="{{ t.id }}" {% if selected_email_template_id|stringformat:"s" == t.id|stringformat:"s" %}selected{% endif %}>
+                {{ t.name }}{% if t.module %} ({{ t.module }}){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          <button class="btn btn-secondary btn-sm" type="submit"><i class="bi bi-magic"></i> Load</button>
+        </div>
+      </form>
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="send_offer">
+
+        <div class="field" style="margin-bottom: 20px;">
+          <label class="field-label">Communication Subject</label>
+          <div style="position: relative;">
+            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3);"><i class="bi bi-chat-left-dots"></i></span>
+            <input id="offerCreateSubject" type="text" name="subject" value="{{ default_subject }}" placeholder="e.g. Official Offer Letter - Ultimatix" style="padding-left: 36px;">
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom: 20px;">
+          <label class="field-label">Offer Content (HTML Supported)</label>
+          <textarea id="offerCreateBody" name="body_html" rows="12" style="font-family: var(--font); line-height: 1.6; font-size: 14px;">{{ default_body }}</textarea>
+          <div style="font-size: 11px; color: var(--text3); margin-top: 10px; padding: 10px; background: var(--accentbg); border-radius: 8px; color: var(--accent2);">
+            <i class="bi bi-info-circle"></i> This communication will automatically append secure links for the candidate to <strong>View</strong>, <strong>Accept</strong>, or <strong>Decline</strong> the offer.
+          </div>
+        </div>
+
+        <div class="card" style="margin: 0;">
+          <div class="card-header" style="display:flex; align-items:center; justify-content: space-between;">
+            <div class="card-title"><i class="bi bi-eye"></i> Email Preview</div>
+            <button type="button" id="offerCreatePreviewBtn" class="btn btn-ghost btn-sm" style="height: 34px; justify-content:center;">
+              <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+          </div>
+          <div style="padding: 12px;">
+            <iframe id="offerCreatePreviewFrame" title="Offer Email Preview" style="width: 100%; height: 480px; border: 1px solid var(--border); border-radius: 12px; background: white;"></iframe>
+            <div style="font-size: 11px; color: var(--text3); margin-top: 8px;">
+              Preview uses sample links. Final email will contain the actual View/Accept/Reject links.
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 32px; display: flex; gap: 12px; border-top: 1px solid var(--border); padding-top: 24px;">
+          <button class="btn btn-primary" type="submit" style="padding: 10px 24px;"><i class="bi bi-send-check"></i> Dispatch Offer Letter</button>
+          <a class="btn btn-ghost" href="/onboarding/board/">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- RIGHT: Recipient Info -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-person-check"></i> Recipient Profile</div>
+      </div>
+      <div style="padding: 20px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+          <div class="user-avatar" style="width: 48px; height: 48px; font-size: 16px;">{{ candidate.full_name|slice:":1" }}</div>
+          <div>
+            <div style="font-size: 16px; font-weight: 800; color: var(--text);">{{ candidate.full_name }}</div>
+            <div style="font-size: 11px; color: var(--text3); font-family: var(--mono);">ID: #{{ candidate.candidate_id }}</div>
+          </div>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="background: var(--surface2); padding: 12px; border-radius: 10px;">
+            <div style="font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase;">Destination Email</div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text);">{{ candidate.email }}</div>
+          </div>
+          {% if job_title %}
+          <div style="background: var(--surface2); padding: 12px; border-radius: 10px;">
+            <div style="font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase;">Job Requisition</div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text);">{{ job_title }}</div>
+          </div>
+          {% endif %}
+          <div style="background: var(--surface2); padding: 12px; border-radius: 10px;">
+            <div style="font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase;">Sender Alias</div>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text);">{{ smtp_from_email|default:"Default System SMTP" }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="background: var(--surface3); border-style: dashed;">
+      <div style="padding: 20px; text-align: center;">
+        <div style="font-size: 24px; color: var(--text3); opacity: 0.5; margin-bottom: 8px;"><i class="bi bi-shield-check"></i></div>
+        <div style="font-size: 12px; color: var(--text3); font-weight: 600;">Secure Delivery</div>
+        <div style="font-size: 11px; color: var(--text3); margin-top: 4px;">All offer letters are encrypted and tracked via the Ultimatix Security Layer.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/onboarding_offer_create.js"></script>
+{% endblock %}

@@ -1,0 +1,385 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Interview Intelligence Assessment{% endblock %}
+{% block nav_interview_evaluation %}active{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 40px;">
+  <div>
+    <div class="page-title" style="font-size: 28px; font-weight: 900;">Intelligence Assessment Protocol</div>
+    <div class="page-subtitle" style="font-size: 15px; opacity: 0.7;">Submit high-bandwidth performance logs and technical competency assessments.</div>
+  </div>
+  <div class="header-actions">
+    {% if not show_form %}
+    <a href="/interview-evaluation/evaluation/?create=1" class="btn btn-primary" style="height: 48px; padding: 0 24px; border-radius: 14px; font-weight: 700;">
+      <i class="bi bi-plus-circle-fill"></i> Initialize New Assessment
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if show_form %}
+<div class="card" style="margin-bottom: 48px; border-radius: 28px; border-top: 6px solid var(--accent); overflow: hidden;">
+  <div class="card-header" style="padding: 24px 40px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+    <div class="card-title" style="font-size: 18px; font-weight: 800;"><i class="bi bi-pencil-square text-grad me-2"></i> {% if form_mode == 'edit' %}Reconfigure{% else %}Define New{% endif %} Intelligence Log</div>
+    <div id="evalProctoringBadge" style="display:inline-flex; align-items:center; gap:8px; padding:6px 16px; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.2); border-radius:99px; font-size:11px; font-weight:800; color:#4ade80; letter-spacing:0.5px; opacity:0;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;animation:pulseGreen 2s infinite;"></span>
+      SESSION MONITORED
+    </div>
+  </div>
+  
+  <form method="post" style="padding: 40px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="{% if form_mode == 'edit' %}update_evaluation{% else %}create_evaluation{% endif %}">
+    <input type="hidden" name="record_id" value="{{ form_data.record_id|default:'' }}">
+    
+    <div class="field-grid grid-3" style="gap: 32px;">
+      <div class="field">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Target Talent <span class="required-star">*</span></label>
+        <select id="ieCandidateId" name="candidate_id" required style="height: 52px; border-radius: 16px; padding: 0 20px;">
+          <option value="">Select Profile</option>
+          {% for c in candidate_options %}
+          <option value="{{ c.candidate_id }}" data-name="{{ c.full_name }}" {% if form_data.candidate_id == c.candidate_id or initial_candidate_id == c.candidate_id %}selected{% endif %}>
+            {{ c.candidate_id }} - {{ c.full_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Full Identity</label>
+        <input id="ieCandidateName" type="text" name="candidate_name" value="{{ form_data.candidate_name|default:initial_candidate_name }}" required readonly style="height: 52px; border-radius: 16px; opacity: 0.6; background: var(--surface2); font-weight: 700;">
+      </div>
+      <div class="field">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Lead Evaluator <span class="required-star">*</span></label>
+        {% with current_interviewer=form_data.interviewer_name|default:"" %}
+        <select name="interviewer_name" required style="height: 52px; border-radius: 16px;">
+          <option value="">Select Command Officer</option>
+          {% if current_interviewer and current_interviewer not in interviewer_name_list %}
+          <option value="{{ current_interviewer }}" selected>{{ current_interviewer }}</option>
+          {% endif %}
+          {% for option in interviewer_options %}
+          <option value="{{ option.full_name }}" {% if current_interviewer == option.full_name %}selected{% endif %}>
+            {{ option.full_name }}
+          </option>
+          {% endfor %}
+        </select>
+        {% endwith %}
+      </div>
+      
+      <div class="field">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Intelligence Tier</label>
+        <select id="ieInterviewRound" name="interview_round" required style="height: 52px; border-radius: 16px;">
+          <option value="">Select Round</option>
+          {% for option in interview_round_options %}
+          <option value="{{ option }}" {% if form_data.interview_round == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="field">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Technical Index (0-10)</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--accent2); font-size: 16px;"><i class="bi bi-cpu"></i></span>
+          <input type="number" min="0" max="10" step="0.1" name="technical_score" value="{{ form_data.technical_score|default:'' }}" required placeholder="e.g. 8.5" style="height: 52px; border-radius: 16px; padding-left: 44px; font-weight: 800; font-family: var(--mono);">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Communication Quotient (0-10)</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--amber); font-size: 16px;"><i class="bi bi-broadcast"></i></span>
+          <input type="number" min="0" max="10" step="0.1" name="communication_score" value="{{ form_data.communication_score|default:'' }}" required placeholder="e.g. 7.0" style="height: 52px; border-radius: 16px; padding-left: 44px; font-weight: 800; font-family: var(--mono);">
+        </div>
+      </div>
+      
+      <div class="field">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Cultural Synchronization (0-10)</label>
+        <div style="position: relative;">
+          <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--green); font-size: 16px;"><i class="bi bi-activity"></i></span>
+          <input type="number" min="0" max="10" step="0.1" name="cultural_fit_score" value="{{ form_data.cultural_fit_score|default:'' }}" required placeholder="e.g. 9.0" style="height: 52px; border-radius: 16px; padding-left: 44px; font-weight: 800; font-family: var(--mono);">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Assessment Protocol</label>
+        <select id="ieAssessmentFormSelect" name="assessment_form_id" style="height: 52px; border-radius: 16px;">
+          <option value="">Standard Logic Sequence</option>
+          {% for form in assessment_form_options %}
+          <option value="{{ form.id }}" {% if form_data.assessment_form_id == form.id|stringformat:"s" %}selected{% endif %}>{{ form.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Contextual Parameters</label>
+        <select id="ieFeedbackFormSelect" name="feedback_form_id" style="height: 52px; border-radius: 16px;">
+          <option value="">No special parameters</option>
+          {% for form in feedback_form_options %}
+          <option value="{{ form.id }}" {% if form_data.feedback_form_id == form.id|stringformat:"s" %}selected{% endif %}>{{ form.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field col-span-3">
+        <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Qualitative Signal Analysis</label>
+        <textarea name="comments" rows="5" placeholder="Document critical strengths, operational risks and technical alignment..." style="border-radius: 20px; padding: 20px;">{{ form_data.comments|default:'' }}</textarea>
+      </div>
+    </div>
+
+    <div id="ieAssessmentDynamicFields"></div>
+    <div id="ieFeedbackDynamicFields"></div>
+
+    <div style="margin-top: 48px; display: flex; justify-content: flex-end; gap: 16px; border-top: 1px solid var(--border); padding-top: 40px;">
+      <a href="/interview-evaluation/evaluation/" class="btn btn-ghost" style="height: 52px; padding: 0 32px; border-radius: 18px;">Abort Protocol</a>
+      {% if form_mode != 'edit' %}
+      <button type="submit" name="submit_mode" value="save_add" class="btn btn-secondary" style="height: 52px; padding: 0 32px; border-radius: 18px; font-weight: 700;">Save & Reset</button>
+      {% endif %}
+      <button type="submit" name="submit_mode" value="save" class="btn btn-primary" style="height: 56px; padding: 0 40px; border-radius: 20px; font-weight: 900; font-size: 15px; box-shadow: 0 10px 25px var(--accentbg);">
+        {% if form_mode == 'edit' %}Update Assessment Matrix{% else %}Finalize Intelligence Log{% endif %} <i class="bi bi-check2-all ms-2"></i>
+      </button>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<!-- Submission History -->
+<div class="card" style="border-radius: 28px; overflow: hidden;">
+  <div class="card-header" style="padding: 24px 40px; border-bottom: 1px solid var(--border);">
+    <div class="card-title" style="font-size: 18px; font-weight: 800;"><i class="bi bi-clock-history me-2" style="color: var(--accent2);"></i> Operational Log History</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="padding-left: 40px;">Profile Identity</th>
+          <th>Lead Officer</th>
+          <th>Intelligence Tier</th>
+          <th>Quota Index (T/C/F)</th>
+          <th>Log Date</th>
+          <th style="text-align: right; padding-right: 40px;">Operations</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in records %}
+        <tr>
+          <td class="primary" style="padding-left: 40px;">
+            <div style="font-weight: 800; color: var(--text); font-size: 14.5px;">{{ row.candidate_name }}</div>
+            <div style="font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: 0.5px;">SEC-ID: #{{ row.candidate_id }}</div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="user-avatar" style="width: 32px; height: 32px; font-size: 11px; font-weight: 800; border-radius: 10px;">{{ row.interviewer_name|slice:":1" }}</div>
+              <div style="font-size: 13.5px; font-weight: 700; color: var(--text);">{{ row.interviewer_name }}</div>
+            </div>
+          </td>
+          <td><span class="status-pill pill-blue" style="font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 8px;">{{ row.interview_round }}</span></td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <span class="status-pill pill-purple" title="Technical" style="padding: 4px 10px; font-weight: 900; font-family: var(--mono); border-radius: 8px;">{{ row.technical_score }}</span>
+              <span class="status-pill pill-amber" title="Communication" style="padding: 4px 10px; font-weight: 900; font-family: var(--mono); border-radius: 8px;">{{ row.communication_score }}</span>
+              <span class="status-pill pill-green" title="Cultural" style="padding: 4px 10px; font-weight: 900; font-family: var(--mono); border-radius: 8px;">{{ row.cultural_fit_score }}</span>
+            </div>
+          </td>
+          <td style="font-size: 12px; color: var(--text3); font-weight: 700;">{{ row.submitted_at|slice:":10" }}</td>
+          <td style="text-align: right; padding-right: 40px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              {% if row.is_submission_record %}
+              <a href="/interview-evaluation/evaluation/?edit_id={{ row.id }}" class="icon-btn" style="width: 38px; height: 38px;" title="Modify Logic"><i class="bi bi-sliders"></i></a>
+              <a href="{% url 'interview_evaluation:evaluation_delete_confirm' row.id %}" class="icon-btn" style="color: var(--red); border-color: var(--redbg); width: 38px; height: 38px;" title="Purge Record"><i class="bi bi-trash3"></i></a>
+              {% else %}
+              <span style="font-size: 10px; color: var(--text3); font-weight: 700; text-transform: uppercase; opacity: 0.6; letter-spacing: 1px;">Auto Gen</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align: center; padding: 100px; color: var(--text3); font-weight: 600;">Intelligence protocol history empty.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+{{ evaluation_form_map|json_script:"ieEvaluationFormMapData" }}
+{{ initial_assessment_form_values|json_script:"ieInitialAssessmentFormValuesData" }}
+{{ initial_feedback_form_values|json_script:"ieInitialFeedbackFormValuesData" }}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const idSelect = document.getElementById("ieCandidateId");
+    const nameInput = document.getElementById("ieCandidateName");
+    const assessmentFormSelect = document.getElementById("ieAssessmentFormSelect");
+    const feedbackFormSelect = document.getElementById("ieFeedbackFormSelect");
+    const assessmentDynamicFields = document.getElementById("ieAssessmentDynamicFields");
+    const feedbackDynamicFields = document.getElementById("ieFeedbackDynamicFields");
+    
+    if (idSelect && nameInput) {
+      idSelect.addEventListener("change", () => {
+        const sel = idSelect.options[idSelect.selectedIndex];
+        nameInput.value = (sel && sel.dataset) ? (sel.dataset.name || "") : "";
+      });
+    }
+
+    const formMap = JSON.parse(document.getElementById("ieEvaluationFormMapData").textContent || "{}");
+    let initAssessment = JSON.parse(document.getElementById("ieInitialAssessmentFormValuesData").textContent || "{}");
+    let initFeedback = JSON.parse(document.getElementById("ieInitialFeedbackFormValuesData").textContent || "{}");
+
+    const renderAssessmentSummary = (payload) => {
+      if (!assessmentDynamicFields) return;
+
+      if (!idSelect?.value) {
+        assessmentDynamicFields.innerHTML = "";
+        return;
+      }
+
+      const card = document.createElement("div");
+      card.style = "margin: 48px 0 0; padding: 28px 32px; border-radius: 24px; border: 1px solid var(--border2); background: rgba(255,255,255,0.01);";
+      const title = document.createElement("div");
+      title.style = "display:flex; align-items:center; gap:10px; font-size: 13px; font-weight: 900; color: var(--accent2); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 18px;";
+      title.innerHTML = '<i class="bi bi-clipboard-data" style="font-size: 18px;"></i> Assessment Result';
+      card.appendChild(title);
+
+      const body = document.createElement("div");
+      body.style = "display:grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;";
+
+      if (!payload || payload.found !== true) {
+        const msg = document.createElement("div");
+        msg.style = "grid-column: 1 / -1; color: var(--text3); font-weight: 700;";
+        msg.textContent = "No assessment result found for this candidate.";
+        body.appendChild(msg);
+      } else {
+        const items = [
+          ["Assessment", payload.assessment_form_name || "-"],
+          ["Status", payload.status || "-"],
+          ["Score", (payload.score === null || payload.score === undefined) ? "-" : String(payload.score)],
+          ["Max Score", (payload.max_score === null || payload.max_score === undefined) ? "-" : String(payload.max_score)],
+          ["Percent", (payload.percent === null || payload.percent === undefined) ? "-" : (String(payload.percent) + "%")],
+          ["Assigned", payload.assigned_at || "-"],
+          ["Submitted", payload.submitted_at || "-"],
+          ["Completed", payload.completed_at || "-"],
+        ];
+
+        items.forEach(([k, v]) => {
+          const box = document.createElement("div");
+          box.style = "padding: 12px 14px; border-radius: 16px; border: 1px solid var(--border2); background: rgba(255,255,255,0.02);";
+          box.innerHTML = `<div style="font-size:10px; font-weight:900; letter-spacing:1px; text-transform:uppercase; color: var(--text3); margin-bottom: 6px;">${k}</div>
+                           <div style="font-size:13px; font-weight:800; color: var(--text);">${(v ?? "-")}</div>`;
+          body.appendChild(box);
+        });
+      }
+
+      card.appendChild(body);
+      assessmentDynamicFields.innerHTML = "";
+      assessmentDynamicFields.appendChild(card);
+    };
+
+    const fetchAssessmentSummary = async () => {
+      if (!idSelect?.value) {
+        assessmentDynamicFields.innerHTML = "";
+        return;
+      }
+      const params = new URLSearchParams();
+      params.set("candidate_id", idSelect.value);
+      if (assessmentFormSelect?.value) params.set("assessment_form_id", assessmentFormSelect.value);
+
+      try {
+        const res = await fetch(`/interview-evaluation/assessment-result/?${params.toString()}`, { headers: { "Accept": "application/json" } });
+        const data = await res.json().catch(() => ({}));
+        renderAssessmentSummary(data);
+      } catch (_) {
+        renderAssessmentSummary({ found: false });
+      }
+    };
+
+    const render = (select, container, prefix, values) => {
+      container.innerHTML = "";
+      const cfg = formMap[select.value];
+      if (!cfg || !cfg.fields) return;
+      
+      const head = document.createElement("div");
+      head.style = "margin: 48px 0 24px; font-size: 13px; font-weight: 900; color: var(--accent2); text-transform: uppercase; letter-spacing: 1.5px; display: flex; align-items: center; gap: 12px;";
+      head.innerHTML = `<i class="bi bi-gear-wide-connected" style="font-size: 20px;"></i> ${cfg.name} Protocol Extension`;
+      container.appendChild(head);
+
+      const grid = document.createElement("div");
+      grid.className = "field-grid grid-3";
+      grid.style.background = "rgba(255,255,255,0.01)";
+      grid.style.padding = "40px";
+      grid.style.borderRadius = "24px";
+      grid.style.border = "1px solid var(--border2)";
+      
+      cfg.fields.forEach(f => {
+        const field = document.createElement("div");
+        field.className = "field";
+        const label = document.createElement("label");
+        label.className = "field-label";
+        label.style = "font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;";
+        label.textContent = f.label;
+        field.appendChild(label);
+        
+        let ctrl;
+        if (f.field_type === 'textarea') {
+          ctrl = document.createElement("textarea");
+          ctrl.style = "border-radius: 16px; padding: 16px;";
+          ctrl.value = values[f.field_name] || "";
+          field.className = "field col-span-3";
+        } else if (f.field_type === 'select') {
+          ctrl = document.createElement("select");
+          ctrl.style = "height: 52px; border-radius: 14px;";
+          ctrl.innerHTML = '<option value="">Select Option</option>' + (f.options || []).map(o => `<option value="${o}" ${values[f.field_name]==o?'selected':''}>${o}</option>`).join("");
+        } else {
+          ctrl = document.createElement("input");
+          ctrl.style = "height: 52px; border-radius: 14px; font-weight: 700;";
+          ctrl.type = f.field_type === 'number' ? 'number' : 'text';
+          ctrl.value = values[f.field_name] || "";
+        }
+        ctrl.name = prefix + f.field_name;
+        field.appendChild(ctrl);
+        grid.appendChild(field);
+      });
+      container.appendChild(grid);
+    };
+
+    assessmentFormSelect?.addEventListener("change", fetchAssessmentSummary);
+    feedbackFormSelect?.addEventListener("change", () => render(feedbackFormSelect, feedbackDynamicFields, "feedback_field_", {}));
+    idSelect?.addEventListener("change", fetchAssessmentSummary);
+    
+    if (assessmentFormSelect) fetchAssessmentSummary();
+    if (feedbackFormSelect) render(feedbackFormSelect, feedbackDynamicFields, "feedback_field_", initFeedback);
+  });
+</script>
+
+{# ── Proctoring: Light mode for evaluators (no webcam, no fullscreen) ── #}
+<script src="/static/js/proctor.js?v=1"></script>
+<script>
+(function () {
+  const TOKEN    = "{{ eval_proctor_session_token|default:'' }}";
+  const MAX_WARN = parseInt("{{ eval_proctor_max_warnings|default:'5' }}", 10) || 5;
+  const badge    = document.getElementById("evalProctoringBadge");
+
+  if (!TOKEN) {
+    // No token = proctoring not enabled for this session; hide badge.
+    return;
+  }
+
+  // Show badge
+  if (badge) {
+    badge.style.opacity = "1";
+    badge.style.transition = "opacity 0.4s";
+  }
+
+  // Add pulse keyframe
+  const ks = document.createElement("style");
+  ks.textContent = "@keyframes pulseGreen { 0%,100%{opacity:1;} 50%{opacity:0.3;} }";
+  document.head.appendChild(ks);
+
+  // Start proctoring — light mode: tab-switch + DevTools only
+  window._evalProctor = new AankhProctor({
+    sessionToken:     TOKEN,
+    maxWarnings:      MAX_WARN,
+    enableWebcam:     false,     // No camera for interviewers
+    enableFullscreen: false,     // No fullscreen enforcement for staff
+    formSelector:     "form",
+  });
+  window._evalProctor.start();
+})();
+</script>
+{% endblock %}

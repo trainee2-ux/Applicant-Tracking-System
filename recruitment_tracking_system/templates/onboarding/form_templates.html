@@ -1,0 +1,109 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Onboarding Form Templates{% endblock %}
+{% block nav_onboarding %}active{% endblock %}
+{% block header %}Onboarding{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="breadcrumb-custom">Onboarding &gt; Form Templates</div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <h5 class="mb-2">Existing Templates</h5>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Fields</th>
+                  <th>Documents</th>
+                  <th>Email Template</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for t in templates %}
+                  <tr>
+                    <td><strong>{{ t.name }}</strong><div class="text-muted small">{{ t.description }}</div></td>
+                    <td class="small">{{ t.selected_fields|join:", " }}</td>
+                    <td class="small">{{ t.document_requirements|join:", " }}</td>
+                    <td class="small">{% if t.offer_email_template %}{{ t.offer_email_template.name }}{% else %}-{% endif %}</td>
+                    <td>{% if t.is_active %}<span class="badge text-bg-success">Active</span>{% else %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}</td>
+                    <td class="small text-muted">{{ t.updated_at|date:"Y-m-d H:i" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="6" class="text-muted">No templates created yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card shadow-sm border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between gap-2">
+            <h5 class="mb-2">Create Template</h5>
+            <a class="btn btn-outline-secondary btn-sm" href="/onboarding/board/">Back</a>
+          </div>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_template">
+            <div class="mb-2">
+              <label class="form-label">Template Name</label>
+              <input class="form-control" name="name" placeholder="e.g., Standard Onboarding">
+            </div>
+            <div class="mb-2">
+              <label class="form-label">Description</label>
+              <input class="form-control" name="description" placeholder="Optional">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Offer Email Template</label>
+              <select class="form-select" name="offer_email_template_id">
+                <option value="">-- Select (optional) --</option>
+                {% for t in email_templates %}
+                  <option value="{{ t.id }}">{{ t.name }}{% if t.module %} ({{ t.module }}){% endif %}</option>
+                {% endfor %}
+              </select>
+              <div class="text-muted small mt-1">Uses Settings → Email Templates for offer letter subject/body.</div>
+            </div>
+
+            <div class="mb-2">
+              <div class="form-label mb-1">Fields</div>
+              <div class="border rounded p-2" style="max-height: 220px; overflow: auto;">
+                {% for key,label in field_choices %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="selected_fields" value="{{ key }}" id="f_{{ key }}">
+                    <label class="form-check-label" for="f_{{ key }}">{{ label }}</label>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <div class="form-label mb-1">Document Requirements</div>
+              <div class="border rounded p-2" style="max-height: 200px; overflow: auto;">
+                {% for key,label in document_choices %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="document_requirements" value="{{ key }}" id="d_{{ key }}">
+                    <label class="form-check-label" for="d_{{ key }}">{{ label }}</label>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <button class="btn btn-primary" type="submit">Create Template</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

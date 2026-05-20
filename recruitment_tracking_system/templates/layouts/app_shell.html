@@ -1,0 +1,439 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ATS{% endblock %} &mdash; Ultimatix</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Bootstrap (grid/utilities used across pages) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}?v={% now 'U' %}">
+  {% block page_css %}{% endblock %}
+  <style>
+    /* Inline fixes for proper density and alignment */
+    .nav-icon i { font-size: 1.1rem; }
+    .topbar-search i { font-size: 0.9rem; color: var(--text3); }
+    .icon-btn i { font-size: 1.1rem; }
+    .btn i { font-size: 0.9rem; }
+    .stat-icon i { font-size: 1.25rem; }
+  </style>
+</head>
+<body class="{% if request.session.theme == 'light' %}light-mode{% endif %}">
+<div class="layout-wrap" id="layoutWrap">
+
+  <!-- ===== TOPBAR ===== -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-icon">
+        <img src="{% static 'images/ultimatix_logo.jpg' %}" alt="Ultimatix">
+      </div>
+      <div>
+        <div class="logo-name">Ultimatix</div>
+        <div class="logo-tag">ATS Platform</div>
+      </div>
+    </div>
+    <div class="icon-btn" id="sidebarToggle" title="Toggle Sidebar" style="margin-right: 16px;">
+      <i class="bi bi-list"></i>
+    </div>
+    {% block topbar_search %}
+    <form class="topbar-search" method="get" action="{% url 'global_search' %}">
+      <i class="bi bi-search"></i>
+      <input type="text" name="q" autocomplete="off" placeholder="Search candidates, jobs, evaluation..." value="{{ request.GET.q|default:'' }}">
+      <span class="search-kbd">⌘K</span>
+    </form>
+    {% endblock %}
+    
+    <div class="topbar-right">
+       {% if request.session.login_user_role|lower != "candidate" %}
+        {% block topbar_primary_action %}
+        <a href="/candidate-management/registration/" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Candidate</a>
+        {% endblock %}
+      {% endif %}
+      {% if request.session.login_user_role|lower != "candidate" %}
+      <div class="theme-picker" id="accentThemePicker">
+        <div class="icon-btn" id="accentThemeToggle" title="Pick Color Theme" aria-label="Pick color theme" aria-haspopup="dialog" aria-expanded="false">
+          <i class="bi bi-palette"></i>
+        </div>
+        <div class="theme-popover d-none" id="accentThemePopover" role="dialog" aria-label="Color theme picker">
+          <div class="theme-popover-head">
+            <div class="theme-popover-title">Color Theme</div>
+            <button type="button" class="theme-popover-close" id="accentThemeClose" aria-label="Close">×</button>
+          </div>
+          <div class="theme-popover-body">
+            <label class="theme-popover-label" for="accentColorInput">Choose color</label>
+            <input class="theme-color-input" id="accentColorInput" type="color" value="#6c63ff">
+            <div class="theme-swatches" aria-label="Quick colors">
+              <button type="button" class="theme-swatch" data-color="#6c63ff" aria-label="Purple"></button>
+              <button type="button" class="theme-swatch" data-color="#3b82f6" aria-label="Blue"></button>
+              <button type="button" class="theme-swatch" data-color="#10b981" aria-label="Green"></button>
+              <button type="button" class="theme-swatch" data-color="#f59e0b" aria-label="Amber"></button>
+              <button type="button" class="theme-swatch" data-color="#f43f5e" aria-label="Rose"></button>
+              <button type="button" class="theme-swatch" data-color="#a855f7" aria-label="Violet"></button>
+              <button type="button" class="theme-swatch" data-color="#06b6d4" aria-label="Cyan"></button>
+              <button type="button" class="theme-swatch" data-color="#22c55e" aria-label="Emerald"></button>
+              <button type="button" class="theme-swatch" data-color="#ef4444" aria-label="Red"></button>
+              <button type="button" class="theme-swatch" data-color="#f97316" aria-label="Orange"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="icon-btn" id="themeToggle" title="Toggle Light/Dark Mode">
+        <i class="bi bi-moon-stars" id="themeIcon"></i>
+      </div>
+      {% endif %}
+
+      
+
+      <div class="notif-picker" id="notifPicker">
+        <div class="icon-btn" id="notifToggle" title="Notifications" aria-label="Notifications" aria-haspopup="dialog" aria-expanded="false">
+          <i class="bi bi-bell"></i>
+          {% if ui_notification_unread %}
+            <div class="notif-dot"></div>
+          {% endif %}
+        </div>
+        <div class="notif-popover d-none" id="notifPopover" role="dialog" aria-label="Notifications">
+          <div class="notif-popover-head">
+            <div class="notif-popover-title">Notifications</div>
+            <button type="button" class="notif-popover-close" id="notifClose" aria-label="Close">×</button>
+          </div>
+          <div class="notif-popover-body">
+            {% for n in ui_notifications %}
+              <a class="notif-item {% if not n.is_read %}unread{% endif %}" href="/settings/notifications/open/{{ n.id }}/">
+                <div class="notif-item-title">{{ n.title }}</div>
+                {% if n.message %}
+                  <div class="notif-item-msg">{{ n.message }}</div>
+                {% endif %}
+                <div class="notif-item-meta">{{ n.created_at|date:"M d, Y H:i" }}</div>
+              </a>
+            {% empty %}
+              <div class="notif-empty">No notifications.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <a class="user-profile" href="{% url 'accounts:my_profile' %}" title="My Profile" aria-label="Open profile">
+        <div class="user-avatar">
+          {{ request.session.login_user_name|slice:":1"|default:"A" }}
+        </div>
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <nav style="display: flex; flex-direction: column; height: 100%;">
+      {% block sidebar_nav %}
+      <span class="nav-label">Core</span>
+      {% if nav_access.dashboard %}
+      <a class="nav-link {% block nav_dashboard %}{% endblock %}" href="/dashboard/">
+        <span class="nav-icon"><i class="bi bi-grid-1x2-fill"></i></span> <span>Dashboard</span>
+      </a>
+      {% endif %}
+      {% if nav_access.applicant_tracking %}
+      <a class="nav-link {% block nav_applicant_tracking %}{% endblock %}" href="/applicant-tracking/application-pipeline/">
+        <span class="nav-icon"><i class="bi bi-kanban-fill"></i></span> <span>Pipeline</span>
+        <span class="nav-badge">{% block pipeline_count %}{% endblock %}</span>
+      </a>
+      {% endif %}
+      {% if nav_access.candidate_management %}
+      <a class="nav-link {% block nav_candidate_management %}{% endblock %}" href="/candidate-management/">
+        <span class="nav-icon"><i class="bi bi-people-fill"></i></span> <span>Candidates</span>
+      </a>
+      {% endif %}
+      {% if nav_access.job_requisition %}
+      <a class="nav-link {% block nav_jobs %}{% endblock %}" href="/job-requisition/">
+        <span class="nav-icon"><i class="bi bi-briefcase-fill"></i></span> <span>Jobs</span>
+      </a>
+      {% endif %}
+      {% if request.session.login_user_role|lower == "candidate" %}
+      <a class="nav-link {% block nav_candidate_portal %}{% endblock %}" href="/candidate-portal/">
+        <span class="nav-icon"><i class="bi bi-person-workspace"></i></span> <span>Candidate Portal</span>
+      </a>
+      <a class="nav-link {% block nav_candidate_pipeline %}{% endblock %}" href="/candidate-portal/application-pipeline/">
+        <span class="nav-icon"><i class="bi bi-kanban"></i></span> <span>My Applications</span>
+      </a>
+      {% endif %}
+
+      <span class="nav-label">Process</span>
+      {% if nav_access.applicant_tracking %}
+      <a class="nav-link {% block nav_interviews %}{% endblock %}" href="/applicant-tracking/interview-scheduling/">
+        <span class="nav-icon"><i class="bi bi-calendar-week-fill"></i></span> <span>Interviews</span>
+      </a>
+      {% endif %}
+      {% if nav_access.interview_evaluation %}
+      <a class="nav-link {% block nav_interview_evaluation %}{% endblock %}" href="/interview-evaluation/">
+        <span class="nav-icon"><i class="bi bi-clipboard2-check-fill"></i></span> <span>Evaluation</span>
+      </a>
+      {% endif %}
+      {% if nav_access.interview_recording %}
+      <a class="nav-link {% block nav_interview_recording %}{% endblock %}" href="/interview-recording/">
+        <span class="nav-icon"><i class="bi bi-camera-video-fill"></i></span> <span>Interview Recording</span>
+      </a>
+      {% endif %}
+      {% if nav_access.background_verification %}
+      <a class="nav-link {% block nav_background_verification %}{% endblock %}" href="/background-verification/">
+        <span class="nav-icon"><i class="bi bi-shield-lock-fill"></i></span> <span>Background Check</span>
+      </a>
+      {% endif %}
+      {% if nav_access.onboarding %}
+      <a class="nav-link {% block nav_onboarding %}{% endblock %}" href="/onboarding/board/">
+        <span class="nav-icon"><i class="bi bi-rocket-takeoff-fill"></i></span> <span>Onboarding</span>
+      </a>
+      {% endif %}
+
+      {% if nav_access.task_management or nav_task_override %}
+      <a class="nav-link {% block nav_task_management %}{% endblock %}" href="/task-management/">
+        <span class="nav-icon"><i class="bi bi-check2-square"></i></span> <span>Tasks</span>
+        {% if nav_task_override and not nav_access.task_management %}
+          <span class="nav-badge">!</span>
+        {% endif %}
+      </a>
+      {% endif %}
+
+      {% if nav_access.candidate_management %}
+      <a class="nav-link {% block nav_activity %}{% endblock %}" href="/candidate-management/activity/">
+        <span class="nav-icon"><i class="bi bi-lightning-charge-fill"></i></span> <span>Activity</span>
+      </a>
+      {% endif %}
+
+      <span class="nav-label">Admin</span>
+      {% if nav_access.recruitment_teams %}
+      <a class="nav-link {% block nav_recruitment_teams %}{% endblock %}" href="/recruitment-teams/">
+        <span class="nav-icon"><i class="bi bi-diagram-3-fill"></i></span> <span>Teams</span>
+      </a>
+      {% endif %}
+      {% if nav_access.settings %}
+      <a class="nav-link {% block nav_settings %}{% endblock %}" href="/settings/">
+        <span class="nav-icon"><i class="bi bi-gear-fill"></i></span> <span>Settings</span>
+      </a>
+      {% endif %}
+
+      <div style="margin-top: auto; padding: 12px 0; border-top: 1px solid var(--border);">
+        <a href="{% url 'accounts:logout' %}" class="nav-link" style="color: var(--red);">
+          <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> <span>Logout</span>
+        </a>
+      </div>
+      {% endblock %}
+    </nav>
+  </aside>
+
+  <!-- ===== MAIN PANEL ===== -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+</div>
+
+{% block page_js %}{% endblock %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // Theme Logic
+  const body = document.body;
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  const root = document.documentElement;
+  const accentThemePicker = document.getElementById('accentThemePicker');
+  const accentThemeToggle = document.getElementById('accentThemeToggle');
+  const accentThemePopover = document.getElementById('accentThemePopover');
+  const accentThemeClose = document.getElementById('accentThemeClose');
+  const accentColorInput = document.getElementById('accentColorInput');
+  const notifPicker = document.getElementById('notifPicker');
+  const notifToggle = document.getElementById('notifToggle');
+  const notifPopover = document.getElementById('notifPopover');
+  const notifClose = document.getElementById('notifClose');
+  
+  const savedTheme = localStorage.getItem('ats-theme') || 'dark';
+  if (savedTheme === 'light') {
+    body.classList.add('light-mode');
+    if (themeIcon) themeIcon.classList.replace('bi-moon-stars', 'bi-sun');
+  }
+
+  // Accent color (full color picker + swatches)
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+  const normalizeHex = (hex) => {
+    if (!hex) return null;
+    const s = String(hex).trim();
+    const m = s.match(/^#([0-9a-fA-F]{6})$/);
+    return m ? `#${m[1].toLowerCase()}` : null;
+  };
+  const hexToRgb = (hex) => {
+    const n = normalizeHex(hex);
+    if (!n) return null;
+    const raw = n.slice(1);
+    return {
+      r: parseInt(raw.slice(0, 2), 16),
+      g: parseInt(raw.slice(2, 4), 16),
+      b: parseInt(raw.slice(4, 6), 16),
+    };
+  };
+  const rgbToHex = ({ r, g, b }) => {
+    const toHex = (v) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  };
+  const rgbToHsl = ({ r, g, b }) => {
+    const rn = r / 255, gn = g / 255, bn = b / 255;
+    const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+    const d = max - min;
+    let h = 0;
+    const l = (max + min) / 2;
+    const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+    if (d !== 0) {
+      switch (max) {
+        case rn: h = ((gn - bn) / d) % 6; break;
+        case gn: h = (bn - rn) / d + 2; break;
+        default: h = (rn - gn) / d + 4; break;
+      }
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+    return { h, s: s * 100, l: l * 100 };
+  };
+  const hslToRgb = ({ h, s, l }) => {
+    const sn = clamp(s, 0, 100) / 100;
+    const ln = clamp(l, 0, 100) / 100;
+    const c = (1 - Math.abs(2 * ln - 1)) * sn;
+    const hp = ((h % 360) + 360) % 360 / 60;
+    const x = c * (1 - Math.abs((hp % 2) - 1));
+    let r1 = 0, g1 = 0, b1 = 0;
+    if (hp >= 0 && hp < 1) [r1, g1, b1] = [c, x, 0];
+    else if (hp < 2) [r1, g1, b1] = [x, c, 0];
+    else if (hp < 3) [r1, g1, b1] = [0, c, x];
+    else if (hp < 4) [r1, g1, b1] = [0, x, c];
+    else if (hp < 5) [r1, g1, b1] = [x, 0, c];
+    else [r1, g1, b1] = [c, 0, x];
+    const m = ln - c / 2;
+    return { r: (r1 + m) * 255, g: (g1 + m) * 255, b: (b1 + m) * 255 };
+  };
+  const setAccentFromHex = (hex) => {
+    const normalized = normalizeHex(hex);
+    const rgb = hexToRgb(normalized);
+    if (!rgb) return;
+    const hsl = rgbToHsl(rgb);
+    const isLight = body.classList.contains('light-mode');
+    const nextAccent2 = hslToRgb({
+      h: hsl.h,
+      s: clamp(hsl.s + (isLight ? 0 : 2), 0, 100),
+      l: clamp(hsl.l + (isLight ? -10 : 12), 0, 100),
+    });
+    const accent2 = rgbToHex(nextAccent2);
+    root.style.setProperty('--accent', normalized);
+    root.style.setProperty('--accent2', accent2);
+    root.style.setProperty('--accentbg', `rgba(${rgb.r},${rgb.g},${rgb.b},0.14)`);
+
+    // Keep Bootstrap theme in sync (buttons, links, etc.)
+    root.style.setProperty('--bs-primary', normalized);
+    root.style.setProperty('--bs-primary-rgb', `${Math.round(rgb.r)},${Math.round(rgb.g)},${Math.round(rgb.b)}`);
+    root.style.setProperty('--bs-link-color', normalized);
+    root.style.setProperty('--bs-link-hover-color', accent2);
+
+    localStorage.setItem('ats-accent-color', normalized);
+    if (accentColorInput) accentColorInput.value = normalized;
+  };
+  const savedAccentColor = normalizeHex(localStorage.getItem('ats-accent-color')) || '#6c63ff';
+  setAccentFromHex(savedAccentColor);
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const isLight = body.classList.toggle('light-mode');
+      localStorage.setItem('ats-theme', isLight ? 'light' : 'dark');
+      if (themeIcon) {
+        if (isLight) {
+          themeIcon.classList.replace('bi-moon-stars', 'bi-sun');
+        } else {
+          themeIcon.classList.replace('bi-sun', 'bi-moon-stars');
+        }
+      }
+      // Recompute accent2 for current mode
+      setAccentFromHex(normalizeHex(localStorage.getItem('ats-accent-color')) || '#6c63ff');
+    });
+  }
+  const closeAccentPopover = () => {
+    if (!accentThemePopover || !accentThemeToggle) return;
+    accentThemePopover.classList.add('d-none');
+    accentThemeToggle.setAttribute('aria-expanded', 'false');
+  };
+  const openAccentPopover = () => {
+    if (!accentThemePopover || !accentThemeToggle) return;
+    accentThemePopover.classList.remove('d-none');
+    accentThemeToggle.setAttribute('aria-expanded', 'true');
+  };
+  if (accentThemeToggle && accentThemePopover) {
+    accentThemeToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !accentThemePopover.classList.contains('d-none');
+      if (isOpen) closeAccentPopover(); else openAccentPopover();
+    });
+  }
+  if (accentThemeClose) accentThemeClose.addEventListener('click', closeAccentPopover);
+  document.addEventListener('click', (e) => {
+    if (!accentThemePicker || !accentThemePopover) return;
+    if (accentThemePopover.classList.contains('d-none')) return;
+    if (!accentThemePicker.contains(e.target)) closeAccentPopover();
+  });
+  const closeNotifPopover = () => {
+    if (!notifPopover || !notifToggle) return;
+    notifPopover.classList.add('d-none');
+    notifToggle.setAttribute('aria-expanded', 'false');
+  };
+  const openNotifPopover = () => {
+    if (!notifPopover || !notifToggle) return;
+    notifPopover.classList.remove('d-none');
+    notifToggle.setAttribute('aria-expanded', 'true');
+  };
+  if (notifToggle && notifPopover) {
+    notifToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = !notifPopover.classList.contains('d-none');
+      if (isOpen) closeNotifPopover(); else openNotifPopover();
+    });
+  }
+  if (notifClose) notifClose.addEventListener('click', closeNotifPopover);
+  document.addEventListener('click', (e) => {
+    if (!notifPicker || !notifPopover) return;
+    if (notifPopover.classList.contains('d-none')) return;
+    if (!notifPicker.contains(e.target)) closeNotifPopover();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAccentPopover();
+    if (e.key === 'Escape') closeNotifPopover();
+  });
+  if (accentColorInput) {
+    accentColorInput.addEventListener('input', () => setAccentFromHex(accentColorInput.value));
+  }
+  if (accentThemePicker) {
+    accentThemePicker.querySelectorAll('[data-color]').forEach((btn) => {
+      btn.addEventListener('click', () => setAccentFromHex(btn.getAttribute('data-color')));
+    });
+  }
+
+  // Sidebar Toggle Logic
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const savedSidebar = localStorage.getItem('ats-sidebar');
+  if (savedSidebar === 'collapsed') {
+    body.classList.add('sidebar-collapsed');
+  }
+
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', () => {
+      const isCollapsed = body.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('ats-sidebar', isCollapsed ? 'collapsed' : 'expanded');
+    });
+  }
+
+  // Global Search focus
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.querySelector('.topbar-search input')?.focus();
+    }
+  });
+});
+</script>
+</body>
+</html>

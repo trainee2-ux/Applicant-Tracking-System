@@ -1,0 +1,33 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block topbar_search %}{% endblock %}
+{% block topbar_primary_action %}{% endblock %}
+
+{% block sidebar_nav %}
+  <span class="nav-label">Super Admin</span>
+  <a class="nav-link {% block nav_super_admin_dashboard %}{% endblock %}" href="/super-admin/dashboard/">
+    <span class="nav-icon"><i class="bi bi-speedometer2"></i></span> <span>Dashboard</span>
+  </a>
+  <a class="nav-link {% block nav_super_admin_companies %}{% endblock %}" href="/super-admin/companies/">
+    <span class="nav-icon"><i class="bi bi-building"></i></span> <span>Companies</span>
+  </a>
+  <a class="nav-link {% block nav_super_admin_subscriptions %}{% endblock %}" href="/super-admin/subscriptions/">
+    <span class="nav-icon"><i class="bi bi-stars"></i></span> <span>Subscriptions</span>
+  </a>
+  <a class="nav-link {% block nav_super_admin_plans %}{% endblock %}" href="/super-admin/plans/">
+    <span class="nav-icon"><i class="bi bi-layers"></i></span> <span>Plans</span>
+  </a>
+  <a class="nav-link {% block nav_super_admin_billing %}{% endblock %}" href="/super-admin/billing/">
+    <span class="nav-icon"><i class="bi bi-credit-card-2-front"></i></span> <span>Billing</span>
+  </a>
+  <a class="nav-link {% block nav_super_admin_agreements %}{% endblock %}" href="/super-admin/service-agreements/">
+    <span class="nav-icon"><i class="bi bi-file-earmark-text"></i></span> <span>Agreements</span>
+  </a>
+
+  <div style="margin-top: auto; padding: 12px 0; border-top: 1px solid var(--border);">
+    <a href="{% url 'super_admin:logout' %}" class="nav-link" style="color: var(--red);">
+      <span class="nav-icon"><i class="bi bi-box-arrow-right"></i></span> <span>Logout</span>
+    </a>
+  </div>
+{% endblock %}
+

@@ -1,0 +1,21 @@
+{% extends "layouts/app_shell.html" %}
+{% block title %}Access Blocked{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 820px;">
+  <div class="card p-4">
+    <h3 class="mb-2">Access Blocked</h3>
+    {% if reason %}
+    <div class="alert alert-warning mb-3"><strong>{{ reason }}</strong></div>
+    {% endif %}
+    {% if detail %}
+    <div class="text-muted mb-3">{{ detail }}</div>
+    {% endif %}
+    <div class="d-flex gap-2">
+      <a class="btn btn-primary" href="/dashboard/">Go to Dashboard</a>
+      <a class="btn btn-outline-secondary" href="/logout/">Logout</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

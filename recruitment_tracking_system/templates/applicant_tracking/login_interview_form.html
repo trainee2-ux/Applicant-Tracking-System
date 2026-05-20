@@ -1,0 +1,268 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Log In Interview{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=5">{% endblock %}
+{% block nav_interviews %}active{% endblock %}
+{% block header %}Interviews &gt; Take-Home Assessment Form{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="form-shell" style="max-width: 1000px; margin: 0 auto;">
+  <div class="page-header mb-4">
+    <div>
+      <h2 class="page-title">Configure Take-Home Assessment</h2>
+      <p class="page-subtitle">Establish secure evaluation parameters and access protocols for the candidate.</p>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="record_id" value="{{ form_data.record_id|default:'' }}">
+
+    <!-- Section 1: Candidate Information -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-person-badge"></i></div>
+        <div>
+          <div class="section-title">Candidate Information</div>
+          <div class="section-sub">Mapping the talent protocol to the target requisition.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Manpower Requisition ID</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-hash field-icon"></i>
+            <input class="premium-input-v2" type="text" value="Auto" readonly>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Candidate Name</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-person field-icon"></i>
+            <select id="liCandidateSelect" class="premium-input-v2" name="candidate_name" required>
+              <option value="">Select Candidate</option>
+              {% for item in candidate_options %}
+              <option value="{{ item.id }}" data-posting="{{ item.posting }}" {% if form_data.candidate_name == item.id %}selected{% endif %}>{{ item.id }} - {{ item.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Target Position</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-briefcase field-icon"></i>
+            <select id="liPostingTitle" class="premium-input-v2" name="posting_title" required>
+              <option value="">Select Position...</option>
+              {% for item in posting_options %}
+              <option value="{{ item }}" {% if form_data.posting_title == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Operational Client</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-building field-icon"></i>
+            <select class="premium-input-v2" name="client_name">
+              <option value="">Select Client...</option>
+              {% for item in client_options %}
+              <option value="{{ item }}" {% if form_data.client_name == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Assessment Configuration -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-clipboard-check"></i></div>
+        <div>
+          <div class="section-title">Assessment Configuration</div>
+          <div class="section-sub">Define the evaluation schema and digital portal.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Assessment Schema</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-clipboard-data field-icon"></i>
+            <select class="premium-input-v2" name="assessment_name">
+              <option value="">Select Assessment Template</option>
+              {% for item in assessment_options %}
+              <option value="{{ item }}" {% if form_data.assessment_name == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Interview Process Round</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-diagram-3 field-icon"></i>
+            <select class="premium-input-v2" name="interview_process_name" required>
+              <option value="">Select Process Round</option>
+              {% for item in process_options %}
+              <option value="{{ item }}" {% if form_data.interview_process_name == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap col-span-2">
+          <label class="field-label">Assessment Portal URL</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-window-sidebar field-icon"></i>
+            <input class="premium-input-v2" name="login_url" type="url" placeholder="https://assessment-portal.com/..." value="{{ form_data.login_url|default:'' }}">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Timing & Logistics -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-clock"></i></div>
+        <div>
+          <div class="section-title">Timing & Ownership</div>
+          <div class="section-sub">Schedule the sequence and assign protocol leads.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Sequence Date</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-calendar3 field-icon"></i>
+            <input class="premium-input-v2" name="date" type="date" value="{{ form_data.date|default:'' }}" required>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Time Window (From - To)</label>
+          <div class="d-flex gap-2">
+            <div class="input-icon-wrap flex-fill">
+              <i class="bi bi-clock field-icon"></i>
+              <input class="premium-input-v2" name="from_time" type="time" value="{{ form_data.from_time|default:'' }}" required>
+            </div>
+            <div class="input-icon-wrap flex-fill">
+              <i class="bi bi-clock-history field-icon"></i>
+              <input class="premium-input-v2" name="to_time" type="time" value="{{ form_data.to_time|default:'' }}" required>
+            </div>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Protocol Lead</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-person-check field-icon"></i>
+            <select class="premium-input-v2" name="interviewer_name" required>
+              <option value="">Select Interviewer</option>
+              {% for item in interviewer_options %}
+              <option value="{{ item }}" {% if form_data.interviewer_name == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Protocol Owner</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-shield-check field-icon"></i>
+            <select class="premium-input-v2" name="interview_owner">
+              <option value="">Select Owner</option>
+              {% for item in owner_options %}
+              <option value="{{ item }}" {% if form_data.interview_owner == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Secure Access Notes -->
+    <div class="section shadow-sm mb-4">
+      <div class="section-header">
+        <div class="section-icon"><i class="bi bi-key"></i></div>
+        <div>
+          <div class="section-title">Secure Access Notes & Directives</div>
+          <div class="section-sub">Sensitive credentials and internal evaluation instructions.</div>
+        </div>
+      </div>
+      <div class="field-grid grid-2">
+        <div class="field-wrap">
+          <label class="field-label">Access Credentials / Tokens</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-lock field-icon" style="top: 15px;"></i>
+            <textarea class="premium-input-v2" name="access_notes" rows="3" placeholder="Paste assessment tokens or access instructions here...">{{ form_data.access_notes|default:'' }}</textarea>
+          </div>
+        </div>
+        <div class="field-wrap">
+          <label class="field-label">Sequence Directives</label>
+          <div class="input-icon-wrap">
+            <i class="bi bi-chat-left-dots field-icon" style="top: 15px;"></i>
+            <textarea class="premium-input-v2" name="schedule_comments" rows="3" placeholder="General internal comments...">{{ form_data.schedule_comments|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-end gap-3 mt-5">
+      <a href="{% url 'applicant_tracking:login_interview' %}" class="btn btn-secondary" style="padding: 12px 32px; border-radius: 12px;">Cancel</a>
+      <button type="submit" class="btn btn-primary" style="padding: 12px 48px; border-radius: 12px; box-shadow: 0 8px 20px var(--accentbg);">Commit Protocol</button>
+    </div>
+  </form>
+</div>
+
+<style>
+  .input-icon-wrap { position: relative; display: flex; align-items: center; width: 100%; }
+  .field-icon { position: absolute; left: 14px; color: var(--text3); font-size: 1rem; pointer-events: none; }
+  .premium-input-v2 { 
+    width: 100%;
+    height: 48px;
+    padding-left: 42px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13.5px;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.2s;
+  }
+  textarea.premium-input-v2 { height: auto; padding-top: 12px; }
+  .premium-input-v2:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accentbg); }
+  .premium-input-v2[readonly] { opacity: 0.7; cursor: not-allowed; }
+  
+  .section { transition: transform 0.2s; }
+  .section:hover { transform: translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const candidateSelect = document.getElementById("liCandidateSelect");
+    const postingSelect = document.getElementById("liPostingTitle");
+    if (candidateSelect && postingSelect) {
+      candidateSelect.addEventListener("change", function () {
+        const selected = candidateSelect.options[candidateSelect.selectedIndex];
+        const posting = selected && selected.dataset ? selected.dataset.posting : "";
+        if (!posting) return;
+        let matched = Array.from(postingSelect.options).find(function (opt) {
+          return opt.value === posting || opt.text === posting;
+        });
+        if (!matched) {
+          matched = document.createElement("option");
+          matched.value = posting;
+          matched.textContent = posting;
+          postingSelect.appendChild(matched);
+        }
+        postingSelect.value = matched.value;
+      });
+    }
+  });
+</script>
+{% endblock %}
+

@@ -1,0 +1,28 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - {{ module_title }}{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=12">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; {{ module_title }}{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  <div class="settings-main">
+    <div class="settings-panel">
+      <div class="settings-head">
+        <h3 class="settings-title">{{ module_title }}</h3>
+      </div>
+      {% if module_rows %}
+      <ul class="settings-list mb-0">
+        {% for item in module_rows %}
+        <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-muted mb-0">No records to display.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

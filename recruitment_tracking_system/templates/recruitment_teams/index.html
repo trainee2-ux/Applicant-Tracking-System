@@ -1,0 +1,436 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Recruitment Teams{% endblock %}
+{% block page_css %}
+<link rel="stylesheet" href="/static/css/recruitment_teams.css?v=4">
+{% endblock %}
+{% block nav_recruitment_teams %}active{% endblock %}
+{% block header %}Admin &gt; Recruitment Teams{% endblock %}
+
+{% block content %}
+<div class="premium-dashboard fade-in">
+  
+  <!-- Premium Header -->
+  <div class="premium-header mb-5">
+    <div class="header-content">
+      <h1 class="page-title">Recruitment Teams</h1>
+      <p class="page-subtitle">Configure, manage, and monitor your talent acquisition squads.</p>
+    </div>
+    <div class="header-actions">
+      <button id="openTeamCreateBtn" class="btn-premium">
+        <span class="btn-icon">{% if selected_team %}<i class="bi bi-pencil-square"></i>{% else %}<i class="bi bi-plus-lg"></i>{% endif %}</span>
+        <span>{% if selected_team %}Edit Team{% else %}Create Team{% endif %}</span>
+      </button>
+    </div>
+  </div>
+
+  {% if messages %}
+  <div class="alert-container mb-4">
+    {% for message in messages %}
+    <div class="premium-alert alert-{{ message.tags|default:'info' }}">
+      <div class="alert-icon"><i class="bi bi-bell-fill"></i></div>
+      <div class="alert-text">{{ message }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Team Dashboard (Metrics Cards) -->
+  <div class="section-title-wrapper mb-3">
+    <h3 class="section-title"><i class="bi bi-activity text-accent"></i> Performance Overview</h3>
+  </div>
+  
+  <div class="metrics-grid mb-5">
+    {% for row in team_dashboard_rows %}
+    <div class="metric-card glass-panel">
+      <div class="metric-header">
+        <div class="team-avatar">{{ row.team_name|slice:":1"|upper }}</div>
+        <h4 class="team-name">{{ row.team_name }}</h4>
+      </div>
+      <div class="metric-stats">
+        <div class="stat-item">
+          <span class="stat-label">Pending</span>
+          <span class="stat-value text-accent">{{ row.pending }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-label">Completed</span>
+          <span class="stat-value text-accent">{{ row.completed }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-label">Hours</span>
+          <span class="stat-value text-accent">{{ row.total_hours }}</span>
+        </div>
+      </div>
+      <div class="metric-footer">
+        <span class="prod-label">Productivity:</span>
+        <span class="prod-score">{{ row.productivity }}</span>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-metrics glass-panel w-100">
+      <div class="empty-icon"><i class="bi bi-graph-up"></i></div>
+      <p>No team metrics available at this time.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Team Management Form -->
+  <div id="teamCreateFormWrap" class="form-wrapper glass-panel mb-5 {% if not selected_team %}d-none{% endif %}">
+    <div class="form-header">
+      <div class="form-icon">{% if selected_team %}<i class="bi bi-gear-fill"></i>{% else %}<i class="bi bi-stars"></i>{% endif %}</div>
+      <h3 class="form-title">{% if selected_team %}Update Recruitment Team{% else %}Assemble New Team{% endif %}</h3>
+    </div>
+    
+    <form id="teamCreateForm" method="post" action="{% url 'recruitment_teams:index' %}" class="premium-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_team">
+      <input type="hidden" name="team_pk" value="{{ selected_team.id|default:'' }}">
+
+      <div class="form-grid">
+        <div class="input-field">
+          <label>Team ID</label>
+          <div class="input-wrapper disabled">
+            <i class="bi bi-hash input-icon"></i>
+            <input type="text" value="{{ selected_team.team_id|default:next_team_id }}" readonly>
+          </div>
+        </div>
+        
+        <div class="input-field">
+          <label>Team Name <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-building input-icon"></i>
+            <input type="text" name="team_name" value="{{ selected_team.team_name|default:'' }}" required placeholder="e.g. Alpha Recruiters">
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Team Lead <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-person-badge input-icon"></i>
+            <select name="team_lead" required class="custom-select">
+              <option value="">Select a leader</option>
+              {% for item in team_lead_options %}
+              <option {% if selected_team.team_lead == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Department <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-diagram-2 input-icon"></i>
+            <select name="department" required class="custom-select">
+              <option value="">Select department</option>
+              {% for item in department_options %}
+              <option {% if selected_team.department == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Team Members</label>
+          <div class="custom-dropdown" data-dropdown>
+            <div class="dropdown-trigger" data-dropdown-toggle>
+              <div class="trigger-content">
+                <i class="bi bi-people input-icon"></i>
+                <span class="trigger-text">Select members...</span>
+              </div>
+              <i class="bi bi-chevron-down toggle-icon"></i>
+            </div>
+            <div class="dropdown-menu-custom glass-panel">
+              <div class="dropdown-search">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search members..." data-search>
+              </div>
+              <div class="dropdown-items">
+                {% for item in team_member_options %}
+                <label class="dropdown-item">
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" name="team_members" value="{{ item }}" {% if selected_team and item in selected_team.selected_members %}checked{% endif %}>
+                    <div class="custom-checkbox"></div>
+                  </div>
+                  <span>{{ item }}</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Roles</label>
+          <div class="custom-dropdown" data-dropdown>
+            <div class="dropdown-trigger" data-dropdown-toggle>
+              <div class="trigger-content">
+                <i class="bi bi-shield-check input-icon"></i>
+                <span class="trigger-text">Select roles...</span>
+              </div>
+              <i class="bi bi-chevron-down toggle-icon"></i>
+            </div>
+            <div class="dropdown-menu-custom glass-panel">
+              <div class="dropdown-items">
+                {% for item in role_options %}
+                <label class="dropdown-item">
+                  <div class="checkbox-wrapper">
+                    <input type="checkbox" name="team_roles" value="{{ item }}" {% if selected_team and item in selected_team.selected_roles %}checked{% endif %}>
+                    <div class="custom-checkbox"></div>
+                  </div>
+                  <span>{{ item }}</span>
+                </label>
+                {% empty %}
+                <div class="dropdown-empty">No roles available</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Team Email</label>
+          <div class="input-wrapper">
+            <i class="bi bi-envelope-at input-icon"></i>
+            <input type="email" name="team_email" value="{{ selected_team.team_email|default:'' }}" placeholder="team@company.com">
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label>Status <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <i class="bi bi-toggle-on input-icon"></i>
+            <select name="status" required class="custom-select">
+              <option value="">Set status</option>
+              <option {% if selected_team.status == 'Active' %}selected{% endif %}>Active</option>
+              <option {% if selected_team.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-actions mt-4">
+        <button type="button" id="cancelTeamCreateBtn" class="btn-ghost">Cancel</button>
+        <button type="submit" class="btn-premium">
+          <span>{% if selected_team %}Save Changes{% else %}Confirm & Launch Team{% endif %}</span>
+          <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Teams Inventory -->
+  <div class="section-title-wrapper mb-3 d-flex justify-content-between align-items-end">
+    <h3 class="section-title"><i class="bi bi-diagram-3 text-accent"></i> Team Directory</h3>
+    <div class="search-bar glass-panel">
+      <i class="bi bi-search"></i>
+      <input type="text" id="teamSearch" placeholder="Search teams, members...">
+    </div>
+  </div>
+
+  <div class="table-container glass-panel">
+    <table class="premium-table">
+      <thead>
+        <tr>
+          <th>Team Info</th>
+          <th>Lead / Contact</th>
+          <th>Members</th>
+          <th>Roles & Dept</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="teamTableBody">
+        {% for row in records %}
+        <tr class="table-row">
+          <td>
+            <div class="team-info-cell">
+              <div class="team-avatar-sm">{{ row.team_name|slice:":1"|upper }}</div>
+              <div>
+                <div class="team-name-td">{{ row.team_name }}</div>
+                <div class="team-id-td">{{ row.team_id }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="lead-cell">
+              <span class="lead-name"><i class="bi bi-star-fill text-warning me-1"></i>{{ row.team_lead }}</span>
+              {% if row.team_email %}
+              <span class="team-email-td"><i class="bi bi-envelope"></i> {{ row.team_email }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <div class="members-cell" title="{{ row.team_members|default:'No members' }}">
+              {% if row.team_members %}
+                <span class="members-truncate">{{ row.team_members }}</span>
+              {% else %}
+                <span class="text-muted small">No members</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <div class="roles-cell">
+              <span class="dept-badge">{{ row.department }}</span>
+              {% if row.team_roles %}
+                <span class="roles-truncate">{{ row.team_roles }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            {% if row.status == 'Active' %}
+              <div class="status-indicator active">
+                <div class="pulse-dot"></div> Active
+              </div>
+            {% else %}
+              <div class="status-indicator inactive">
+                <div class="dot"></div> Inactive
+              </div>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="action-cell">
+              <a href="{% url 'recruitment_teams:index' %}?edit={{ row.id }}" class="btn-icon-action edit" title="Edit Team">
+                <i class="bi bi-pencil-fill"></i>
+              </a>
+              <form method="post" action="{% url 'recruitment_teams:index' %}" class="d-inline" onsubmit="return confirm('Are you sure you want to disband {{ row.team_name }}?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_team">
+                <input type="hidden" name="team_pk" value="{{ row.id }}">
+                <button type="submit" class="btn-icon-action delete" title="Delete Team">
+                  <i class="bi bi-trash3-fill"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <div class="empty-illustration">
+                <i class="bi bi-people"></i>
+              </div>
+              <h4>No Teams Found</h4>
+              <p>Your directory is empty. Create your first recruitment team to get started.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Reveal animation
+    setTimeout(() => document.querySelector('.premium-dashboard').classList.add('visible'), 100);
+
+    // Toggle Team Form
+    const openBtn = document.getElementById('openTeamCreateBtn');
+    const cancelBtn = document.getElementById('cancelTeamCreateBtn');
+    const formWrap = document.getElementById('teamCreateFormWrap');
+
+    if(openBtn) {
+      openBtn.addEventListener('click', () => {
+        formWrap.classList.remove('d-none');
+        setTimeout(() => {
+          formWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          formWrap.classList.add('highlight-pulse');
+          setTimeout(() => formWrap.classList.remove('highlight-pulse'), 1000);
+        }, 50);
+      });
+    }
+
+    if(cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.has('edit')) {
+          window.location.href = "{% url 'recruitment_teams:index' %}";
+        } else {
+          formWrap.classList.add('d-none');
+        }
+      });
+    }
+
+    // Custom Dropdowns Logic
+    const dropdowns = document.querySelectorAll('[data-dropdown]');
+    
+    dropdowns.forEach(dropdown => {
+      const toggle = dropdown.querySelector('[data-dropdown-toggle]');
+      const triggerText = dropdown.querySelector('.trigger-text');
+      const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+      const searchInput = dropdown.querySelector('[data-search]');
+      const items = dropdown.querySelectorAll('.dropdown-item');
+      const defaultText = triggerText.innerText;
+
+      const updateText = () => {
+        const checked = Array.from(checkboxes).filter(cb => cb.checked);
+        if (checked.length === 0) {
+          triggerText.innerText = defaultText;
+          triggerText.classList.remove('has-selection');
+        } else if (checked.length === 1) {
+          triggerText.innerText = checked[0].closest('.dropdown-item').querySelector('span').innerText;
+          triggerText.classList.add('has-selection');
+        } else {
+          triggerText.innerText = `${checked.length} selected`;
+          triggerText.classList.add('has-selection');
+        }
+      };
+
+      // Initialize text
+      updateText();
+
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Close others
+        dropdowns.forEach(d => { if(d !== dropdown) d.classList.remove('active'); });
+        dropdown.classList.toggle('active');
+        if(dropdown.classList.contains('active') && searchInput) {
+          setTimeout(() => searchInput.focus(), 100);
+        }
+      });
+
+      checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateText);
+      });
+
+      if(searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const val = e.target.value.toLowerCase();
+          items.forEach(item => {
+            const text = item.innerText.toLowerCase();
+            item.style.display = text.includes(val) ? 'flex' : 'none';
+          });
+        });
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      dropdowns.forEach(dropdown => {
+        if (!dropdown.contains(e.target)) {
+          dropdown.classList.remove('active');
+        }
+      });
+    });
+
+    // Simple Table Search
+    const teamSearch = document.getElementById('teamSearch');
+    if (teamSearch) {
+      teamSearch.addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        const rows = document.querySelectorAll('#teamTableBody .table-row');
+        rows.forEach(row => {
+          const text = row.innerText.toLowerCase();
+          row.style.display = text.includes(filter) ? '' : 'none';
+        });
+      });
+    }
+  });
+</script>
+{% endblock %}

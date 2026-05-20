@@ -1,0 +1,112 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Onboarding Form{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block header %}Candidate Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <h4 class="mb-1">Onboarding Form</h4>
+      <div class="text-muted small mb-3">
+        Candidate: <strong>{{ candidate.full_name }}</strong> ({{ candidate.candidate_id }})
+      </div>
+
+      {% if submission.status == "submitted" %}
+        <div class="alert alert-success">Submitted on {{ submission.submitted_at|date:"Y-m-d H:i" }}.</div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="submit_onboarding">
+
+        <h6 class="mt-2 mb-2">Personal Details</h6>
+        <div class="row">
+          {% for f in field_rows %}
+            <div class="col-md-6 mb-3">
+              <label class="form-label">{{ f.label }}{% if f.required %} <span class="text-danger">*</span>{% endif %}</label>
+
+              {% if f.type == "textarea" %}
+                <textarea class="form-control" name="{{ f.key }}" rows="3"{% if f.required %} required{% endif %}>{{ f.value }}</textarea>
+              {% elif f.type == "radio" %}
+                <div class="d-flex flex-wrap gap-3">
+                  {% for opt in f.choices %}
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="{{ f.key }}" id="{{ f.key }}_{{ forloop.counter }}" value="{{ opt }}"{% if f.required %} required{% endif %}{% if f.value == opt %} checked{% endif %}>
+                      <label class="form-check-label" for="{{ f.key }}_{{ forloop.counter }}">{{ opt }}</label>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% elif f.type == "checkbox" %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="{{ f.key }}" id="{{ f.key }}"{% if f.required %} required{% endif %}{% if f.value %} checked{% endif %}>
+                  <label class="form-check-label" for="{{ f.key }}">{{ f.help|default:"" }}</label>
+                </div>
+              {% elif f.type == "matrix" %}
+                <div class="table-responsive">
+                  <table class="table table-sm align-middle">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        {% for c in f.cols %}
+                          <th class="text-center">{{ c }}</th>
+                        {% endfor %}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for r in f.rows %}
+                        <tr>
+                          <td class="fw-semibold">{{ r }}</td>
+                          {% for c in f.cols %}
+                            <td class="text-center">
+                              {% with token=r|add:"__"|add:c %}
+                                <input class="form-check-input" type="checkbox" name="{{ f.key }}__{{ r }}__{{ c }}"
+                                  {% if token in f.matrix_checked %}checked{% endif %}>
+                              {% endwith %}
+                            </td>
+                          {% endfor %}
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <div class="text-muted small">Tick the boxes that apply.</div>
+              {% else %}
+                <input class="form-control" type="{{ f.type }}" name="{{ f.key }}" value="{{ f.value }}"{% if f.required %} required{% endif %}>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+
+        <h6 class="mt-2 mb-2">Documents</h6>
+        {% if document_requirements %}
+          <div class="row">
+            {% for doc in document_rows %}
+              <div class="col-md-6 mb-3">
+                <label class="form-label">{{ doc.label }}</label>
+                <input class="form-control" type="file" name="doc_{{ doc.key }}">
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="alert alert-info">No documents are required for this onboarding form.</div>
+        {% endif %}
+
+        {% if existing_docs %}
+          <div class="mt-2">
+            <div class="text-muted small mb-2">Uploaded documents:</div>
+            <ul class="small">
+              {% for d in existing_docs %}
+                <li>{{ d.document_key }} — {{ d.uploaded_at|date:"Y-m-d H:i" }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <button class="btn btn-primary" type="submit">Submit</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

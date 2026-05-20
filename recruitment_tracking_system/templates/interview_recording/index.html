@@ -1,0 +1,131 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Interview Intelligence{% endblock %}
+{% block nav_interview_recording %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .onboarding-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 24px; }
+  .module-card { 
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; 
+    padding: 24px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+    display: flex; flex-direction: column; gap: 16px; text-decoration: none; position: relative; overflow: hidden;
+  }
+  .module-card:hover { border-color: var(--accent); transform: translateY(-6px); box-shadow: var(--shadow); }
+  .module-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); opacity: 0; transition: opacity 0.2s; }
+  .module-card:hover::after { opacity: 1; }
+  
+  .module-icon { 
+    width: 56px; height: 56px; border-radius: 16px; background: var(--accentbg); color: var(--accent2); 
+    display: flex; align-items: center; justify-content: center; font-size: 24px; 
+  }
+  .module-title { font-size: 18px; font-weight: 800; color: var(--text); }
+  .module-desc { font-size: 13px; color: var(--text3); line-height: 1.5; }
+  
+  /* Calendar (matches interview_panel_calendar.js markup) */
+  .interview-calendar-wrap { display: grid; grid-template-columns: 1fr 340px; gap: 24px; margin-top: 28px; align-items: start; }
+  .interview-calendar-box,
+  .interview-calendar-events { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 22px; }
+
+  .interview-calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  .interview-calendar-month { font-size: 16px; font-weight: 900; color: var(--text); letter-spacing: 0.2px; }
+
+  .interview-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+  .interview-calendar-dow { text-align: center; font-size: 11px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; padding: 6px 0; }
+
+  .interview-calendar-day { position: relative; }
+  .interview-calendar-day {
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    user-select: none;
+  }
+  .interview-calendar-day:hover { border-color: var(--border2); background: var(--surface3); }
+  .interview-calendar-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .interview-calendar-day.muted { opacity: 0.35; cursor: not-allowed; }
+  .interview-calendar-day.has-event { background: var(--accentbg); border-color: rgba(108, 99, 255, 0.35); color: var(--accent2); }
+  .interview-calendar-day.has-event::after { content: ''; width: 6px; height: 6px; border-radius: 999px; background: var(--accent); position: absolute; left: 50%; bottom: 7px; transform: translateX(-50%); }
+  .interview-calendar-day.active { background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; color: #fff; }
+  .interview-calendar-day.active::after { display: none; }
+  .interview-calendar-day.today { box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.35) inset; }
+
+  .interview-calendar-events-title { font-size: 15px; font-weight: 900; color: var(--text); margin-bottom: 14px; }
+  .interview-calendar-events-list { display: flex; flex-direction: column; gap: 12px; max-height: 340px; overflow: auto; padding-right: 2px; }
+  .interview-event-row { padding: 12px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--border); }
+  .interview-event-row strong { display: block; font-size: 13px; color: var(--text); margin-bottom: 4px; }
+  .interview-event-row span { display: block; font-size: 12px; color: var(--text3); }
+
+  @media (max-width: 1100px) {
+    .interview-calendar-wrap { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Interview Intelligence</div>
+    <div class="page-subtitle">Unified coordination of interview panels, session recordings, and interactive scheduling calendars.</div>
+  </div>
+</div>
+
+<div class="onboarding-grid">
+  <!-- Interview Panel -->
+  <a href="/interview-recording/panel/" class="module-card">
+    <div class="module-icon"><i class="bi bi-people-fill"></i></div>
+    <div>
+      <div class="module-title">Panel Coordination</div>
+      <div class="module-desc">Assign interviewers, manage panel availability, and track upcoming session assignments.</div>
+    </div>
+    <div style="font-size: 12px; font-weight: 700; color: var(--accent2);">Launch Panel &rarr;</div>
+  </a>
+
+  <!-- Interview Recording -->
+  <a href="/interview-recording/recording/" class="module-card">
+    <div class="module-icon"><i class="bi bi-camera-video-fill"></i></div>
+    <div>
+      <div class="module-title">Session Recordings</div>
+      <div class="module-desc">Access archived interview videos, transcribed notes, and AI-driven candidate sentiment analysis.</div>
+    </div>
+    <div style="font-size: 12px; font-weight: 700; color: var(--accent2);">View Archives &rarr;</div>
+  </a>
+</div>
+
+<div class="interview-calendar-wrap">
+  <div class="interview-calendar-box">
+    <div class="interview-calendar-head">
+      <button id="calendarPrevBtn" class="btn btn-ghost btn-sm"><i class="bi bi-chevron-left"></i></button>
+      <div id="calendarMonthLabel" class="interview-calendar-month">May 2026</div>
+      <button id="calendarNextBtn" class="btn btn-ghost btn-sm"><i class="bi bi-chevron-right"></i></button>
+    </div>
+    <div id="interviewCalendarGrid" class="interview-calendar-grid" aria-label="Interview calendar">
+      <!-- Grid injected via JS -->
+    </div>
+  </div>
+
+  <div class="interview-calendar-events">
+    <div id="calendarSelectedDateLabel" class="interview-calendar-events-title">Schedule Details</div>
+    <div id="calendarEventsList" class="interview-calendar-events-list">
+      <div style="text-align: center; padding: 40px 0; color: var(--text3);">
+        <i class="bi bi-calendar-x" style="font-size: 34px; opacity: 0.25; display: block; margin-bottom: 12px;"></i>
+        Select a date to view scheduled interviews.
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ panel_records|json_script:"panelScheduleData" }}
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/interview_panel_calendar.js?v=2"></script>
+{% endblock %}

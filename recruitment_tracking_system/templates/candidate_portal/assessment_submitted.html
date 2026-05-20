@@ -1,0 +1,63 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Assessment - {{ form.name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 900px;">
+  <div class="card shadow-sm border-0" style="border-radius: 18px;">
+    <div class="card-body p-4 p-md-5">
+
+      {% if proctor_terminated %}
+        {# ── Proctoring terminated view ── #}
+        <div style="text-align:center; padding: 20px 0 32px;">
+          <div style="font-size: 64px; margin-bottom: 20px;">🚫</div>
+          <h2 style="font-weight: 900; color: #f87171; margin-bottom: 12px;">Session Terminated</h2>
+          <p style="color: var(--text3, #94a3b8); font-size: 15px; max-width: 480px; margin: 0 auto 28px; line-height: 1.7;">
+            Your proctoring session was terminated because the maximum number of violations were reached.
+            The HR team has been notified. You will not be able to re-attempt this assessment.
+          </p>
+          <div style="display:inline-block; padding: 10px 24px; background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); border-radius: 12px; color: #f87171; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">
+            PROCTORING VIOLATION LIMIT EXCEEDED
+          </div>
+        </div>
+      {% else %}
+        {# ── Normal success view ── #}
+        <h2 class="mb-2" style="font-weight: 800;">Thanks! Your assessment is submitted.</h2>
+        <div class="text-muted">Form: <strong>{{ form.name }}</strong></div>
+        <div class="text-muted">Candidate: <strong>{{ candidate.full_name }}</strong></div>
+
+        <hr class="my-4"/>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="p-3 rounded-3" style="background: var(--surface2); border: 1px solid var(--border);">
+              <div class="text-muted small">Score</div>
+              <div style="font-size: 28px; font-weight: 800;">
+                {% if form.show_score_to_candidate %}
+                  {{ submission.score|floatformat:0 }}
+                  {% if submission.max_score != None %}<span class="text-muted" style="font-size: 16px;">/ {{ submission.max_score|floatformat:0 }}</span>{% endif %}
+                {% else %}
+                  <span class="text-muted" style="font-size: 16px;">Hidden</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 rounded-3" style="background: var(--surface2); border: 1px solid var(--border);">
+              <div class="text-muted small">Status</div>
+              <div style="font-size: 16px; font-weight: 700;">{{ assignment.status }}</div>
+              <div class="text-muted small mt-1">Submitted at: {{ submission.submitted_at }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 text-muted small">
+          You can close this page now.
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+

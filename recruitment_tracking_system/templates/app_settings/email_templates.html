@@ -1,0 +1,443 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Email Templates{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=12">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Email Templates{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  <div class="settings-main">
+    <div class="settings-panel email-template-shell mb-3">
+      <div class="settings-head">
+        <div>
+          <h3 class="settings-title mb-1">Email Template Master</h3>
+          <div class="settings-subtitle">Create and manage templates used across ATS communications.</div>
+        </div>
+        <div class="d-flex gap-2">
+          {% if show_form %}
+            <a href="{% url 'app_settings:email_templates' %}" class="btn btn-outline-secondary btn-sm settings-btn">Close</a>
+          {% else %}
+            <a href="{% url 'app_settings:email_templates' %}?create=1" class="btn btn-primary btn-sm settings-btn">Create</a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if show_form %}
+        <div class="email-template-card mt-3">
+          <div class="email-template-card-title">{% if edit_template %}Edit Email Template{% else %}Create Email Template{% endif %}</div>
+          <form id="emailTemplateForm" method="post" class="email-template-grid">
+            {% csrf_token %}
+            <input type="hidden" name="template_id" value="{{ edit_template.id|default:'' }}">
+            <div>
+              <label class="form-label">Template Name</label>
+              <input class="form-control reg-input" type="text" name="name" value="{{ edit_template.name|default:'' }}" placeholder="Interview Invite">
+            </div>
+            <div>
+              <label class="form-label">Module</label>
+              <input class="form-control reg-input" type="text" name="module" value="{{ edit_template.module|default:'' }}" placeholder="Interview">
+            </div>
+            <div>
+              <label class="form-label">Trigger</label>
+              <input class="form-control reg-input" type="text" name="trigger" value="{{ edit_template.trigger|default:'' }}" placeholder="e.g. candidate_stage_update" list="emailTriggerOptions">
+              <datalist id="emailTriggerOptions">
+                <option value="candidate_stage_update"></option>
+                <option value="candidate_stage:applied"></option>
+                <option value="candidate_stage:screened"></option>
+                <option value="candidate_stage:interview"></option>
+                <option value="candidate_stage:offer"></option>
+                <option value="candidate_stage:hired"></option>
+                <option value="candidate_stage:rejected"></option>
+                <option value="candidate_portal_registration"></option>
+                <option value="candidate_portal_access"></option>
+                <option value="onboarding_offer_send"></option>
+                <option value="onboarding_document_request"></option>
+              </datalist>
+              <div class="form-text">
+                Supported auto-triggers: <code>candidate_stage_update</code> (any stage change) or <code>candidate_stage:&lt;stage&gt;</code>
+                (example: <code>candidate_stage:interview</code>). Used when you move candidates in Pipeline.
+                <br>
+                Candidate portal registration: <code>candidate_portal_registration</code> (sent after portal registration).
+                <br>
+                Onboarding: <code>onboarding_offer_send</code> (offer email) and <code>onboarding_document_request</code> (document collection request).
+              </div>
+            </div>
+            <div>
+              <label class="form-label">Status</label>
+              <select class="form-select reg-input" name="is_active">
+                <option value="on" {% if edit_template and edit_template.is_active or not edit_template %}selected{% endif %}>Active</option>
+                <option value="" {% if edit_template and not edit_template.is_active %}selected{% endif %}>Inactive</option>
+              </select>
+            </div>
+            <div class="email-span-all">
+              <label class="form-label">To</label>
+              <input class="form-control reg-input" type="text" name="to_emails" value="{{ edit_template.to_emails|default:'' }}" placeholder="candidate.email, manager.email">
+            </div>
+            <div class="email-span-all">
+              <label class="form-label">CC</label>
+              <input class="form-control reg-input" type="text" name="cc_emails" value="{{ edit_template.cc_emails|default:'' }}" placeholder="hr.email">
+            </div>
+            <div class="email-span-all">
+              <label class="form-label">BCC</label>
+              <input class="form-control reg-input" type="text" name="bcc_emails" value="{{ edit_template.bcc_emails|default:'' }}" placeholder="audit.email">
+            </div>
+            <div class="email-span-all">
+              <label class="form-label">Subject</label>
+              <input class="form-control reg-input" type="text" name="subject" value="{{ edit_template.subject|default:'' }}" placeholder="Interview Invitation">
+            </div>
+            <div class="email-span-all">
+              <label class="form-label">Placeholders</label>
+              <div class="email-placeholder-bar">
+                {% for item in placeholders %}
+                <button
+                  type="button"
+                  class="email-placeholder-chip"
+                  data-placeholder="{{ '{' }}{{ '{' }}{{ item.key }}{{ '}' }}{{ '}' }}"
+                  title="{{ item.description|default:item.label }}"
+                >{{ item.key }}</button>
+                {% endfor %}
+              </div>
+              <div class="form-text">Click to insert into subject or body.</div>
+            </div>
+            <div class="email-span-all">
+              <label class="form-label">Email Body</label>
+              <div class="email-editor-toolbar">
+                <button type="button" class="email-editor-btn" data-wrap="<strong>" data-wrap-end="</strong>"><strong>B</strong></button>
+                <button type="button" class="email-editor-btn" data-wrap="<em>" data-wrap-end="</em>"><em>I</em></button>
+                <button type="button" class="email-editor-btn" data-wrap="<u>" data-wrap-end="</u>"><u>U</u></button>
+                <select id="emailFontSizeSelect" class="form-select form-select-sm email-editor-select">
+                  <option value="">Font Size</option>
+                  <option value="12px">12</option>
+                  <option value="14px">14</option>
+                  <option value="16px">16</option>
+                  <option value="18px">18</option>
+                  <option value="20px">20</option>
+                  <option value="24px">24</option>
+                </select>
+                <select id="emailFontFamilySelect" class="form-select form-select-sm email-editor-select">
+                  <option value="">Font</option>
+                  <option value="Arial">Arial</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Tahoma">Tahoma</option>
+                  <option value="Verdana">Verdana</option>
+                </select>
+                <button type="button" class="email-editor-btn" data-wrap="<br>" data-wrap-end="">Line Break</button>
+              </div>
+              <textarea id="emailBodyInput" class="form-control reg-input email-body-textarea" rows="14" name="body" placeholder="Hello {{candidate_name}}...">{{ edit_template.body|default:'' }}</textarea>
+              <div class="form-text">HTML tags are supported. Use the toolbar to insert styling.</div>
+            </div>
+
+            <details class="email-span-all mt-2">
+              <summary class="fw-semibold" style="cursor: pointer;">
+                Onboarding Form (Optional)
+                <span class="text-muted fw-normal" style="font-size: 12px; margin-left: 8px;">
+                  Selected:
+                  <span id="onboardingFieldCount">{% if onboarding_config %}{{ onboarding_config.selected_fields|length }}{% else %}0{% endif %}</span>
+                  fields,
+                  <span id="onboardingDocCount">{% if onboarding_config %}{{ onboarding_config.document_requirements|length }}{% else %}0{% endif %}</span>
+                  documents
+                </span>
+              </summary>
+              <div class="form-text mb-2 mt-1">
+                Configure onboarding fields & document requirements for this template (used when sending offer letters).
+              </div>
+              <div class="text-muted small mb-2">
+                <span id="onboardingSelectedNames">
+                  {% if onboarding_config %}
+                    Fields: {{ onboarding_config.selected_fields|join:", " }}{% if onboarding_config.document_requirements %} · Docs: {{ onboarding_config.document_requirements|join:", " }}{% endif %}
+                  {% endif %}
+                </span>
+              </div>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label">Onboarding Fields</label>
+                  <div class="border rounded p-2" style="max-height: 190px; overflow: auto; background: #fff;">
+                    {% for key,label in onboarding_field_options %}
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          name="onboarding_fields"
+                          value="{{ key }}"
+                          id="obf_{{ key }}"
+                          {% if onboarding_config and key in onboarding_config.selected_fields %}checked{% endif %}
+                        >
+                        <label class="form-check-label" for="obf_{{ key }}">{{ label }}</label>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Document Requirements</label>
+                  <div class="border rounded p-2" style="max-height: 190px; overflow: auto; background: #fff;">
+                    {% for key,label in onboarding_document_options %}
+                      <div class="form-check">
+                        <input
+                          class="form-check-input"
+                          type="checkbox"
+                          name="onboarding_documents"
+                          value="{{ key }}"
+                          id="obd_{{ key }}"
+                          {% if onboarding_config and key in onboarding_config.document_requirements %}checked{% endif %}
+                        >
+                        <label class="form-check-label" for="obd_{{ key }}">{{ label }}</label>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <div class="email-template-actions email-span-all">
+              <button type="submit" class="btn btn-primary btn-sm settings-btn">{% if edit_template %}Update{% else %}Save Template{% endif %}</button>
+              <a href="{% url 'app_settings:email_templates' %}" class="btn btn-outline-secondary btn-sm settings-btn">Cancel</a>
+              <button type="button" id="previewEmailBtn" class="btn btn-outline-secondary btn-sm settings-btn">Preview Email</button>
+            </div>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="settings-panel">
+      <div class="settings-head">
+        <div class="settings-title">Templates Dashboard</div>
+      </div>
+      {% if not show_form %}
+        <div class="text-muted small mt-2">Click <strong>Create</strong> to add a new email template, or edit an existing one from the list.</div>
+      {% endif %}
+      <div class="table-responsive permission-table-shell mt-3">
+        <table class="table table-sm settings-table mb-0">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Module</th>
+              <th>Trigger</th>
+              <th>Subject</th>
+              <th>Status</th>
+              <th>Updated</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in templates %}
+            <tr>
+              <td class="fw-semibold">{{ item.name }}</td>
+              <td>{{ item.module|default:"-" }}</td>
+              <td>{{ item.trigger|default:"-" }}</td>
+              <td>{{ item.subject }}</td>
+              <td>
+                {% if item.is_active %}
+                <span class="settings-chip">Active</span>
+                {% else %}
+                <span class="settings-chip settings-chip-light">Inactive</span>
+                {% endif %}
+              </td>
+              <td>{{ item.updated_at|date:"Y-m-d H:i" }}</td>
+              <td class="text-end">
+                <a href="{% url 'app_settings:email_templates' %}?edit_id={{ item.id }}" class="btn btn-outline-primary btn-sm py-0 px-2">Edit</a>
+                <form method="post" class="d-inline" onsubmit="return confirm('Delete this template?');">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete_template">
+                  <input type="hidden" name="template_id" value="{{ item.id }}">
+                  <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-3">No templates available.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const subjectInput = document.querySelector("input[name='subject']");
+    const bodyInput = document.getElementById("emailBodyInput");
+    const moduleInput = document.querySelector("input[name='module']");
+    const triggerInput = document.querySelector("input[name='trigger']");
+    const previewBtn = document.getElementById("previewEmailBtn");
+    const chips = document.querySelectorAll(".email-placeholder-chip");
+    const styleButtons = document.querySelectorAll(".email-editor-btn[data-wrap]");
+    const fontSizeSelect = document.getElementById("emailFontSizeSelect");
+    const fontFamilySelect = document.getElementById("emailFontFamilySelect");
+
+    const insertAtCursor = function (input, text) {
+      if (!input) return;
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const value = input.value || "";
+      input.value = value.slice(0, start) + text + value.slice(end);
+      const caret = start + text.length;
+      input.setSelectionRange(caret, caret);
+      input.focus();
+    };
+
+    chips.forEach((chip) => {
+      chip.addEventListener("click", function () {
+        const token = chip.getAttribute("data-placeholder") || "";
+        if (document.activeElement === subjectInput) {
+          insertAtCursor(subjectInput, token);
+        } else {
+          insertAtCursor(bodyInput, token);
+        }
+      });
+    });
+
+    const getCookie = function (name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(";").shift();
+      return "";
+    };
+
+    const ensurePreviewModal = function () {
+      let modal = document.getElementById("emailPreviewModal");
+      if (modal) return modal;
+
+      modal = document.createElement("div");
+      modal.id = "emailPreviewModal";
+      modal.style.display = "none";
+      modal.style.position = "fixed";
+      modal.style.inset = "0";
+      modal.style.background = "rgba(0,0,0,0.8)";
+      modal.style.zIndex = "1400";
+      modal.style.alignItems = "center";
+      modal.style.justifyContent = "center";
+      modal.style.backdropFilter = "blur(6px)";
+      modal.innerHTML = `
+        <div class="card" style="width: min(1000px, calc(100vw - 40px)); max-height: calc(100vh - 60px); overflow: auto; border-radius: 16px;">
+          <div class="card-header" style="display:flex; align-items:center; justify-content: space-between;">
+            <div class="card-title"><i class="bi bi-eye"></i> Email Preview</div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="emailPreviewCloseBtn">Close</button>
+          </div>
+          <div style="padding: 16px 18px;">
+            <div class="small text-muted mb-2">Subject:</div>
+            <div id="emailPreviewSubject" style="font-weight: 800; margin-bottom: 14px;"></div>
+            <div class="small text-muted mb-2">Body:</div>
+            <div id="emailPreviewBody" style="background:#fff; border:1px solid var(--border); border-radius: 12px; padding: 14px;"></div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) modal.style.display = "none";
+      });
+      const close = modal.querySelector("#emailPreviewCloseBtn");
+      if (close) close.addEventListener("click", function () { modal.style.display = "none"; });
+      return modal;
+    };
+
+    const openPreview = async function () {
+      if (!previewBtn || !subjectInput || !bodyInput) return;
+      const modal = ensurePreviewModal();
+      const subjectEl = document.getElementById("emailPreviewSubject");
+      const bodyEl = document.getElementById("emailPreviewBody");
+      if (subjectEl) subjectEl.textContent = "Loading…";
+      if (bodyEl) bodyEl.innerHTML = "Loading…";
+      modal.style.display = "flex";
+
+      try {
+        const res = await fetch("{% url 'app_settings:email_template_preview' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            subject: subjectInput.value || "",
+            body: bodyInput.value || "",
+            module: moduleInput ? moduleInput.value : "",
+            trigger: triggerInput ? triggerInput.value : "",
+          }),
+        });
+        const data = await res.json();
+        if (!data || !data.ok) throw new Error((data && data.message) || "Preview failed.");
+        if (subjectEl) subjectEl.textContent = data.rendered_subject || "";
+        if (bodyEl) bodyEl.innerHTML = data.rendered_body || "";
+      } catch (e) {
+        if (subjectEl) subjectEl.textContent = "Preview failed";
+        if (bodyEl) bodyEl.textContent = e && e.message ? e.message : "Preview failed.";
+      }
+    };
+
+    if (previewBtn) previewBtn.addEventListener("click", openPreview);
+
+    const wrapSelection = function (input, startTag, endTag) {
+      if (!input) return;
+      const start = input.selectionStart || 0;
+      const end = input.selectionEnd || 0;
+      const value = input.value || "";
+      const selected = value.slice(start, end) || "";
+      const wrapped = startTag + selected + (endTag || "");
+      input.value = value.slice(0, start) + wrapped + value.slice(end);
+      const caret = start + wrapped.length;
+      input.setSelectionRange(caret, caret);
+      input.focus();
+    };
+
+    styleButtons.forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const startTag = btn.getAttribute("data-wrap") || "";
+        const endTag = btn.getAttribute("data-wrap-end") || "";
+        wrapSelection(bodyInput, startTag, endTag);
+      });
+    });
+
+    if (fontSizeSelect) {
+      fontSizeSelect.addEventListener("change", function () {
+        const size = fontSizeSelect.value || "";
+        if (!size) return;
+        wrapSelection(bodyInput, `<span style="font-size:${size}">`, "</span>");
+        fontSizeSelect.value = "";
+      });
+    }
+
+    if (fontFamilySelect) {
+      fontFamilySelect.addEventListener("change", function () {
+        const family = fontFamilySelect.value || "";
+        if (!family) return;
+        wrapSelection(bodyInput, `<span style="font-family:${family}">`, "</span>");
+        fontFamilySelect.value = "";
+      });
+    }
+
+    const onboardingFieldCount = document.getElementById("onboardingFieldCount");
+    const onboardingDocCount = document.getElementById("onboardingDocCount");
+    const onboardingSelectedNames = document.getElementById("onboardingSelectedNames");
+    const fieldChecks = Array.from(document.querySelectorAll('input[name="onboarding_fields"]'));
+    const docChecks = Array.from(document.querySelectorAll('input[name="onboarding_documents"]'));
+
+    const updateOnboardingSummary = function () {
+      if (!onboardingFieldCount || !onboardingDocCount) return;
+      const selectedFields = fieldChecks.filter((c) => c.checked).map((c) => c.value);
+      const selectedDocs = docChecks.filter((c) => c.checked).map((c) => c.value);
+      onboardingFieldCount.textContent = String(selectedFields.length);
+      onboardingDocCount.textContent = String(selectedDocs.length);
+      if (onboardingSelectedNames) {
+        const parts = [];
+        if (selectedFields.length) parts.push("Fields: " + selectedFields.join(", "));
+        if (selectedDocs.length) parts.push("Docs: " + selectedDocs.join(", "));
+        onboardingSelectedNames.textContent = parts.join(" · ");
+      }
+    };
+
+    fieldChecks.forEach((c) => c.addEventListener("change", updateOnboardingSummary));
+    docChecks.forEach((c) => c.addEventListener("change", updateOnboardingSummary));
+    updateOnboardingSummary();
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Bulk Upload Import{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=12">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Bulk Upload &gt; Import{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  <div class="settings-main">
+    <div class="settings-panel">
+      <div class="settings-head">
+        <div>
+          <h3 class="settings-title mb-1">Confirm Import</h3>
+          <div class="settings-subtitle">Review your mapping, then run the import.</div>
+        </div>
+      </div>
+
+      <div class="small text-muted mb-2">File: {{ ctx.filename }}</div>
+
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th style="min-width: 260px;">File Column</th>
+              <th style="min-width: 260px;">Mapped Field</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for k,v in mapping.items %}
+              <tr>
+                <td><code>{{ k }}</code></td>
+                <td class="small">{% if v %}{{ v }}{% else %}<span class="text-muted">Skip</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <a href="{% url 'app_settings:bulk_upload_map' %}" class="btn btn-outline-secondary btn-sm settings-btn">Back</a>
+        <button type="submit" class="btn btn-primary btn-sm settings-btn" onclick="return confirm('Run import now?');">Run Import</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

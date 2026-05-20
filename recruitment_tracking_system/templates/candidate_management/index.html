@@ -1,0 +1,145 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Candidate Lifecycle Management{% endblock %}
+{% block nav_candidate_management %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .onboarding-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 24px; }
+  .module-card { 
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; 
+    padding: 24px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+    display: flex; flex-direction: column; gap: 16px; text-decoration: none; position: relative; overflow: hidden;
+  }
+  .module-card:hover { border-color: var(--accent); transform: translateY(-6px); box-shadow: var(--shadow); }
+  .module-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); opacity: 0; transition: opacity 0.2s; }
+  .module-card:hover::after { opacity: 1; }
+  
+  .module-icon { 
+    width: 56px; height: 56px; border-radius: 16px; background: var(--accentbg); color: var(--accent2); 
+    display: flex; align-items: center; justify-content: center; font-size: 24px; 
+  }
+  .module-title { font-size: 18px; font-weight: 800; color: var(--text); }
+  .module-desc { font-size: 13px; color: var(--text3); line-height: 1.5; }
+  
+  .stat-mini { font-size: 12px; font-weight: 700; color: var(--accent2); background: rgba(108,99,255,0.1); padding: 4px 10px; border-radius: 20px; width: fit-content; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Lifecycle Management</div>
+    <div class="page-subtitle">End-to-end oversight of candidate engagement, from initial registration to final interview evaluation.</div>
+  </div>
+</div>
+
+<div class="onboarding-grid">
+  <!-- Registration -->
+  <a href="/candidate-management/registration/" class="module-card">
+    <div class="module-icon"><i class="bi bi-person-plus-fill"></i></div>
+    <div>
+      <div class="module-title">Talent Acquisition</div>
+      <div class="module-desc">Onboard new candidates, capture biographical data, and initialize their digital career profiles.</div>
+    </div>
+    <div class="stat-mini">New Registration →</div>
+  </a>
+
+  <!-- Profile Directory -->
+  <a href="/candidate-management/list/" class="module-card">
+    <div class="module-icon"><i class="bi bi-person-badge-fill"></i></div>
+    <div>
+      <div class="module-title">Profile Directory</div>
+      <div class="module-desc">Deep-dive into individual candidate dossiers, application history, and competency mapping.</div>
+    </div>
+    <div class="stat-mini">View Profiles →</div>
+  </a>
+
+  <!-- Evaluation -->
+  <a href="/candidate-management/evaluation/" class="module-card">
+    <div class="module-icon"><i class="bi bi-journal-check"></i></div>
+    <div>
+      <div class="module-title">Holistic Evaluation</div>
+      <div class="module-desc">Review assessment scores, interview feedback, and multi-round competency ratings.</div>
+    </div>
+    <div class="stat-mini">Check Scores →</div>
+  </a>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden; margin-top: 32px;">
+  <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+    <div class="card-title">Candidate Pipeline <span style="font-weight: 400; font-size: 12px; margin-left: 8px; color: var(--text3);">{{ entries|length }} active profiles</span></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Reference ID</th>
+          <th>Full Name</th>
+          <th>Academic Credentials</th>
+          <th>Portal Attribution</th>
+          <th style="width: 250px;">Lifecycle State</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in entries %}
+        <tr>
+          <td class="primary">
+            <a href="/candidate-management/profile/?candidate_id={{ item.id }}" style="font-family: var(--mono); font-weight: 700; color: var(--accent2); text-decoration: none;">#{{ item.id }}</a>
+          </td>
+          <td>
+            <div style="font-weight: 700; color: var(--text);">{{ item.name }}</div>
+            <div style="font-size: 11px; color: var(--text3);">{{ item.email }}</div>
+          </td>
+          <td>
+            <div style="font-size: 13px; font-weight: 600; color: var(--text2);">{{ item.degree }}</div>
+            <div style="font-size: 10px; color: var(--text3); text-transform: uppercase;">Batch of {{ item.year }}</div>
+          </td>
+          <td>
+            <span class="status-pill pill-blue" style="font-size: 10px;">{{ item.references|default:"Direct" }}</span>
+          </td>
+          <td>
+            {% if item.applications %}
+              {% for app in item.applications %}
+              <div style="background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; margin-bottom: 8px;">
+                <div style="font-size: 10px; color: var(--text3); font-weight: 800; text-transform: uppercase; margin-bottom: 4px;">{{ app.job_id }} · {{ app.title }}</div>
+                <form method="post" class="mb-0">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="update_status">
+                  <input type="hidden" name="candidate_id" value="{{ item.id }}">
+                  <input type="hidden" name="job_id" value="{{ app.job_id }}">
+                  <select name="status" onchange="this.form.submit()" class="form-select form-select-sm" style="font-size: 11px; font-weight: 700; border-radius: 6px; padding: 4px 8px;">
+                    {% for status in status_options %}
+                    <option value="{{ status }}" {% if app.stage == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              </div>
+              {% endfor %}
+            {% else %}
+              <form method="post" class="mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_status">
+                <input type="hidden" name="candidate_id" value="{{ item.id }}">
+                <select name="status" onchange="this.form.submit()" class="form-select form-select-sm" style="font-size: 11px; font-weight: 700; border-radius: 6px;">
+                  {% for status in status_options %}
+                  <option value="{{ status }}" {% if item.status == status %}selected{% endif %}>{{ status }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 80px; color: var(--text3);">
+            <div style="font-size: 48px; opacity: 0.1;"><i class="bi bi-people"></i></div>
+            <div style="margin-top: 16px;">No candidate entries detected in the lifecycle tracker.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

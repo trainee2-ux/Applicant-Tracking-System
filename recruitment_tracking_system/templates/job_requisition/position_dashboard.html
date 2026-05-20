@@ -1,0 +1,88 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Job Requisition Matrix{% endblock %}
+{% block nav_jobs %}active{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 32px;">
+  <div>
+    <div class="page-title">Job Requisition Matrix</div>
+    <div class="page-subtitle">Manage, track, and authorize high-priority job postings across global divisions.</div>
+  </div>
+  <div class="header-actions">
+    <a href="{% url 'job_requisition:posting_form' %}" class="btn btn-primary" style="height: 48px; padding: 0 24px; border-radius: 14px; font-weight: 700;">
+      <i class="bi bi-plus-circle-fill"></i> Initialize New Position
+    </a>
+  </div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden; border-radius: 24px;">
+  <div class="card-header" style="padding: 24px 32px; border-bottom: 1px solid var(--border);">
+    <div class="card-title" style="font-size: 18px; font-weight: 800;">Active Requisition Pipeline <span style="font-weight: 400; font-size: 12px; margin-left: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px;">{{ rows|length }} total nodes tracked</span></div>
+  </div>
+  
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="padding-left: 32px;">Reference Node</th>
+          <th>Designation & Sector</th>
+          <th>Geographic Hub</th>
+          <th>Competency Requirements</th>
+          <th>Protocol State</th>
+          <th>External Link</th>
+          <th style="text-align: right; padding-right: 32px;">Operations</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="primary" style="padding-left: 32px;"><span style="font-family: var(--mono); font-weight: 800; color: var(--accent2); font-size: 14px;">#{{ row.job_id }}</span></td>
+          <td>
+            <div style="font-weight: 800; color: var(--text); font-size: 14.5px;">{{ row.job_title }}</div>
+            <div style="font-size: 10px; color: var(--text3); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">{{ row.department }} Division</div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text2);">
+              <i class="bi bi-geo-alt-fill" style="color: var(--accent2);"></i> {{ row.location }}
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 11px; color: var(--text2); max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; background: var(--surface2); padding: 4px 10px; border-radius: 8px; display: inline-block;">
+              {{ row.skills_required|default:"General Skills" }}
+            </div>
+            <div style="font-size: 9px; color: var(--text3); text-transform: uppercase; font-weight: 900; margin-top: 6px; letter-spacing: 1px;">Experience Target: {{ row.experience_range }}</div>
+          </td>
+          <td>
+            <span class="status-pill {% if row.approval_status|lower == 'approved' %}pill-green{% elif row.approval_status|lower == 'pending' %}pill-amber{% else %}pill-blue{% endif %}" style="padding: 4px 12px; border-radius: 12px; font-weight: 800; font-size: 10px;">
+              <span class="dot"></span> {{ row.approval_status|default:"Draft State" }}
+            </span>
+          </td>
+          <td>
+            {% if row.public_url %}
+            <a href="{% url 'candidate_portal:public_job_detail' row.job_id %}" target="_blank" class="icon-btn" title="Inspect Public Signal" style="width: 36px; height: 36px; border-radius: 10px;"><i class="bi bi-box-arrow-up-right" style="font-size: 14px;"></i></a>
+            {% else %}
+            <span style="color: var(--text3); font-size: 11px; font-weight: 800; opacity: 0.4;">INTERNAL ONLY</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right; padding-right: 32px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+              <a href="{% url 'job_requisition:posting_form' %}?job_id={{ row.job_id }}" class="icon-btn" style="width: 38px; height: 38px;" title="Reconfigure Node"><i class="bi bi-sliders"></i></a>
+              <a href="{% url 'job_requisition:delete_confirm' row.job_id %}" class="icon-btn" style="color: var(--red); border-color: var(--redbg); width: 38px; height: 38px;" title="Purge Requisition"><i class="bi bi-trash3"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align: center; padding: 120px; color: var(--text3);">
+            <div style="font-size: 64px; opacity: 0.1; margin-bottom: 24px;"><i class="bi bi-briefcase-fill"></i></div>
+            <div style="font-size: 16px; font-weight: 700; margin-bottom: 8px;">Requisition Grid Offline</div>
+            <div style="font-size: 13px; opacity: 0.7;">No active positions detected in the global directory.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

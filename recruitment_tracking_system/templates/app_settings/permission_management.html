@@ -1,0 +1,263 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Permission Management{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=25">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Permission Management{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  <div class="settings-main">
+
+    {% if messages %}
+    <div class="mb-3">
+      {% for message in messages %}
+      <div class="pm-alert"><i class="bi bi-info-circle-fill"></i> {{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Page Header -->
+    <div class="pm-page-header">
+      <div>
+        <h2 class="pm-title">Permission Management</h2>
+        <p class="pm-subtitle">Define role-based access controls for each module and sub-module</p>
+      </div>
+      <button id="openPermissionCreateBtn" type="button" class="pm-btn-primary">
+        <i class="bi bi-shield-plus"></i> Create Permission
+      </button>
+    </div>
+
+    <!-- Form -->
+    <div id="permissionFormWrap" class="{% if not selected_permission %}d-none{% endif %} pm-form-card mb-4">
+      <div class="pm-form-title">
+        <i class="bi bi-shield-lock"></i>
+        {% if selected_permission %}Update Permission{% else %}New Permission Rule{% endif %}
+      </div>
+      <form id="permissionCreateForm" method="post" class="pm-form-body">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{% if selected_permission %}update_permission{% else %}create_permission{% endif %}">
+        <input type="hidden" name="record_id" value="{{ selected_permission.id|default:'' }}">
+
+        <div class="pm-form-selects">
+          <div class="pm-field">
+            <label class="pm-label">Role <span class="pm-req">*</span></label>
+            <select class="pm-select" name="role" required>
+              <option value="">Select Role</option>
+              {% for item in role_options %}
+              <option {% if selected_permission.role == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="pm-field">
+            <label class="pm-label">Module <span class="pm-req">*</span></label>
+            <select id="permissionModuleSelect" class="pm-select" name="module" required>
+              <option value="">Select Module</option>
+              {% for item in module_options %}
+              <option {% if selected_permission.module == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="pm-field">
+            <label class="pm-label">Sub Module <span class="pm-req">*</span></label>
+            <select id="permissionSubModuleSelect" class="pm-select" name="sub_module" required>
+              <option value="">Select Sub Module</option>
+              {% for item in sub_module_options %}
+              <option {% if selected_permission.sub_module == item %}selected{% endif %}>{{ item }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="pm-perms-section">
+          <div class="pm-perms-label">Access Permissions</div>
+          <div class="pm-perms-grid">
+            <label class="pm-perm-chip">
+              <input class="perm-toggle" type="checkbox" name="create_permission" {% if selected_permission and selected_permission.create_permission %}checked{% elif not selected_permission %}checked{% endif %}>
+              <i class="bi bi-plus-circle"></i> Create
+            </label>
+            <label class="pm-perm-chip">
+              <input class="perm-toggle" type="checkbox" name="view_permission" {% if selected_permission and selected_permission.view_permission %}checked{% elif not selected_permission %}checked{% endif %}>
+              <i class="bi bi-eye"></i> View
+            </label>
+            <label class="pm-perm-chip">
+              <input class="perm-toggle" type="checkbox" name="edit_permission" {% if selected_permission and selected_permission.edit_permission %}checked{% elif not selected_permission %}checked{% endif %}>
+              <i class="bi bi-pencil"></i> Edit
+            </label>
+            <label class="pm-perm-chip">
+              <input class="perm-toggle" type="checkbox" name="delete_permission" {% if selected_permission and selected_permission.delete_permission %}checked{% elif not selected_permission %}checked{% endif %}>
+              <i class="bi bi-trash3"></i> Delete
+            </label>
+            <label class="pm-perm-chip">
+              <input class="perm-toggle" type="checkbox" name="approve_permission" {% if selected_permission and selected_permission.approve_permission %}checked{% endif %}>
+              <i class="bi bi-check-circle"></i> Approve
+            </label>
+            <label class="pm-perm-chip">
+              <input class="perm-toggle" type="checkbox" name="export_permission" {% if selected_permission and selected_permission.export_permission %}checked{% endif %}>
+              <i class="bi bi-box-arrow-up"></i> Export
+            </label>
+            <label class="pm-perm-chip">
+              <input class="perm-toggle" type="checkbox" name="download_permission" {% if selected_permission and selected_permission.download_permission %}checked{% endif %}>
+              <i class="bi bi-download"></i> Download
+            </label>
+            <label class="pm-perm-chip">
+              <input class="perm-toggle" type="checkbox" name="assign_permission" {% if selected_permission and selected_permission.assign_permission %}checked{% endif %}>
+              <i class="bi bi-person-check"></i> Assign
+            </label>
+            <label class="pm-perm-chip full-access">
+              <input id="fullAccessPermission" type="checkbox" name="full_access" {% if selected_permission and selected_permission.full_access %}checked{% endif %}>
+              <i class="bi bi-shield-fill-check"></i> Full Access
+            </label>
+          </div>
+        </div>
+
+        <div class="pm-form-actions">
+          <button type="submit" class="pm-btn-save"><i class="bi bi-check-lg"></i> {% if selected_permission %}Update{% else %}Save{% endif %}</button>
+          <button id="cancelPermissionCreateBtn" type="button" class="pm-btn-cancel">Cancel</button>
+          {% if selected_permission %}
+          <a href="{% url 'app_settings:permission_management' %}" class="pm-btn-cancel">Close</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <!-- Table -->
+    <div class="pm-table-card">
+      <div class="pm-table-header">
+        <span class="pm-table-title"><i class="bi bi-shield-shaded"></i> Permission Matrix</span>
+        <span class="pm-count">{{ records|length }} rule{% if records|length != 1 %}s{% endif %}</span>
+      </div>
+      <div class="pm-table-wrap">
+        <table class="pm-table">
+          <thead>
+            <tr>
+              <th>ROLE</th>
+              <th>MODULE</th>
+              <th>SUB MODULE</th>
+              <th class="text-center">C</th>
+              <th class="text-center">V</th>
+              <th class="text-center">E</th>
+              <th class="text-center">D</th>
+              <th class="text-center">A</th>
+              <th class="text-center">Ex</th>
+              <th class="text-center">Dl</th>
+              <th class="text-center">As</th>
+              <th class="text-center">Full</th>
+              <th class="text-end">ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in records %}
+            <tr class="pm-row">
+              <td><span class="pm-role-tag">{{ item.role }}</span></td>
+              <td class="pm-mod">{{ item.module }}</td>
+              <td class="pm-mod">{{ item.sub_module }}</td>
+              <td class="text-center">{% if item.create_permission %}<i class="bi bi-check-circle-fill pm-yes"></i>{% else %}<i class="bi bi-x-circle pm-no"></i>{% endif %}</td>
+              <td class="text-center">{% if item.view_permission %}<i class="bi bi-check-circle-fill pm-yes"></i>{% else %}<i class="bi bi-x-circle pm-no"></i>{% endif %}</td>
+              <td class="text-center">{% if item.edit_permission %}<i class="bi bi-check-circle-fill pm-yes"></i>{% else %}<i class="bi bi-x-circle pm-no"></i>{% endif %}</td>
+              <td class="text-center">{% if item.delete_permission %}<i class="bi bi-check-circle-fill pm-yes"></i>{% else %}<i class="bi bi-x-circle pm-no"></i>{% endif %}</td>
+              <td class="text-center">{% if item.approve_permission %}<i class="bi bi-check-circle-fill pm-yes"></i>{% else %}<i class="bi bi-x-circle pm-no"></i>{% endif %}</td>
+              <td class="text-center">{% if item.export_permission %}<i class="bi bi-check-circle-fill pm-yes"></i>{% else %}<i class="bi bi-x-circle pm-no"></i>{% endif %}</td>
+              <td class="text-center">{% if item.download_permission %}<i class="bi bi-check-circle-fill pm-yes"></i>{% else %}<i class="bi bi-x-circle pm-no"></i>{% endif %}</td>
+              <td class="text-center">{% if item.assign_permission %}<i class="bi bi-check-circle-fill pm-yes"></i>{% else %}<i class="bi bi-x-circle pm-no"></i>{% endif %}</td>
+              <td class="text-center">{% if item.full_access %}<span class="pm-full-badge">Full</span>{% else %}<i class="bi bi-x-circle pm-no"></i>{% endif %}</td>
+              <td class="text-end">
+                <div class="pm-actions">
+                  <a href="{% url 'app_settings:permission_management' %}?edit={{ item.id }}" class="pm-act-btn edit" title="Edit"><i class="bi bi-pencil"></i></a>
+                  <form method="post" class="d-inline" onsubmit="return confirm('Delete this permission rule?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_permission">
+                    <input type="hidden" name="record_id" value="{{ item.id }}">
+                    <button type="submit" class="pm-act-btn del" title="Delete"><i class="bi bi-trash3"></i></button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="13" class="pm-empty">
+                <i class="bi bi-shield-slash"></i>
+                <p>No permission rules defined yet</p>
+                <span>Click "Create Permission" to define access rules</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  .pm-alert{padding:10px 16px;border-radius:10px;margin-bottom:8px;font-size:13px;font-weight:600;background:var(--accentbg);color:var(--accent);border-left:4px solid var(--accent);display:flex;align-items:center;gap:8px}
+  .pm-page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;gap:12px;flex-wrap:wrap}
+  .pm-title{font-size:22px;font-weight:800;color:var(--text);margin:0 0 3px}
+  .pm-subtitle{font-size:13px;color:var(--text3);margin:0}
+  .pm-btn-primary{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(108,99,255,.3);transition:all .15s;cursor:pointer}
+  .pm-btn-primary:hover{transform:translateY(-2px)}
+  .pm-form-card{background:var(--surface);border:1px solid var(--accent);border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(108,99,255,.1)}
+  .pm-form-title{padding:16px 24px;border-bottom:1px solid var(--border);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);display:flex;align-items:center;gap:8px}
+  .pm-form-body{padding:24px;display:flex;flex-direction:column;gap:24px}
+  .pm-form-selects{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .pm-field{display:flex;flex-direction:column;gap:6px}
+  .pm-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)}
+  .pm-req{color:var(--red)}
+  .pm-select{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-size:13px;width:100%}
+  .pm-select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accentbg)}
+  .pm-perms-section{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px 20px}
+  .pm-perms-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:14px}
+  .pm-perms-grid{display:flex;flex-wrap:wrap;gap:10px}
+  .pm-perm-chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;user-select:none}
+  .pm-perm-chip:has(input:checked){background:var(--accentbg);border-color:var(--accent);color:var(--accent)}
+  .pm-perm-chip.full-access:has(input:checked){background:#dcfce7;border-color:#22c55e;color:#15803d}
+  .pm-perm-chip input{width:0;height:0;position:absolute;opacity:0}
+  .pm-perm-chip i{font-size:14px}
+  .pm-form-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .pm-btn-save{background:var(--accent);color:#fff;border:none;padding:9px 20px;border-radius:10px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .pm-btn-cancel{background:var(--surface2);color:var(--text3);text-decoration:none;padding:9px 16px;border-radius:10px;font-weight:600;font-size:13px;border:1px solid var(--border);cursor:pointer}
+  .pm-table-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.05)}
+  .pm-table-header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid var(--border)}
+  .pm-table-title{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);display:flex;align-items:center;gap:8px}
+  .pm-count{font-size:12px;font-weight:600;color:var(--text3);background:var(--surface2);padding:3px 10px;border-radius:20px;border:1px solid var(--border)}
+  .pm-table-wrap{overflow-x:auto}
+  .pm-table{width:100%;border-collapse:collapse}
+  .pm-table thead th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);padding:12px 10px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface2)}
+  .pm-row:hover{background:var(--surface2)}
+  .pm-row td{padding:13px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .pm-row:last-child td{border-bottom:none}
+  .pm-role-tag{background:var(--accentbg);color:var(--accent);padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;white-space:nowrap}
+  .pm-mod{font-size:12px;color:var(--text2);font-weight:600}
+  .pm-yes{color:#22c55e;font-size:15px}
+  .pm-no{color:var(--text3);opacity:.75;font-size:15px}
+  .pm-full-badge{background:#dcfce7;color:#15803d;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800}
+  .pm-actions{display:flex;justify-content:flex-end;gap:6px}
+  .pm-act-btn{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;transition:all .15s;border:none;cursor:pointer}
+  .pm-act-btn.edit{background:var(--bluebg);color:var(--blue)}
+  .pm-act-btn.del{background:var(--redbg);color:var(--red)}
+  .pm-act-btn:hover{transform:scale(1.1)}
+  .pm-empty{text-align:center;padding:60px 20px;color:var(--text3)}
+  .pm-empty i{font-size:40px;opacity:.2;display:block;margin-bottom:12px}
+  .pm-empty p{font-size:15px;font-weight:700;color:var(--text2);margin:0 0 4px}
+  .pm-empty span{font-size:12px}
+  @media(max-width:900px){.pm-form-selects{grid-template-columns:1fr 1fr}}
+</style>
+
+{% endblock %}
+
+{% block page_js %}
+{{ sub_module_map|json_script:"permissionSubModuleMapData" }}
+<script src="/static/js/permission_management.js?v=2"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("openPermissionCreateBtn");
+  const wrap = document.getElementById("permissionFormWrap");
+  const cancel = document.getElementById("cancelPermissionCreateBtn");
+  if (btn && wrap) btn.addEventListener("click", () => wrap.classList.toggle("d-none"));
+  if (cancel && wrap) cancel.addEventListener("click", () => wrap.classList.add("d-none"));
+});
+</script>
+{% endblock %}

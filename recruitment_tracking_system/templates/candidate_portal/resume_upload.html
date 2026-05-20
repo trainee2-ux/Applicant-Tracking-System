@@ -1,0 +1,54 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Upload Resume{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/candidate_portal.css?v=2">{% endblock %}
+
+{% block content %}
+<div class="cp-hero">
+  <div>
+    <div class="cp-title">Upload Your Resume</div>
+    <div class="cp-subtitle">Upload a PDF resume to auto-fill your profile and continue to the portal.</div>
+  </div>
+  <div class="cp-hero-actions">
+    <a href="{{ next_url|default:'/candidate-portal/' }}" class="btn btn-ghost btn-sm"><i class="bi bi-arrow-left me-1"></i> Back to Portal</a>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2 cp-alert">
+      <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div class="cp-card">
+  <div class="cp-card-head">
+    <div>
+      <div class="cp-card-title"><i class="bi bi-file-earmark-arrow-up me-1"></i> Resume Upload</div>
+      <div class="cp-card-subtitle">Accepted format: PDF only</div>
+    </div>
+  </div>
+  <div class="cp-card-body">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="field-grid grid-2 cp-field-grid">
+        <div class="field">
+          <label class="field-label">Registered Email</label>
+          <input class="form-control" type="email" value="{{ candidate.email }}" readonly>
+        </div>
+        <div class="field">
+          <label class="field-label">Choose Resume (PDF)</label>
+          <input class="form-control" type="file" name="resume_upload" accept="application/pdf" required>
+        </div>
+      </div>
+      <div class="cp-form-actions">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i> Upload & Continue</button>
+        <a class="btn btn-secondary" href="{{ next_url|default:'/candidate-portal/' }}">Skip for now</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,69 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - My Application Pipeline{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=7">{% endblock %}
+{% block nav_candidate_pipeline %}active{% endblock %}
+{% block header %}Candidate Portal &gt;Application Pipeline{% endblock %}
+
+{% block content %}
+<div class="pipeline-board-wrap">
+  <div class="pipeline-toolbar">
+    <h3 class="applicant-panel-title mb-0">Application Pipeline</h3>
+    <div class="pipeline-actions">
+      <form method="get" class="pipeline-position-form">
+        <select name="job_id" class="pipeline-position-select" onchange="this.form.submit()">
+          <option value="">All Job Applications</option>
+          {% for p in position_options %}
+          <option value="{{ p.job_id }}" {% if selected_job_id == p.job_id %}selected{% endif %}>
+            {{ p.job_id }} - {{ p.title }}
+          </option>
+          {% endfor %}
+        </select>
+      </form>
+      <input id="pipelineSearch" class="pipeline-search" type="search" placeholder="Search my jobs or stage">
+    </div>
+  </div>
+  <div class="pipeline-board">
+    {% for column in columns %}
+    <section class="pipeline-column" data-stage="{{ column.name }}">
+      <header class="pipeline-column-head">
+        <span>{{ column.name }}</span>
+        <span class="pipeline-count">{{ column.items|length }}</span>
+      </header>
+      <div class="pipeline-cards">
+        {% if column.items %}
+          {% for c in column.items %}
+          <article class="pipeline-card" data-name="{{ c.name }}" data-job="{{ c.job_applied }}">
+            <div><strong>Candidate ID:</strong> {{ c.candidate_id }}</div>
+            <div><strong>Name:</strong> {{ c.name }}</div>
+            <div><strong>Job Applied:</strong> {{ c.job_applied }}</div>
+            <div><strong>Stage:</strong> <span class="card-stage">{{ c.stage }}</span></div>
+            <div><strong>Last Updated:</strong> <span class="card-updated">{{ c.last_updated }}</span></div>
+          </article>
+          {% endfor %}
+        {% else %}
+          <div class="pipeline-empty">No records in this stage</div>
+        {% endif %}
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchInput = document.getElementById("pipelineSearch");
+    if (!searchInput) return;
+    searchInput.addEventListener("input", function () {
+      const q = (searchInput.value || "").trim().toLowerCase();
+      document.querySelectorAll(".pipeline-card").forEach(function (card) {
+        const name = (card.getAttribute("data-name") || "").toLowerCase();
+        const job = (card.getAttribute("data-job") || "").toLowerCase();
+        card.style.display = (!q || name.includes(q) || job.includes(q)) ? "" : "none";
+      });
+    });
+  });
+</script>
+{% endblock %}

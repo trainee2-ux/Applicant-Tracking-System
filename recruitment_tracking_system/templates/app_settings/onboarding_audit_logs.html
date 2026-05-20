@@ -1,0 +1,99 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Onboarding Audit Logs{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=26">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Onboarding Audit Logs{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+
+  <div class="settings-main">
+    <div class="settings-panel">
+      <div class="settings-head">
+        <div>
+          <h3 class="settings-title"><i class="bi bi-journal-text me-2"></i>Onboarding Audit Logs</h3>
+          <div class="settings-subtitle">Trail of onboarding actions and certificate events.</div>
+        </div>
+        <form method="get" style="max-width: 420px; width: 100%;">
+          <input name="q" value="{{ query }}" placeholder="Search candidate, action, user..." />
+        </form>
+      </div>
+
+      <div class="table-wrap" style="margin-top: 12px;">
+        <table class="settings-table">
+          <thead>
+            <tr>
+              <th>Candidate</th>
+              <th>Action</th>
+              <th>Performed By</th>
+              <th>Details</th>
+              <th>IP</th>
+              <th>Timestamp</th>
+              <th>Certificate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in logs %}
+            <tr>
+              <td class="primary">
+                {% if log.candidate %}
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width: 220px;">
+                    <span style="font-weight:700;color:var(--text-main);">{{ log.candidate.full_name }}</span>
+                    <span style="font-size:12px;color:var(--text-label);">{{ log.candidate.email }}</span>
+                  </div>
+                {% else %}
+                  <span style="color: var(--text-label);">N/A</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="status-pill pill-purple">{{ log.formatted_action|default:"-" }}</span>
+              </td>
+              <td>
+                {% if log.performed_by %}
+                  <div style="display:flex;flex-direction:column;gap:2px;min-width: 170px;">
+                    <span style="font-weight:700;color:var(--text-main);">{{ log.performed_by.full_name }}</span>
+                    <span style="font-size:12px;color:var(--text-label);">{{ log.performed_by.role }}</span>
+                  </div>
+                {% else %}
+                  <span style="color: var(--text-label);">System / Candidate</span>
+                {% endif %}
+              </td>
+              <td style="max-width: 360px;">
+                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ log.details }}">
+                  {{ log.details|default:"-" }}
+                </div>
+              </td>
+              <td><span style="font-family: var(--mono); font-size: 12px;">{{ log.ip_address|default:"-" }}</span></td>
+              <td>
+                <div style="display:flex;flex-direction:column;gap:2px;min-width: 120px;">
+                  <span>{{ log.timestamp|date:"M d, Y" }}</span>
+                  <span style="font-size:12px;color:var(--text-label);">{{ log.timestamp|date:"H:i:s" }}</span>
+                </div>
+              </td>
+              <td>
+                {% if log.action == 'CERTIFICATE_GENERATED' and log.details.certificate_id %}
+                  <a class="btn btn-ghost btn-sm" href="{% url 'onboarding:certificate_view' log.details.certificate_id %}">
+                    <i class="bi bi-file-earmark-pdf-fill"></i> View / Download
+                  </a>
+                {% else %}
+                  <span style="color: var(--text-label);">-</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" style="text-align:center; padding: 28px 14px; color: var(--text-label);">
+                No audit logs found.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

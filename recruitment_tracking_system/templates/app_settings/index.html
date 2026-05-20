@@ -1,0 +1,12 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Settings{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=12">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+</div>
+{% endblock %}

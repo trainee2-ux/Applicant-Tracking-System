@@ -1,0 +1,102 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Candidate Portal Access{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/candidate_portal_admin_access.css?v=1">{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block header %}Candidate Portal &gt; Access Report{% endblock %}
+
+{% block content %}
+<section class="portal-access-page">
+  <div class="portal-access-head">
+    <h4 class="mb-0">Candidate Portal Access Report</h4>
+    <input id="portalAccessSearch" class="form-control form-control-sm portal-access-search" type="search" placeholder="Search by ID, name, email, or job">
+  </div>
+
+  <div class="portal-access-stats">
+    <article class="portal-stat-card">
+      <div class="portal-stat-label">Total Access Profiles</div>
+      <div class="portal-stat-value">{{ total_count }}</div>
+    </article>
+    <article class="portal-stat-card">
+      <div class="portal-stat-label">Active Profiles</div>
+      <div class="portal-stat-value text-success">{{ active_count }}</div>
+    </article>
+    <article class="portal-stat-card">
+      <div class="portal-stat-label">Inactive Profiles</div>
+      <div class="portal-stat-value text-secondary">{{ inactive_count }}</div>
+    </article>
+    <article class="portal-stat-card">
+      <div class="portal-stat-label">Accessed in Last 24h</div>
+      <div class="portal-stat-value text-primary">{{ recent_access_count }}</div>
+    </article>
+  </div>
+
+  <div class="card border-0 shadow-sm portal-access-table-card">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0 portal-access-table">
+        <thead>
+          <tr>
+            <th>Candidate ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Portal Email</th>
+            <th>Access Status</th>
+            <th>Last Access</th>
+            <th>Applied Jobs</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr class="portal-access-row">
+            <td>{{ row.candidate_id }}</td>
+            <td>{{ row.name }}</td>
+            <td>{{ row.email }}</td>
+            <td>{{ row.portal_email }}</td>
+            <td>
+              {% if row.is_active %}
+              <span class="badge rounded-pill text-bg-success">Active</span>
+              {% else %}
+              <span class="badge rounded-pill text-bg-secondary">Inactive</span>
+              {% endif %}
+            </td>
+            <td>{{ row.last_login_at|date:"Y-m-d H:i"|default:"-" }}</td>
+            <td>
+              {% if row.jobs %}
+                <div class="portal-job-list">
+                  {% for job in row.jobs %}
+                    <span class="portal-job-chip">{{ job }}</span>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-3">No portal access records available.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const search = document.getElementById("portalAccessSearch");
+    if (!search) return;
+    const rows = Array.from(document.querySelectorAll(".portal-access-row"));
+    search.addEventListener("input", function () {
+      const q = (search.value || "").trim().toLowerCase();
+      rows.forEach(function (row) {
+        const text = (row.textContent || "").toLowerCase();
+        row.style.display = !q || text.includes(q) ? "" : "none";
+      });
+    });
+  });
+</script>
+{% endblock %}

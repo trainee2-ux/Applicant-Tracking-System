@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Offer Letter</title>
+</head>
+<body style="margin:0; padding:0; background:#f3f5f7;">
+  <!-- Outer -->
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f5f7; padding:24px 12px;">
+    <tr>
+      <td align="center">
+        <!-- Card -->
+        <table role="presentation" width="680" cellspacing="0" cellpadding="0" style="max-width:680px; width:100%; background:#ffffff; border:1px solid #e6e8ee; border-radius:16px; overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:22px 22px 18px; background:#0b1220;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td valign="top" style="color:#fff;">
+                    <div style="font-family:Arial,Helvetica,sans-serif; font-weight:800; font-size:15px; letter-spacing:.2px;">
+                      {{ company_name }}
+                    </div>
+                    <div style="margin-top:8px; display:inline-block; padding:6px 12px; border-radius:999px; border:1px solid rgba(240,180,41,.45); background:rgba(240,180,41,.14); color:#ffd68a; font-family:Arial,Helvetica,sans-serif; font-weight:800; font-size:11px; letter-spacing:.14em; text-transform:uppercase;">
+                      Offer Letter
+                    </div>
+                  </td>
+                  <td valign="top" align="right" style="color:#fff;">
+                    <div style="font-family:Arial,Helvetica,sans-serif; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.55);">Offer ID</div>
+                    <div style="font-family:Arial,Helvetica,sans-serif; font-size:12.5px; font-weight:700; color:rgba(255,255,255,.92);">
+                      {% if offer %}{{ offer.id }}{% else %}{{ offer_id|default:"—" }}{% endif %}
+                    </div>
+                    <div style="margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.55);">Date</div>
+                    <div style="font-family:Arial,Helvetica,sans-serif; font-size:12.5px; font-weight:700; color:rgba(255,255,255,.92);">
+                      {% if offer %}{{ offer.sent_at|date:"Y-m-d" }}{% else %}{{ offer_date|default:"" }}{% endif %}
+                    </div>
+                  </td>
+                </tr>
+              </table>
+
+              <div style="margin-top:16px; font-family:Arial,Helvetica,sans-serif; font-size:26px; line-height:1.2; font-weight:900; color:#ffffff;">
+                Congratulations, {{ candidate.full_name|default:"Candidate" }}.
+              </div>
+              <div style="margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-size:14px; line-height:1.7; color:rgba(255,255,255,.76);">
+                We’re excited to offer you the position of <strong style="color:#fff;">{{ job_title }}</strong> at
+                <strong style="color:#fff;">{{ company_name }}</strong>. Please review the details and respond using the buttons below.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:18px 22px 8px;">
+              {% if body_html %}
+              <div style="font-family:Arial,Helvetica,sans-serif; font-size:14px; line-height:1.75; color:#0f172a;">
+                {{ body_html|safe }}
+              </div>
+              {% endif %}
+
+              <!-- Summary cards -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:14px;">
+                <tr>
+                  <td valign="top" style="padding:0;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e6e8ee; border-radius:14px; overflow:hidden;">
+                      <tr>
+                        <td style="background:#f8fafc; padding:12px 14px; border-bottom:1px solid #e6e8ee; font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:#0f172a;">
+                          Offer Summary
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:12px 14px;">
+                          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-family:Arial,Helvetica,sans-serif; font-size:13.5px; line-height:1.6;">
+                            <tr>
+                              <td width="38%" style="color:#64748b; font-weight:800; padding:6px 0;">Position</td>
+                              <td style="color:#0f172a; font-weight:800; padding:6px 0;">{{ job_title }}</td>
+                            </tr>
+                            <tr>
+                              <td style="color:#64748b; font-weight:800; padding:6px 0;">Department</td>
+                              <td style="color:#0f172a; font-weight:800; padding:6px 0;">{{ department }}</td>
+                            </tr>
+                            <tr>
+                              <td style="color:#64748b; font-weight:800; padding:6px 0;">Location</td>
+                              <td style="color:#0f172a; font-weight:800; padding:6px 0;">{{ work_location }}</td>
+                            </tr>
+                            <tr>
+                              <td style="color:#64748b; font-weight:800; padding:6px 0;">Employment Type</td>
+                              <td style="color:#0f172a; font-weight:800; padding:6px 0;">{{ employment_type }}</td>
+                            </tr>
+                            <tr>
+                              <td style="color:#64748b; font-weight:800; padding:6px 0;">Reporting To</td>
+                              <td style="color:#0f172a; font-weight:800; padding:6px 0;">{{ reporting_manager }}</td>
+                            </tr>
+                            <tr>
+                              <td style="color:#64748b; font-weight:800; padding:6px 0;">Joining Date</td>
+                              <td style="color:#0f172a; font-weight:800; padding:6px 0;">{{ joining_date }}</td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Compensation -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:14px; border:1px solid #e6e8ee; border-radius:14px; overflow:hidden;">
+                <tr>
+                  <td style="background:#f8fafc; padding:12px 14px; border-bottom:1px solid #e6e8ee; font-family:Arial,Helvetica,sans-serif; font-size:12px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:#0f172a;">
+                    Compensation
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:12px 14px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-family:Arial,Helvetica,sans-serif; font-size:13.5px; line-height:1.6;">
+                      <tr>
+                        <td width="38%" style="color:#64748b; font-weight:800; padding:6px 0;">CTC (Annual)</td>
+                        <td style="color:#0f172a; font-weight:900; padding:6px 0;">{{ ctc_annual }}</td>
+                      </tr>
+                      <tr>
+                        <td style="color:#64748b; font-weight:800; padding:6px 0;">Base Pay</td>
+                        <td style="color:#0f172a; font-weight:900; padding:6px 0;">{{ base_pay }}</td>
+                      </tr>
+                      <tr>
+                        <td style="color:#64748b; font-weight:800; padding:6px 0;">Benefits</td>
+                        <td style="color:#0f172a; font-weight:900; padding:6px 0;">{{ benefits }}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Buttons -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:18px;">
+                <tr>
+                  <td align="center" style="padding:6px 0 0;">
+                    <a href="{{ offer_view_url }}" style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding:12px 16px; border-radius:12px; font-family:Arial,Helvetica,sans-serif; font-weight:900; font-size:13px;">
+                      View Offer Letter
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center" style="padding:12px 0 0;">
+                    <a href="{{ accept_url }}" style="display:inline-block; background:#16a34a; color:#ffffff; text-decoration:none; padding:12px 16px; border-radius:12px; font-family:Arial,Helvetica,sans-serif; font-weight:900; font-size:13px; margin-right:8px;">
+                      Accept Offer
+                    </a>
+                    <a href="{{ reject_url }}" style="display:inline-block; background:#dc2626; color:#ffffff; text-decoration:none; padding:12px 16px; border-radius:12px; font-family:Arial,Helvetica,sans-serif; font-weight:900; font-size:13px;">
+                      Reject Offer
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Fallback links -->
+              <div style="margin-top:16px; padding:14px; border:1px dashed #cbd5e1; border-radius:12px; background:#f8fafc;">
+                <div style="font-family:Arial,Helvetica,sans-serif; font-size:11px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; color:#64748b; margin-bottom:8px;">
+                  If buttons don’t work
+                </div>
+                <div style="font-family:Arial,Helvetica,sans-serif; font-size:13px; color:#0f172a; line-height:1.6;">
+                  Accept: <a href="{{ accept_url }}" style="color:#2563eb;">{{ accept_url }}</a><br>
+                  Reject: <a href="{{ reject_url }}" style="color:#2563eb;">{{ reject_url }}</a>
+                </div>
+              </div>
+
+              <!-- Onboarding link -->
+              <div style="margin-top:14px; padding:14px; background:#f1f5f9; border-radius:12px;">
+                <div style="font-family:Arial,Helvetica,sans-serif; font-size:13px; color:#334155; font-weight:700;">
+                  Onboarding link (for registration + document upload):
+                </div>
+                <div style="margin-top:6px;">
+                  <a href="{{ onboarding_url }}" style="font-family:Arial,Helvetica,sans-serif; font-size:13px; color:#2563eb;">{{ onboarding_url }}</a>
+                </div>
+              </div>
+
+              <div style="margin-top:16px; font-family:Arial,Helvetica,sans-serif; font-size:12px; color:#64748b;">
+                You can also open <strong>View Offer Letter</strong> and respond from your Candidate Portal.
+              </div>
+
+              <div style="height:14px;"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#0b1220; padding:14px 22px 16px; color:rgba(255,255,255,.72);">
+              <div style="font-family:Arial,Helvetica,sans-serif; font-weight:900; color:rgba(255,255,255,.88);">{{ company_name }}</div>
+              <div style="margin-top:8px; font-family:Arial,Helvetica,sans-serif; font-size:11.5px; line-height:1.6; color:rgba(255,255,255,.45);">
+                This email contains confidential information intended only for the candidate addressed. If you received this by mistake, please delete it.
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

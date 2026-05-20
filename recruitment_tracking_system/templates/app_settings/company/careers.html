@@ -1,0 +1,103 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Careers Page{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=12">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Company Management &gt; Careers Page{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  <div class="settings-main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Careers Page</div>
+        <div class="page-subtitle">Manage your public jobs page settings and branding</div>
+      </div>
+      <a class="btn btn-primary btn-sm" href="{{ CAREERS_URL|default:'/careers/' }}" target="_blank" rel="noopener">
+        <i class="bi bi-box-arrow-up-right"></i> Open
+      </a>
+    </div>
+
+    <div class="settings-grid">
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Public URL</div>
+            <div class="card-subtitle">Share this link with candidates</div>
+          </div>
+        </div>
+
+        <div class="settings-kv">
+          <div class="settings-kv-label">Careers URL</div>
+          <div class="settings-kv-value">
+            <span class="settings-mono" id="careersUrlText">{{ CAREERS_URL|default:'/careers/' }}</span>
+            <button class="btn btn-secondary btn-sm" type="button" id="copyCareersUrlBtn">
+              <i class="bi bi-clipboard"></i> Copy
+            </button>
+          </div>
+        </div>
+        <div class="settings-note" style="margin-top:10px;">
+          This URL is visible to candidates. Share it on your website, social pages, and job boards.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Branding</div>
+            <div class="card-subtitle">Coming soon</div>
+          </div>
+          <span class="settings-chip settings-chip-light">Planned</span>
+        </div>
+
+        <form class="settings-fields-grid" onsubmit="return false;">
+          <div class="settings-span-all">
+            <label class="form-label">Page Title</label>
+            <input class="form-control" type="text" value="Careers at Ultimatix" disabled>
+          </div>
+          <div class="settings-span-all">
+            <label class="form-label">Tagline</label>
+            <input class="form-control" type="text" value="Find your next role with us" disabled>
+          </div>
+          <div>
+            <label class="form-label">Primary Color</label>
+            <input class="form-control" type="text" value="#6366F1" disabled>
+          </div>
+          <div>
+            <label class="form-label">Contact Email</label>
+            <input class="form-control" type="email" value="careers@ultimatix.example" disabled>
+          </div>
+          <div class="settings-span-all">
+            <div class="settings-note">
+              UI preview/settings save will be enabled when the backend model is added for careers configuration.
+            </div>
+          </div>
+        </form>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var btn = document.getElementById('copyCareersUrlBtn');
+  var text = document.getElementById('careersUrlText');
+  if (!btn || !text || !navigator.clipboard) return;
+  btn.addEventListener('click', async function () {
+    try {
+      await navigator.clipboard.writeText(text.textContent.trim());
+      btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
+      setTimeout(function () { btn.innerHTML = '<i class="bi bi-clipboard"></i> Copy'; }, 1200);
+    } catch (e) {}
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Interview Panel Coordination{% endblock %}
+{% block nav_interview_recording %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Panel Coordination</div>
+    <div class="page-subtitle">Schedule, modify, and track interview panel assignments across multiple evaluation modes.</div>
+  </div>
+  <div class="header-actions">
+    <a id="openPanelFormBtn" href="/interview-recording/panel/?create=1" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle"></i> Create Assignment</a>
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert" style="margin-bottom: 24px; border-radius: 12px; border: none; background: var(--accentbg); color: var(--accent2); font-weight: 600;">
+      <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div id="panelFormWrap" class="card {% if not show_form %}d-none{% endif %}" style="margin-bottom: 32px; border-top: 4px solid var(--accent);">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-calendar-plus"></i> {% if form_mode == 'edit' %}Modify{% else %}New{% endif %} Interview Assignment</div>
+  </div>
+  <form method="post" style="padding: 24px;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="{% if form_mode == 'edit' %}update_panel{% else %}create_panel{% endif %}">
+    <input type="hidden" name="record_id" value="{{ form_data.record_id|default:'' }}">
+    
+    <div class="field-grid grid-3" style="gap: 20px;">
+      <div class="field">
+        <label class="field-label">Candidate <span class="required-star">*</span></label>
+        <select name="candidate" required>
+          <option value="">Select Profile</option>
+          {% for c in candidate_options %}
+          <option value="{{ c.candidate_id }}" {% if form_data.candidate == c.candidate_id %}selected{% endif %}>
+            {{ c.candidate_id }} - {{ c.full_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Assigned Interviewer(s) <span class="required-star">*</span></label>
+        {% with current_interviewer=form_data.interviewers|default:"" %}
+        <select name="interviewers" required>
+          <option value="">Select Evaluator</option>
+          {% if current_interviewer and current_interviewer not in interviewer_name_list %}
+          <option value="{{ current_interviewer }}" selected>{{ current_interviewer }}</option>
+          {% endif %}
+          {% for option in interviewer_options %}
+          <option value="{{ option.full_name }}" {% if current_interviewer == option.full_name %}selected{% endif %}>
+            {{ option.full_name }}
+          </option>
+          {% endfor %}
+        </select>
+        {% endwith %}
+      </div>
+      <div class="field">
+        <label class="field-label">Interview Date <span class="required-star">*</span></label>
+        <input type="date" name="date" value="{{ form_data.date|default:'' }}" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Time Slot (Local) <span class="required-star">*</span></label>
+        <input type="time" name="time" value="{{ form_data.time|default:'' }}" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Evaluation Mode <span class="required-star">*</span></label>
+        <select name="mode" required>
+          <option value="">Select Mode</option>
+          <option {% if form_data.mode == 'In Person' %}selected{% endif %}>In Person</option>
+          <option {% if form_data.mode == 'Video' %}selected{% endif %}>Video</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Bridge / Video URL</label>
+        <input type="url" name="video_link" value="{{ form_data.video_link|default:'' }}" placeholder="https://teams.microsoft.com/...">
+      </div>
+    </div>
+
+    <div style="margin-top: 32px; display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border); padding-top: 24px;">
+      <a id="cancelPanelFormBtn" href="/interview-recording/panel/" class="btn btn-ghost">Discard</a>
+      <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Confirm Schedule <i class="bi bi-check2-circle"></i></button>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+    <div class="card-title">Active Schedule Ledger</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Interviewer(s)</th>
+          <th>Schedule</th>
+          <th>Mode</th>
+          <th>Communication Link</th>
+          <th style="text-align: right;">Operations</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in panel_records %}
+        <tr>
+          <td class="primary">
+            <div style="font-weight: 700; color: var(--text);">{{ row.candidate }}</div>
+            <div style="font-size: 10px; color: var(--text3); text-transform: uppercase;">Reference Profile</div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="user-avatar" style="width: 28px; height: 28px; font-size: 10px;">{{ row.interviewers|slice:":1" }}</div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text2);">{{ row.interviewers }}</div>
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 13px; font-weight: 700; color: var(--text);">{{ row.date }}</div>
+            <div style="font-size: 11px; color: var(--text3);"><i class="bi bi-clock"></i> {{ row.time }}</div>
+          </td>
+          <td>
+            <span class="status-pill {% if row.mode|lower == 'video' %}pill-purple{% else %}pill-blue{% endif %}" style="font-size: 10px;">
+              <i class="bi {% if row.mode|lower == 'video' %}bi-camera-video{% else %}bi-person-workspace{% endif %}"></i> {{ row.mode }}
+            </span>
+          </td>
+          <td>
+            {% if row.video_link %}
+              <a href="{{ row.video_link }}" target="_blank" class="status-pill pill-green" style="text-decoration: none; font-size: 10px;"><i class="bi bi-link-45deg"></i> Join Bridge</a>
+            {% else %}
+              <span style="opacity: 0.3;">—</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              {% if row.is_editable %}
+                <a href="/interview-recording/panel/?edit_id={{ row.id }}" class="icon-btn" title="Edit Schedule"><i class="bi bi-pencil-square"></i></a>
+                <a href="{% url 'interview_recording:panel_delete_confirm' row.id %}" class="icon-btn" style="color: var(--red); border-color: var(--redbg);" title="Cancel Assignment"><i class="bi bi-trash"></i></a>
+              {% else %}
+                <span style="font-size: 11px; font-style: italic; color: var(--text3);">External System</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 80px; color: var(--text3);">
+            <div style="font-size: 48px; opacity: 0.1;"><i class="bi bi-calendar-x"></i></div>
+            <div style="margin-top: 16px;">No upcoming interview panels scheduled.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const openBtn = document.getElementById("openPanelFormBtn");
+    const panelForm = document.getElementById("panelFormWrap");
+    const cancelBtn = document.getElementById("cancelPanelFormBtn");
+
+    if (openBtn && panelForm) {
+      openBtn.addEventListener("click", (e) => {
+        if (panelForm.classList.contains("d-none")) {
+          e.preventDefault();
+          panelForm.classList.remove("d-none");
+          panelForm.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

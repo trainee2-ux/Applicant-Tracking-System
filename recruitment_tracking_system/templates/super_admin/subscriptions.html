@@ -1,0 +1,110 @@
+{% extends "super_admin/base.html" %}
+{% block title %}Super Admin - Subscriptions{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/super_admin.css?v=2">{% endblock %}
+{% block header %}Super Admin &gt; Subscriptions{% endblock %}
+{% block nav_super_admin_subscriptions %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2 superadmin-page">
+  <div class="sa-head">
+    <div>
+      <p class="sa-subtitle">Assign a plan to a company and track subscription state.</p>
+      <h2 class="sa-title">Subscriptions</h2>
+    </div>
+    <div class="sa-actions">
+      <a class="btn btn-sm btn-primary" href="/super-admin/plans/">
+        <i class="bi bi-layers me-1"></i> Manage Plans
+      </a>
+    </div>
+  </div>
+
+  <div class="sa-card p-3 mb-3">
+    <div class="sa-card-head">
+      <h3 class="sa-card-title">Assign Subscription</h3>
+    </div>
+    <form method="post" class="row g-2 align-items-end">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="assign">
+      <div class="col-md-4">
+        <label class="form-label">Company</label>
+        <select class="form-select" name="company_id">
+          {% for c in companies %}
+          <option value="{{ c.id }}">{{ c.company_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Plan</label>
+        <select class="form-select" name="plan_id">
+          {% for p in plans %}
+          <option value="{{ p.id }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Billing Cycle</label>
+        <input class="form-control" name="billing_cycle" placeholder="monthly">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Amount</label>
+        <input class="form-control" name="amount" placeholder="0">
+      </div>
+      <div class="col-md-1">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-check2-circle me-1"></i> Assign
+        </button>
+      </div>
+    </form>
+    <div class="text-muted small mt-2">Tip: create plans in <a href="{% url 'super_admin:plans' %}">Plans</a> first.</div>
+  </div>
+
+  <div class="sa-card p-0">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Plan</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Status</th>
+            <th>Payment</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in subscriptions %}
+          <tr>
+            <td>{{ s.company.company_name }}</td>
+            <td>{{ s.plan.name }}</td>
+            <td>{{ s.start_date }}</td>
+            <td>{{ s.end_date }}</td>
+            <td>
+              {% if s.status == "active" %}
+                <span class="badge text-bg-success">active</span>
+              {% elif s.status == "expired" %}
+                <span class="badge text-bg-secondary">expired</span>
+              {% else %}
+                <span class="badge text-bg-light border">{{ s.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.payment_status == "paid" %}
+                <span class="badge text-bg-success">paid</span>
+              {% elif s.payment_status == "failed" %}
+                <span class="badge text-bg-danger">failed</span>
+              {% else %}
+                <span class="badge text-bg-warning">pending</span>
+              {% endif %}
+            </td>
+            <td>{{ s.amount }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No subscriptions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

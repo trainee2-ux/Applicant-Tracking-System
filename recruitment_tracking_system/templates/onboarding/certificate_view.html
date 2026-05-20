@@ -1,0 +1,146 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Certificate{% endblock %}
+{% block nav_onboarding %}active{% endblock %}
+{% block header %}Onboarding &gt; Certificate{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 18px;">
+  <div>
+    <div class="page-title">Signing Certificate</div>
+    <div class="page-subtitle">
+      {{ candidate.full_name }}{% if candidate.candidate_id %} ({{ candidate.candidate_id }}){% endif %}
+      {% if doc_title %} — {{ doc_title }}{% endif %}
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+    <a class="btn btn-ghost btn-sm" href="{% url 'onboarding:audit_logs' %}">
+      <i class="bi bi-arrow-left"></i> Back to Audit Logs
+    </a>
+    {% if request.user.is_staff %}
+      <form method="post" action="{% url 'onboarding:certificate_regenerate' cert.id %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Regenerate this certificate PDF with the latest layout?');">
+          <i class="bi bi-arrow-clockwise"></i> Regenerate PDF
+        </button>
+      </form>
+    {% endif %}
+    <a class="btn btn-primary btn-sm" href="{% url 'onboarding:certificate_download' cert.id %}">
+      <i class="bi bi-file-earmark-pdf-fill"></i> Download PDF
+    </a>
+  </div>
+</div>
+
+<div class="card" style="padding: 16px;">
+  <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <span class="status-pill pill-blue"><span class="dot"></span> PDF Preview</span>
+      {% if cert.verification_hash %}
+        <span style="font-family: var(--mono); font-size: 12px; color: var(--text3);">
+          Hash: {{ cert.verification_hash|slice:":12" }}…
+        </span>
+      {% endif %}
+    </div>
+    <a class="btn btn-secondary btn-sm" href="{{ cert.certificate_pdf.url }}" target="_blank" rel="noopener">
+      <i class="bi bi-box-arrow-up-right"></i> Open in New Tab
+    </a>
+  </div>
+
+  <div id="pdfPreviewShell" style="border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface2); height: calc(100vh - var(--topbar) - 210px); min-height: 520px;">
+    <div id="pdfPreviewTop" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface);">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span id="pdfStatus" style="font-size:12px;color:var(--text3);font-weight:600;">Loading PDF…</span>
+        <span id="pdfMeta" style="font-size:12px;color:var(--text3);"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <button id="pdfZoomOut" type="button" class="btn btn-ghost btn-sm" style="height:32px;"><i class="bi bi-zoom-out"></i></button>
+        <button id="pdfZoomIn" type="button" class="btn btn-ghost btn-sm" style="height:32px;"><i class="bi bi-zoom-in"></i></button>
+      </div>
+    </div>
+    <div id="pdfPages" style="max-height: 100%; overflow: auto; padding: 16px; display:flex; flex-direction:column; gap: 14px;"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const pdfUrl = "{{ cert.certificate_pdf.url|escapejs }}";
+  const pagesHost = document.getElementById("pdfPages");
+  const statusEl = document.getElementById("pdfStatus");
+  const metaEl = document.getElementById("pdfMeta");
+  const zoomInBtn = document.getElementById("pdfZoomIn");
+  const zoomOutBtn = document.getElementById("pdfZoomOut");
+  if (!pagesHost || !statusEl || !window.pdfjsLib || !pdfUrl) return;
+
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
+
+  let pdfDoc = null;
+  let zoom = 1.2;
+
+  const clearPages = () => { pagesHost.innerHTML = ""; };
+
+  const renderAll = async () => {
+    if (!pdfDoc) return;
+    clearPages();
+    statusEl.textContent = "Rendering…";
+    metaEl.textContent = `${pdfDoc.numPages} page(s)`;
+
+    for (let pageNo = 1; pageNo <= pdfDoc.numPages; pageNo += 1) {
+      const page = await pdfDoc.getPage(pageNo);
+      const viewport = page.getViewport({ scale: zoom });
+      const outputScale = window.devicePixelRatio || 1;
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d", { alpha: false });
+      canvas.width = Math.floor(viewport.width * outputScale);
+      canvas.height = Math.floor(viewport.height * outputScale);
+      canvas.style.width = `${Math.floor(viewport.width)}px`;
+      canvas.style.height = `${Math.floor(viewport.height)}px`;
+      canvas.style.display = "block";
+      canvas.style.borderRadius = "10px";
+      canvas.style.border = "1px solid rgba(0,0,0,0.06)";
+      canvas.style.background = "#fff";
+
+      const wrap = document.createElement("div");
+      wrap.style.maxWidth = "980px";
+      wrap.style.margin = "0 auto";
+      wrap.style.overflowX = "auto";
+      wrap.style.paddingBottom = "2px";
+      wrap.appendChild(canvas);
+
+      pagesHost.appendChild(wrap);
+
+      const transform = outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : null;
+      await page.render({ canvasContext: ctx, viewport, transform }).promise;
+    }
+
+    statusEl.textContent = "Ready";
+  };
+
+  const load = async () => {
+    try {
+      statusEl.textContent = "Loading PDF…";
+      pdfDoc = await window.pdfjsLib.getDocument(pdfUrl).promise;
+      await renderAll();
+    } catch (e) {
+      statusEl.textContent = "Failed to load PDF preview.";
+      metaEl.textContent = "";
+      const msg = document.createElement("div");
+      msg.style.textAlign = "center";
+      msg.style.padding = "48px 16px";
+      msg.style.color = "var(--text3)";
+      msg.innerHTML = '<div style="font-size:40px;opacity:.25;margin-bottom:10px;"><i class="bi bi-file-earmark-pdf"></i></div>Preview not available. Use "Open in New Tab" or "Download PDF".';
+      pagesHost.appendChild(msg);
+    }
+  };
+
+  if (zoomInBtn) zoomInBtn.addEventListener("click", async () => { zoom = Math.min(2.2, zoom + 0.15); await renderAll(); });
+  if (zoomOutBtn) zoomOutBtn.addEventListener("click", async () => { zoom = Math.max(0.8, zoom - 0.15); await renderAll(); });
+
+  load();
+});
+</script>
+{% endblock %}

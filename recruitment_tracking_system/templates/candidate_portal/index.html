@@ -1,0 +1,442 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Candidate Experience Portal{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/candidate_portal.css?v=2">{% endblock %}
+
+{% block content %}
+<div class="cp-hero">
+  <div>
+    <div class="cp-title">Candidate Experience Portal</div>
+    <div class="cp-subtitle">Manage your profile, upload your resume, and track your application lifecycle.</div>
+  </div>
+  <div class="cp-hero-actions">
+    <button type="button" id="openResumePopupBtn" class="btn btn-secondary btn-sm"><i class="bi bi-file-earmark-arrow-up me-1"></i> Upload Resume</button>
+    <button type="button" id="openAiChatBtn" class="btn btn-ghost btn-sm"><i class="bi bi-chat-dots me-1"></i> Ask AI</button>
+    <a href="{% url 'candidate_portal:onboarding_documents' %}" class="btn btn-ghost btn-sm"><i class="bi bi-folder2-open me-1"></i> Onboarding Docs</a>
+    {% if pending_signature_url %}
+      <a href="{{ pending_signature_url }}" class="btn btn-primary btn-sm"><i class="bi bi-pencil-fill me-1"></i> Sign Documents</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2 cp-alert">
+      <i class="bi bi-info-circle-fill me-2"></i> {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+{% if pending_signature_url %}
+  <div class="cp-callout">
+    <div class="cp-callout-icon"><i class="bi bi-shield-lock"></i></div>
+    <div class="cp-callout-body">
+      <div class="cp-callout-title">Signature Required</div>
+      <div class="cp-callout-sub">Please sign the pending document(s) to finalize your onboarding.</div>
+    </div>
+    <a href="{{ pending_signature_url }}" class="btn btn-warning btn-sm cp-callout-btn">Review & Sign</a>
+  </div>
+{% endif %}
+
+<div class="cp-card" id="candidateProfileCard">
+  <div class="cp-card-head">
+    <div>
+      <div class="cp-card-title"><i class="bi bi-person-vcard me-1"></i> Professional Identity</div>
+      <div class="cp-card-subtitle">Last updated: {{ candidate.updated_at|date:"M j, Y" }}</div>
+    </div>
+  </div>
+  <div class="cp-card-body">
+    <form id="candidateProfileForm" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_profile">
+      <input type="hidden" id="educationRecordsJson" name="education_records_json" value="">
+      
+      <div class="field-grid grid-3 cp-field-grid">
+        <div class="field">
+          <label class="field-label">Full Name</label>
+          <input class="form-control" type="text" name="full_name" value="{{ candidate.full_name }}" required>
+        </div>
+        <div class="field">
+          <label class="field-label">Registered Email</label>
+          <input class="form-control" type="email" value="{{ candidate.email }}" readonly>
+        </div>
+        <div class="field">
+          <label class="field-label">Contact Number</label>
+          <input class="form-control" type="text" name="contact_number" value="{{ candidate.contact_number }}" required>
+        </div>
+        <div class="field">
+          <label class="field-label">Skill Cluster (Comma separated)</label>
+          <input class="form-control" type="text" name="skills" value="{{ candidate.skills|default:'' }}" placeholder="e.g. Python, Django, React">
+        </div>
+        <div class="field">
+          <label class="field-label">Total Experience</label>
+          <input class="form-control" type="text" name="experience" value="{{ candidate.experience|default:'' }}" placeholder="e.g. 5 Years">
+        </div>
+        <div class="field">
+          <label class="field-label">Highest Education Level</label>
+          <input class="form-control" type="text" name="highest_education_level" value="{{ candidate.highest_education_level|default:'' }}" placeholder="e.g. Masters">
+        </div>
+        <div class="field">
+          <label class="field-label">Degree Specialization</label>
+          <input class="form-control" type="text" name="degree_name" value="{{ candidate.degree_name|default:'' }}" placeholder="e.g. Computer Science">
+        </div>
+        <div class="field">
+          <label class="field-label">Professional Portfolio / LinkedIn</label>
+          <input class="form-control" type="url" name="social_media_link" value="{{ candidate.social_media_link|default:'' }}" placeholder="https://linkedin.com/in/...">
+        </div>
+        <div class="field">
+          <label class="field-label">Certifications</label>
+          <input class="form-control" type="text" name="certifications" value="{{ candidate.certifications|default:'' }}">
+        </div>
+      </div>
+
+      <div class="field cp-field-spacer">
+        <label class="field-label">Employment Chronology</label>
+        <textarea name="employment_history" rows="3" placeholder="Summary of your previous roles and responsibilities...">{{ candidate.employment_history|default:'' }}</textarea>
+      </div>
+
+      <div class="field cp-field-spacer">
+        <label class="field-label">Academic Records</label>
+        <div id="candidateEducationRecords" class="cp-education-box">
+          {% if education_records %}
+            <div class="cp-education-grid">
+            {% for edu in education_records %}
+            <div class="cp-education-item">
+              <div class="cp-edu-title">{{ edu.level }}{% if edu.course %} — {{ edu.course }}{% endif %}</div>
+              <div class="cp-edu-sub"><i class="bi bi-building me-1"></i> {{ edu.institute|default:edu.board_university }}</div>
+              <div class="cp-edu-meta">
+                <span>Batch {{ edu.year_of_passing }}</span>
+                <span>Score: {{ edu.score }}</span>
+              </div>
+            </div>
+            {% endfor %}
+            </div>
+          {% else %}
+            <div class="cp-muted-empty">No structured education records detected. Use the resume upload to auto-fill.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="cp-form-actions">
+        {% if resume_url %}
+        <a class="btn btn-ghost btn-sm" href="{{ resume_url }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf me-1"></i> View Resume</a>
+        {% endif %}
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle me-1"></i> Save Profile</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="cp-card">
+  <div class="cp-card-head">
+    <div class="cp-card-title"><i class="bi bi-journal-check me-1"></i> Assessments</div>
+  </div>
+  <div class="cp-card-body p-0">
+  <div class="table-wrap cp-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Assessment</th>
+          <th>Assigned</th>
+          <th>Status</th>
+          <th>Result</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in assessments_data %}
+        <tr>
+          <td class="primary">
+            <div class="cp-jobtitle">{{ item.form.name }}</div>
+            {% if item.form.department %}<div class="cp-date">{{ item.form.department }}</div>{% endif %}
+          </td>
+          <td>
+            <div class="cp-date"><i class="bi bi-calendar3 me-1"></i> {{ item.assignment.assigned_at|date:"M j, Y" }}</div>
+            {% if item.assignment.due_at %}<div class="cp-date">Due: {{ item.assignment.due_at|date:"M j, Y, g:i A" }}</div>{% endif %}
+          </td>
+          <td>
+            {% if item.assignment.status|lower == "completed" %}
+              <span class="status-pill pill-green cp-pill-small"><span class="dot"></span> Completed</span>
+            {% elif item.assignment.status|lower == "expired" %}
+              <span class="status-pill pill-red cp-pill-small"><span class="dot"></span> Expired</span>
+            {% else %}
+              <span class="status-pill pill-blue cp-pill-small"><span class="dot"></span> Pending</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if item.submission %}
+              {% if item.can_show_score %}
+                <div style="font-weight: 900; color: var(--text);">
+                  {{ item.submission.score|floatformat:0 }}
+                  {% if item.submission.max_score != None %}<span class="cp-date">/ {{ item.submission.max_score|floatformat:0 }}</span>{% endif %}
+                </div>
+                {% if item.score_percent != None %}<div class="cp-date">{{ item.score_percent }}%</div>{% endif %}
+              {% else %}
+                <div class="cp-date">Hidden</div>
+              {% endif %}
+              <div class="cp-date">Submitted: {{ item.submission.submitted_at|date:"M j, Y, g:i A" }}</div>
+            {% else %}
+              <div class="cp-date" style="opacity: 0.7;">—</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if item.assignment.status|lower == "pending" %}
+              <a class="btn btn-primary btn-sm" href="{% url 'candidate_portal:assessment_form' item.assignment.token %}">Take</a>
+            {% else %}
+              <a class="btn btn-ghost btn-sm" href="{% url 'candidate_portal:assessment_form' item.assignment.token %}">View</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="cp-table-empty">
+            <div class="cp-table-empty-icon"><i class="bi bi-journal-check"></i></div>
+            <div class="cp-table-empty-text">No assessments assigned yet.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  </div>
+</div>
+
+<div class="cp-card">
+  <div class="cp-card-head">
+    <div class="cp-card-title"><i class="bi bi-kanban me-1"></i> Application Lifecycle Tracking</div>
+  </div>
+  <div class="cp-card-body p-0">
+  <div class="table-wrap cp-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Requisition ID</th>
+          <th>Job Title</th>
+          <th>Department</th>
+          <th>Engagement State</th>
+          <th>Submission Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in job_apps_data %}
+        <tr>
+          <td class="primary">
+            {% if item.application.job %}
+              <a href="{% url 'candidate_portal:applied_job_detail' item.application.job.job_id %}" class="cp-jobid">#{{ item.application.job.job_id }}</a>
+            {% else %}
+              <span style="opacity: 0.3;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if item.application.job %}
+              <div class="cp-jobtitle">{{ item.application.job.title }}</div>
+            {% else %}
+              <span style="opacity: 0.3;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="cp-dept">{{ item.application.job.department|default:"General" }}</div>
+          </td>
+          <td>
+            <span class="status-pill pill-blue cp-pill-small">
+              <span class="dot"></span> {{ item.stage|capfirst }}
+            </span>
+          </td>
+          <td>
+            <div class="cp-date"><i class="bi bi-calendar3 me-1"></i> {{ item.application.applied_on|date:"M j, Y" }}</div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="cp-table-empty">
+            <div class="cp-table-empty-icon"><i class="bi bi-briefcase"></i></div>
+            <div class="cp-table-empty-text">No active job applications found. Explore our careers page to apply.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  </div>
+</div>
+
+<!-- Resume OCR Modal -->
+<div id="resumeUploadModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:2000;">
+  <div class="card" style="width:min(560px,92vw); padding: 0; overflow: hidden; border: none; box-shadow: 0 32px 64px rgba(0,0,0,0.5);">
+    <div class="card-header" style="background: var(--surface); padding: 20px 24px; border-bottom: 1px solid var(--border);">
+      <div class="card-title"><i class="bi bi-cpu"></i> AI-Powered Resume Parser</div>
+      <button id="resumeUploadCloseBtn" type="button" class="btn-close" style="filter: invert(1); margin-left: auto;"></button>
+    </div>
+    <div style="padding: 24px;">
+      <div id="resumeUploadAlert" class="alert d-none py-2" style="border-radius: 10px; font-size: 13px; font-weight: 600; margin-bottom: 20px;"></div>
+      
+      <div style="text-align: center; margin-bottom: 24px; padding: 32px; border: 2px dashed var(--border); border-radius: 16px; background: var(--surface2);">
+        <div style="font-size: 48px; color: var(--accent); opacity: 0.5; margin-bottom: 16px;"><i class="bi bi-file-earmark-pdf"></i></div>
+        <h5 style="color: var(--text); font-weight: 800; margin-bottom: 8px;">Upload Your Resume</h5>
+        <p style="color: var(--text3); font-size: 13px; margin-bottom: 20px;">Our AI engine will automatically extract your education, skills, and experience to populate your profile.</p>
+        
+        <input id="resumeUploadInput" type="file" accept=".pdf" style="display: none;">
+        <button type="button" onclick="document.getElementById('resumeUploadInput').click()" class="btn btn-secondary btn-sm" style="width: 200px;">Choose File</button>
+        <div id="fileNameDisplay" style="margin-top: 12px; font-size: 12px; color: var(--accent2); font-weight: 700;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" id="resumeUploadOcrBtn" class="btn btn-primary" style="width: 100%; padding: 12px;">Process & Auto-Fill Profile <i class="bi bi-stars"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Chat Modal (Ollama) -->
+<div id="aiChatModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:2100;">
+  <div class="card" style="width:min(720px,94vw); padding: 0; overflow: hidden; border: none; box-shadow: 0 32px 64px rgba(0,0,0,0.5);">
+    <div class="card-header" style="background: var(--surface); padding: 20px 24px; border-bottom: 1px solid var(--border); display:flex; align-items:center;">
+      <div class="card-title"><i class="bi bi-chat-dots"></i> Portal Assistant (Local AI)</div>
+      <button id="aiChatCloseBtn" type="button" class="btn-close" style="filter: invert(1); margin-left: auto;"></button>
+    </div>
+    <div style="padding: 18px 24px;">
+      <div id="aiChatOutput" style="height: 260px; overflow:auto; background: var(--surface2); border: 1px solid var(--border); border-radius: 14px; padding: 14px; color: var(--text); font-size: 13px; line-height: 1.5;">
+        <div style="color: var(--text3); font-weight: 700;">Ask anything about the portal, onboarding, documents, or next steps.</div>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <textarea id="aiChatInput" class="form-control" rows="3" placeholder="Type your question... (Ctrl+Enter to send)" style="resize: vertical;"></textarea>
+        <div id="aiChatAlert" class="alert d-none py-2" style="border-radius: 10px; font-size: 13px; font-weight: 700; margin-top: 10px;"></div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap: 12px; margin-top: 12px;">
+        <button type="button" id="aiChatSendBtn" class="btn btn-primary" style="min-width: 160px;">Send <i class="bi bi-arrow-right"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const uploadModal = document.getElementById("resumeUploadModal");
+    const openBtn = document.getElementById("openResumePopupBtn");
+    const closeBtn = document.getElementById("resumeUploadCloseBtn");
+    const uploadInput = document.getElementById("resumeUploadInput");
+    const fileNameDisplay = document.getElementById("fileNameDisplay");
+    const ocrBtn = document.getElementById("resumeUploadOcrBtn");
+    const alertBox = document.getElementById("resumeUploadAlert");
+
+    const setModal = (open) => { uploadModal.style.display = open ? "flex" : "none"; };
+    
+    openBtn?.addEventListener("click", () => setModal(true));
+    closeBtn?.addEventListener("click", () => setModal(false));
+    
+    uploadInput?.addEventListener("change", (e) => {
+      fileNameDisplay.textContent = e.target.files[0] ? e.target.files[0].name : "";
+    });
+
+    const showMessage = (type, text) => {
+      alertBox.className = "alert py-2 alert-" + (type === 'danger' ? 'danger' : 'success');
+      alertBox.textContent = text;
+      alertBox.classList.remove("d-none");
+    };
+
+    ocrBtn?.addEventListener("click", () => {
+      const file = uploadInput.files[0];
+      if (!file) return showMessage("danger", "Please select a PDF file.");
+      
+      const formData = new FormData();
+      formData.append("resume_upload", file);
+      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+      
+      ocrBtn.disabled = true;
+      ocrBtn.innerHTML = 'Processing... <i class="bi bi-hourglass-split"></i>';
+
+      fetch("{% url 'candidate_portal:resume_ocr' %}", {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin"
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) return showMessage("danger", data.message);
+        showMessage("success", "Profile successfully synchronized with resume data.");
+        setTimeout(() => window.location.reload(), 1500);
+      })
+      .catch(() => showMessage("danger", "Internal server error during analysis."))
+      .finally(() => {
+        ocrBtn.disabled = false;
+        ocrBtn.innerHTML = 'Process & Auto-Fill Profile <i class="bi bi-stars"></i>';
+      });
+    });
+
+    // --- Ollama AI Chat ---
+    const aiChatModal = document.getElementById("aiChatModal");
+    const openAiChatBtn = document.getElementById("openAiChatBtn");
+    const aiChatCloseBtn = document.getElementById("aiChatCloseBtn");
+    const aiChatInput = document.getElementById("aiChatInput");
+    const aiChatSendBtn = document.getElementById("aiChatSendBtn");
+    const aiChatOutput = document.getElementById("aiChatOutput");
+    const aiChatAlert = document.getElementById("aiChatAlert");
+
+    const setAiChatModal = (open) => { aiChatModal.style.display = open ? "flex" : "none"; };
+    openAiChatBtn?.addEventListener("click", () => { setAiChatModal(true); aiChatInput?.focus(); });
+    aiChatCloseBtn?.addEventListener("click", () => setAiChatModal(false));
+
+    const showAiChatMessage = (role, text) => {
+      const safe = (text || "").replace(/[<>]/g, "");
+      const wrap = document.createElement("div");
+      wrap.style.marginTop = "10px";
+      wrap.innerHTML = `<div style="font-weight: 900; color: var(--text2);">${role}</div><div style="white-space: pre-wrap;">${safe}</div>`;
+      aiChatOutput.appendChild(wrap);
+      aiChatOutput.scrollTop = aiChatOutput.scrollHeight;
+    };
+
+    const showAiChatAlert = (type, text) => {
+      aiChatAlert.className = "alert py-2 alert-" + (type === "danger" ? "danger" : "success");
+      aiChatAlert.textContent = text;
+      aiChatAlert.classList.remove("d-none");
+    };
+
+    const sendAiChat = () => {
+      const msg = (aiChatInput.value || "").trim();
+      if (!msg) return;
+      aiChatAlert.classList.add("d-none");
+      showAiChatMessage("You", msg);
+      aiChatInput.value = "";
+
+      const formData = new FormData();
+      formData.append("message", msg);
+      formData.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+
+      aiChatSendBtn.disabled = true;
+      aiChatSendBtn.innerHTML = 'Sending... <i class="bi bi-hourglass-split"></i>';
+
+      fetch("{% url 'candidate_portal:ai_chat' %}", {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin"
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) {
+          showAiChatAlert("danger", data.message || "AI request failed.");
+          return;
+        }
+        showAiChatMessage("AI", data.message || "");
+      })
+      .catch(() => showAiChatAlert("danger", "Internal server error."))
+      .finally(() => {
+        aiChatSendBtn.disabled = false;
+        aiChatSendBtn.innerHTML = 'Send <i class="bi bi-arrow-right"></i>';
+      });
+    };
+
+    aiChatSendBtn?.addEventListener("click", sendAiChat);
+    aiChatInput?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        sendAiChat();
+      }
+    });
+  });
+</script>
+{% endblock %}

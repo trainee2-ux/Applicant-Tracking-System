@@ -1,0 +1,8 @@
+/* Candidate registration screen specific styles */
+.registration-box {
+  border-radius: 20px;
+}
+
+.registration-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}

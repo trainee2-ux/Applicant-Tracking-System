@@ -1,0 +1,160 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Candidate Intelligence Database{% endblock %}
+{% block nav_candidate_database %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Candidate Intelligence Database</div>
+    <div class="page-subtitle">Centralized repository for high-fidelity talent search, historical records, and screening analytics.</div>
+  </div>
+  <div class="header-actions">
+    <button id="candidateFilterBtn" type="button" class="btn btn-ghost btn-sm"><i class="bi bi-funnel"></i> Advanced Filters</button>
+    <button id="candidateSearchBtn" type="button" class="btn btn-primary btn-sm"><i class="bi bi-search"></i> Talent Search</button>
+  </div>
+</div>
+
+<!-- Search & Filter Panels -->
+<div id="candidateSearchPanel" class="card d-none" style="margin-bottom: 24px; border-top: 4px solid var(--accent);">
+  <div style="padding: 24px;">
+    <form method="get" style="display: grid; grid-template-columns: 200px 1fr 120px; gap: 16px;">
+      <select class="form-select" name="search_by" style="background: var(--surface2);">
+        <option value="">Attribute Type</option>
+        <option value="name">Full Name</option>
+        <option value="email">Email Address</option>
+        <option value="phone">Contact Number</option>
+        <option value="aadhaar">Identity (Aadhaar)</option>
+        <option value="pan">Identity (PAN)</option>
+        <option value="skills">Skill Cluster</option>
+        <option value="job_applied">Requisition Title</option>
+        <option value="status">Pipeline Status</option>
+      </select>
+      <div style="position: relative;">
+        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text3);"><i class="bi bi-terminal"></i></span>
+        <input class="form-control" type="search" name="q" placeholder="Enter search criteria..." style="padding-left: 36px;">
+      </div>
+      <button type="submit" class="btn btn-primary">Execute Search</button>
+    </form>
+  </div>
+</div>
+
+<div id="candidateFilterPanel" class="card d-none" style="margin-bottom: 24px;">
+  <div class="card-header"><div class="card-title">Column Customization</div></div>
+  <div style="padding: 24px; display: flex; flex-wrap: wrap; gap: 20px;">
+    {% for label in "Candidate ID,Name,Email,Phone,Aadhaar,PAN,PF,ESIC,Skills,Job,Status"|split:"," %}
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text2);">
+      <input type="checkbox" checked style="width: 16px; height: 16px; accent-color: var(--accent);"> {{ label }}
+    </label>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card" style="padding: 0; overflow: hidden;">
+  <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+    <div class="card-title">Talent Pool Records <span style="font-weight: 400; font-size: 12px; margin-left: 8px; color: var(--text3);">Showing {{ rows|length }} verified profiles</span></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40px;"><input id="candidateSelectAll" type="checkbox" style="width: 16px; height: 16px;"></th>
+          <th>Reference ID</th>
+          <th>Profile Identity</th>
+          <th>Skill Matrix</th>
+          <th>Exp.</th>
+          <th>Current Application</th>
+          <th>BGV Status</th>
+          <th>Metrics</th>
+          <th>Resume</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td><input class="candidate-row-check" type="checkbox" style="width: 16px; height: 16px;"></td>
+          <td class="primary"><span style="font-family: var(--mono); font-weight: 700; color: var(--accent2);">{{ row.candidate_id }}</span></td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div class="user-avatar" style="width: 32px; height: 32px; font-size: 11px;">
+                {% if row.profile_photo_url %}<img src="{{ row.profile_photo_url }}" style="width:100%;height:100%;border-radius:50%;">{% else %}{{ row.personal_info|slice:":1" }}{% endif %}
+              </div>
+              <div>
+                <div style="font-weight: 700; color: var(--text);">{{ row.personal_info }}</div>
+                <div style="font-size: 10px; color: var(--text3); font-weight: 600;">ACTIVE CANDIDATE</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="font-size: 11px; color: var(--text2); font-weight: 600; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ row.skills }}</div>
+          </td>
+          <td style="font-size: 12.5px; font-weight: 600; color: var(--text3);">{{ row.experience }}</td>
+          <td><span class="status-pill pill-blue" style="font-size: 10px;">{{ row.job_applied|default:"Unlinked" }}</span></td>
+          <td>
+            <span class="status-pill {% if row.bgv_status|lower == 'completed' %}pill-green{% else %}pill-amber{% endif %}" style="font-size: 10px;">
+              <span class="dot"></span> {{ row.bgv_status|default:"Pending" }}
+            </span>
+          </td>
+          <td>
+            <div style="font-size: 11px; font-weight: 800; color: var(--accent2); background: var(--accentbg); padding: 2px 8px; border-radius: 4px; width: fit-content;">{{ row.interview_scores|default:"N/A" }}</div>
+          </td>
+          <td>
+            {% if row.resume_url %}
+              <a href="{{ row.resume_url }}" target="_blank" class="status-pill pill-purple" style="text-decoration: none; font-size: 10px; font-weight: 700;"><i class="bi bi-file-earmark-pdf"></i> View PDF</a>
+            {% else %}
+              <span style="opacity: 0.3;">—</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <a href="/candidate-management/profile/?candidate_id={{ row.candidate_id }}" class="icon-btn" title="Edit Profile"><i class="bi bi-pencil-square"></i></a>
+              <form method="post" class="mb-0" onsubmit="return confirm('Archive profile {{ row.candidate_id }}?');">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete_candidate">
+                <input type="hidden" name="candidate_id" value="{{ row.candidate_id }}">
+                <button type="submit" class="icon-btn" style="color: var(--red); border-color: var(--redbg);" title="Archive Candidate"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="10" style="text-align: center; padding: 80px; color: var(--text3);">
+            <div style="font-size: 48px; opacity: 0.1;"><i class="bi bi-database-exclamation"></i></div>
+            <div style="margin-top: 16px;">No candidate profiles detected in the database.</div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchBtn = document.getElementById("candidateSearchBtn");
+    const filterBtn = document.getElementById("candidateFilterBtn");
+    const searchPanel = document.getElementById("candidateSearchPanel");
+    const filterPanel = document.getElementById("candidateFilterPanel");
+    const selectAll = document.getElementById("candidateSelectAll");
+    const rowChecks = document.querySelectorAll(".candidate-row-check");
+
+    const togglePanel = (panel) => {
+      const isOpen = !panel.classList.contains("d-none");
+      searchPanel.classList.add("d-none");
+      filterPanel.classList.add("d-none");
+      if (!isOpen) panel.classList.remove("d-none");
+    };
+
+    searchBtn?.addEventListener("click", () => togglePanel(searchPanel));
+    filterBtn?.addEventListener("click", () => togglePanel(filterPanel));
+
+    selectAll?.addEventListener("change", (e) => {
+      rowChecks.forEach(c => c.checked = e.target.checked);
+    });
+  });
+</script>
+{% endblock %}

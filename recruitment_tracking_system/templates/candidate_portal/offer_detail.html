@@ -1,0 +1,44 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Offer Letter{% endblock %}
+{% block nav_candidate_portal %}active{% endblock %}
+{% block header %}Candidate Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+        <div>
+          <h4 class="mb-0">Offer Letter</h4>
+          <div class="text-muted small">
+            Candidate: <strong>{{ offer.candidate.full_name }}</strong> ({{ offer.candidate.candidate_id }})
+          </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <a class="btn btn-outline-secondary btn-sm" href="/candidate-portal/">Candidate Portal</a>
+          <span class="badge text-bg-secondary">{{ offer.status }}</span>
+        </div>
+      </div>
+
+      {% if is_expired %}
+        <div class="alert alert-warning">This offer link has expired.</div>
+      {% endif %}
+
+      <hr>
+
+      <div style="line-height: 1.6;">
+        {{ offer_rendered_html|safe }}
+      </div>
+
+      {% if not is_expired and offer.status != "accepted" and offer.status != "rejected" %}
+        <hr>
+        <div class="d-flex gap-2">
+          <a class="btn btn-success" href="{{ accept_url }}">Accept</a>
+          <a class="btn btn-danger" href="{{ reject_url }}">Reject</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

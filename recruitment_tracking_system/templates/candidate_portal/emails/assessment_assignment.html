@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Assessment Assigned</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial, Helvetica, sans-serif;">
+    <div style="max-width:640px;margin:0 auto;padding:24px;">
+      <div style="background:#ffffff;border-radius:14px;border:1px solid #e9ecf3;overflow:hidden;">
+        <div style="padding:22px 24px;background:#111827;color:#fff;">
+          <div style="font-size:14px;opacity:.85;">{{ company_name|default:"Ultimatix ATS" }}</div>
+          <div style="font-size:20px;font-weight:800;margin-top:6px;">Assessment Assigned</div>
+        </div>
+        <div style="padding:24px;">
+          <p style="margin:0 0 12px 0;color:#111827;font-size:14px;">Hi {{ candidate_name|default:"Candidate" }},</p>
+          <p style="margin:0 0 16px 0;color:#374151;font-size:14px;line-height:1.6;">
+            You have been assigned an assessment form: <strong>{{ assessment_name }}</strong>.
+            Please open the link below to complete and submit your responses.
+          </p>
+          <div style="margin:18px 0;">
+            <a href="{{ assignment_url }}" style="display:inline-block;background:#6c63ff;color:#fff;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700;font-size:14px;">
+              Open Assessment Form
+            </a>
+          </div>
+          <p style="margin:0;color:#6b7280;font-size:12px;line-height:1.5;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            <span style="word-break:break-all;">{{ assignment_url }}</span>
+          </p>
+        </div>
+      </div>
+      <div style="text-align:center;color:#9ca3af;font-size:12px;margin-top:14px;">
+        This is an automated message. Please do not reply.
+      </div>
+    </div>
+  </body>
+</html>
+

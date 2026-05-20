@@ -1,0 +1,92 @@
+{% extends "super_admin/base.html" %}
+{% block title %}Super Admin - Service Agreements{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/super_admin.css?v=2">{% endblock %}
+{% block header %}Super Admin &gt; Service Agreements{% endblock %}
+{% block nav_super_admin_agreements %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2 superadmin-page">
+  <div class="sa-head">
+    <div>
+      <p class="sa-subtitle">Manage pending and completed agreements.</p>
+      <h2 class="sa-title">Service Agreements</h2>
+    </div>
+    <div class="sa-actions">
+      <a class="btn btn-sm btn-primary" href="/super-admin/subscriptions/">
+        <i class="bi bi-stars me-1"></i> Subscriptions
+      </a>
+    </div>
+  </div>
+
+  <div class="sa-card p-3 mb-3">
+    <div class="sa-card-head">
+      <h3 class="sa-card-title">Pending</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-striped mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Service From</th>
+            <th>Service To</th>
+            <th style="width: 160px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in pending_companies %}
+          <tr>
+            <td>{{ c.company_name }}</td>
+            <td>{{ c.status }}</td>
+            <td>{{ c.service_from|default:"-" }}</td>
+            <td>{{ c.service_to|default:"-" }}</td>
+            <td>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="complete">
+                <input type="hidden" name="company_id" value="{{ c.id }}">
+                <button class="btn btn-sm btn-primary" type="submit">
+                  <i class="bi bi-check2-circle me-1"></i> Complete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="text-center text-muted py-3">No pending agreements.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sa-card p-3">
+    <div class="sa-card-head">
+      <h3 class="sa-card-title">Completed</h3>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Service From</th>
+            <th>Service To</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in completed_companies %}
+          <tr>
+            <td>{{ c.company_name }}</td>
+            <td>{{ c.status }}</td>
+            <td>{{ c.service_from|default:"-" }}</td>
+            <td>{{ c.service_to|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-center text-muted py-3">No completed agreements.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

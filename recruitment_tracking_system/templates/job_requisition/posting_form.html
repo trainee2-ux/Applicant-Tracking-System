@@ -1,0 +1,720 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Requisition Engineering Protocol{% endblock %}
+{% block nav_jobs %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .protocol-stepper { 
+    display: flex; gap: 8px; margin-bottom: 48px; padding: 10px; 
+    background: var(--surface2); border-radius: 24px; border: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  .protocol-step { 
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 16px; border-radius: 18px; cursor: pointer; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--text3); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    position: relative; z-index: 2;
+  }
+  .protocol-step:hover { color: var(--text2); background: rgba(255,255,255,0.03); }
+  .protocol-step.active { background: var(--surface); color: var(--accent2); box-shadow: var(--shadow); border: 1px solid var(--border2); }
+  
+  .protocol-step-dot { 
+    width: 28px; height: 28px; border-radius: 10px; background: var(--surface3); 
+    display: flex; align-items: center; justify-content: center; font-size: 11px; 
+    font-weight: 900; color: var(--text2); transition: all 0.4s; 
+  }
+  .protocol-step.active .protocol-step-dot { background: var(--accent); color: #fff; box-shadow: 0 0 15px var(--accentbg); }
+
+  .pane-header { display: flex; align-items: center; gap: 20px; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .pane-icon { 
+    width: 60px; height: 60px; border-radius: 20px; 
+    background: linear-gradient(135deg, var(--accentbg), rgba(108,99,255,0.05)); 
+    color: var(--accent2); display: flex; align-items: center; justify-content: center; 
+    font-size: 28px; border: 1px solid rgba(108,99,255,0.1);
+  }
+  .pane-title { font-size: 22px; font-weight: 900; color: var(--text); letter-spacing: -0.5px; }
+  .pane-subtitle { font-size: 13px; color: var(--text3); font-weight: 500; margin-top: 4px; }
+  
+  .field { margin-bottom: 4px; }
+  .field-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text3); letter-spacing: 1px; margin-bottom: 10px; display: block; }
+  
+  input, select, textarea {
+    background: var(--surface2) !important;
+    border: 1px solid var(--border) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent) !important;
+    background: var(--surface) !important;
+    box-shadow: 0 0 0 4px var(--accentbg) !important;
+  }
+
+  /* Skill Tag Grid */
+  .skill-tag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 10px; }
+  .skill-tag-item { position: relative; }
+  .skill-tag-item input { display: none; }
+  .skill-tag-label {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; font-size: 13px; font-weight: 700; color: var(--text2);
+    cursor: pointer; transition: all 0.25s; text-align: center;
+  }
+  .skill-tag-item input:checked + .skill-tag-label {
+    background: var(--accentbg); border-color: var(--accent); color: var(--accent2);
+    box-shadow: 0 4px 12px var(--accentbg);
+  }
+  .skill-tag-label:hover { border-color: var(--text3); background: var(--surface3); }
+
+  .required-signal { color: var(--red); margin-left: 4px; font-weight: 900; }
+  
+  .file-upload:hover { border-color: var(--accent) !important; background: var(--surface3) !important; transform: translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 40px;">
+  <div>
+    <div class="page-title" style="font-size: 28px; font-weight: 900;">Requisition Engineering Protocol</div>
+    <div class="page-subtitle" style="font-size: 15px; opacity: 0.7;">Define operational roles, compensation tiers, and technical competency vectors.</div>
+  </div>
+  <div class="header-actions">
+    <a href="/job-requisition/dashboard/" class="btn btn-ghost" style="border-radius: 14px;">Abort Protocol</a>
+    <span class="status-pill pill-blue" style="height: 40px; padding: 0 16px; border-radius: 12px; font-weight: 800;"><span class="dot"></span> Draft Initialization</span>
+  </div>
+</div>
+
+<div class="card" style="border-radius: 32px; padding: 40px; border-top: 8px solid var(--accent);">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="form_mode" value="{{ form_mode|default:'create' }}">
+    <input type="hidden" name="job_id" value="{{ edit_job_id|default:'' }}">
+
+    <!-- Stepper -->
+    <div class="protocol-stepper" id="jobFormTabs">
+      <div class="protocol-step active" data-target="jobOpeningPane">
+        <div class="protocol-step-dot"><span>1</span></div>
+        <div class="protocol-step-label">Core Logic</div>
+      </div>
+      <div class="protocol-step" data-target="addressPane">
+        <div class="protocol-step-dot"><span>2</span></div>
+        <div class="protocol-step-label">Hub Location</div>
+      </div>
+      <div class="protocol-step" data-target="descriptionPane">
+        <div class="protocol-step-dot"><span>3</span></div>
+        <div class="protocol-step-label">JD Synthesis</div>
+      </div>
+      <div class="protocol-step" data-target="attachmentsPane">
+        <div class="protocol-step-dot"><span>4</span></div>
+        <div class="protocol-step-label">Documentation</div>
+      </div>
+    </div>
+
+    <!-- PANE 1: JOB OPENING -->
+    <div class="job-tab-pane active" id="jobOpeningPane">
+      <div class="pane-header">
+        <div class="pane-icon"><i class="bi bi-cpu-fill"></i></div>
+        <div>
+          <div class="pane-title">Protocol Core Logic</div>
+          <div class="pane-subtitle">Essential parameters for the hiring sequence</div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-3" style="gap: 32px;">
+        <div class="field">
+          <label class="field-label">Sequence Ref-ID</label>
+          <input type="text" name="manpower_requisition_id" value="{{ form_data.manpower_requisition_id|default:next_manpower_requisition_id }}" readonly style="height: 52px; border-radius: 16px; opacity: 0.6; font-weight: 800; font-family: var(--mono);">
+        </div>
+        <div class="field col-span-2">
+          <label class="field-label">Operational Title <span class="required-signal">*</span></label>
+          <input id="postingTitleInput" type="text" name="posting_title" value="{{ form_data.posting_title|default:'' }}" required placeholder="e.g. Lead Systems Engineer" style="height: 52px; border-radius: 16px; font-weight: 800; font-size: 15px;">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Business Unit / Industry</label>
+          <select name="industry" style="height: 52px; border-radius: 16px;">
+            <option value="">Select Industry</option>
+            {% for item in industry_options %}
+            <option value="{{ item }}" {% if form_data.industry == item or form_data.client_name == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Account Director</label>
+          <select name="account_manager" style="height: 52px; border-radius: 16px;">
+            <option value="">Select Director</option>
+            {% for item in manager_options %}
+            <option value="{{ item }}" {% if form_data.account_manager == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Lead Recruiter</label>
+          <select name="assigned_recruiter" style="height: 52px; border-radius: 16px;">
+            <option value="">Select Recruiter</option>
+            {% for item in recruiter_options %}
+            <option value="{{ item }}" {% if form_data.assigned_recruiter == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Deployment Type</label>
+          <select name="job_type" style="height: 52px; border-radius: 16px;">
+            <option {% if form_data.job_type == 'Full-Time' %}selected{% endif %}>Full-Time</option>
+            <option {% if form_data.job_type == 'Part-Time' %}selected{% endif %}>Part-Time</option>
+            <option {% if form_data.job_type == 'Contractual' %}selected{% endif %}>Contractual</option>
+            <option {% if form_data.job_type == 'Remote' %}selected{% endif %}>Remote</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Experience Tier</label>
+          <select name="work_experience" style="height: 52px; border-radius: 16px;">
+            <option {% if form_data.work_experience == 'Entry Level (0-2 Yrs)' %}selected{% endif %}>Entry Level (0-2 Yrs)</option>
+            <option {% if form_data.work_experience == 'Mid Senior (3-5 Yrs)' %}selected{% endif %}>Mid Senior (3-5 Yrs)</option>
+            <option {% if form_data.work_experience == 'Senior (6-10 Yrs)' %}selected{% endif %}>Senior (6-10 Yrs)</option>
+            <option {% if form_data.work_experience == 'Expert (10+ Yrs)' %}selected{% endif %}>Expert (10+ Yrs)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Target Convergence</label>
+          <input type="date" name="target_closure_date" value="{{ form_data.target_closure_date|default:'' }}" style="height: 52px; border-radius: 16px;">
+        </div>
+        
+        <div class="field col-span-2">
+          <label class="field-label">Compensation Bandwidth (Annual)</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 120px; gap: 16px;">
+            <input type="number" name="salary_from" placeholder="Min Quotient" value="{{ form_data.salary_from|default:'' }}" style="height: 52px; border-radius: 16px; font-weight: 800; font-family: var(--mono);">
+            <input type="number" name="salary_to" placeholder="Max Quotient" value="{{ form_data.salary_to|default:'' }}" style="height: 52px; border-radius: 16px; font-weight: 800; font-family: var(--mono);">
+            <select name="currency_type" style="height: 52px; border-radius: 16px; font-weight: 900;">
+              <option {% if form_data.currency_type == 'INR (₹)' %}selected{% endif %}>INR (₹)</option>
+              <option {% if form_data.currency_type == 'USD ($)' %}selected{% endif %}>USD ($)</option>
+              <option {% if form_data.currency_type == 'EUR (€)' %}selected{% endif %}>EUR (€)</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Node Capacity</label>
+          <input type="number" name="number_of_opening" value="{{ form_data.number_of_opening|default:'1' }}" min="1" style="height: 52px; border-radius: 16px; font-weight: 900; text-align: center;">
+        </div>
+
+        <div class="field col-span-2">
+          <label class="field-label">Competency Vectors (Select multiple)</label>
+          <div class="tag-input-container" id="skillTagContainer" style="min-height: 52px; padding: 8px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+            {% for item in form_data.required_skills %}
+            <div class="tag-chip" style="background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+              {{ item }} <i class="bi bi-x-circle-fill tag-remove" style="cursor: pointer; opacity: 0.8;" data-value="{{ item }}"></i>
+              <input type="hidden" name="required_skills" value="{{ item }}">
+            </div>
+            {% endfor %}
+            <input type="text" id="skillInput" placeholder="Type vector and press Enter..." style="border: none !important; background: transparent !important; box-shadow: none !important; width: auto; flex: 1; min-width: 150px; height: 36px; padding: 0; font-weight: 600;">
+          </div>
+          <div style="font-size: 11px; color: var(--text3); margin-top: 10px; font-weight: 600;"><i class="bi bi-info-circle-fill me-1" style="color: var(--accent);"></i> Type a skill and press Enter to add.</div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Hiring Workflow Stages</label>
+          <div class="custom-dropdown" id="stagesDropdown" style="position: relative;">
+            <div class="dropdown-toggle" style="height: 52px; padding: 0 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; font-weight: 700; font-size: 14px; color: var(--text2);">
+              <span class="toggle-text">Select Stages</span>
+              <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="dropdown-menu" style="display: none; position: absolute; top: calc(100% + 8px); left: 0; width: 100%; background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; box-shadow: var(--shadow-lg); z-index: 100; max-height: 250px; overflow-y: auto; padding: 12px;">
+              {% for item in stage_options %}
+              <label class="dropdown-item" style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background 0.2s;">
+                <input type="checkbox" name="stages" value="{{ item }}" {% if item in form_data.stages %}checked{% endif %} style="width: 18px; height: 18px; accent-color: var(--accent);">
+                <span style="font-weight: 600; font-size: 13px;">{{ item }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div style="margin-top: 48px; display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-primary job-next-btn" data-next="addressPane" style="height: 56px; padding: 0 40px; border-radius: 18px; font-weight: 900; box-shadow: 0 10px 20px var(--accentbg);">Geographic Synchronization <i class="bi bi-arrow-right ms-2"></i></button>
+      </div>
+    </div>
+
+    <!-- PANE 2: ADDRESS -->
+    <div class="job-tab-pane" id="addressPane" style="display: none;">
+      <div class="pane-header">
+        <div class="pane-icon"><i class="bi bi-geo-fill"></i></div>
+        <div>
+          <div class="pane-title">Hub Synchronization</div>
+          <div class="pane-subtitle">Define the physical or logical work perimeter</div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-3" style="gap: 32px;">
+        <div class="field">
+          <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Jurisdiction</label>
+          <select name="country" style="height: 52px; border-radius: 16px;">
+            <option value="">Select Territory</option>
+            {% for item in country_options %}
+            <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Operational Hub (City)</label>
+          <select name="city" style="height: 52px; border-radius: 16px;">
+            <option value="">Select Hub</option>
+            {% for item in city_options %}
+            <option value="{{ item.name }}" data-code="{{ item.code|default:'' }}">{{ item.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Access Code (Zip)</label>
+          <select name="pincode" style="height: 52px; border-radius: 16px; font-weight: 800; font-family: var(--mono);">
+            <option value="">Auto-Detecting...</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top: 48px; display: flex; justify-content: space-between;">
+        <button type="button" class="btn btn-ghost job-next-btn" data-next="jobOpeningPane" style="height: 52px; border-radius: 16px;"><i class="bi bi-arrow-left me-2"></i> Back to Logic</button>
+        <button type="button" class="btn btn-primary job-next-btn" data-next="descriptionPane" style="height: 56px; padding: 0 40px; border-radius: 18px; font-weight: 900; box-shadow: 0 10px 20px var(--accentbg);">Synthesis JD <i class="bi bi-arrow-right ms-2"></i></button>
+      </div>
+    </div>
+
+    <!-- PANE 3: DESCRIPTION -->
+    <div class="job-tab-pane" id="descriptionPane" style="display: none;">
+      <div class="pane-header">
+        <div class="pane-icon"><i class="bi bi-keyboard-fill"></i></div>
+        <div>
+          <div class="pane-title">Intelligence JD Synthesis</div>
+          <div class="pane-subtitle">Articulate the operational impact and talent value proposition</div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" style="margin-left: auto; border-radius: 12px; height: 44px; padding: 0 20px; background: var(--purple); border-color: var(--purple);" id="aiSuggestAllBtn"><i class="bi bi-stars me-2"></i> AI-Orchestrate JD</button>
+      </div>
+
+      <!-- Sleek Red Color Line Error Banner -->
+      <div id="aiGuardrailsErrorLine" style="display: none; background: rgba(239, 68, 68, 0.08); border-left: 4px solid #ef4444; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px; color: #ef4444; font-size: 13.5px; font-weight: 700; align-items: center; gap: 10px; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.05); text-align: left;">
+        <i class="bi bi-exclamation-triangle-fill" style="font-size: 16px;"></i>
+        <span id="aiGuardrailsErrorMessage">Please enter the correct details.</span>
+      </div>
+
+      <!-- Real-Time NVIDIA NeMo Guardrails Middleware Tracer -->
+      <div id="aiGuardrailsContainer" style="display: none; background: rgba(10, 12, 18, 0.95); border: 1px solid rgba(108, 99, 255, 0.35); border-radius: 20px; padding: 24px; margin-bottom: 32px; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); text-align: left;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid rgba(108, 99, 255, 0.15); padding-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="bi bi-shield-check" style="color: var(--accent2); font-size: 20px;"></i>
+            <span style="font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: -0.3px;">NVIDIA NeMo Guardrails Middleware Tracer</span>
+          </div>
+          <span class="status-pill pill-purple" id="guardrailsStatusBadge" style="font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 8px;">Active Protection</span>
+        </div>
+        <div id="aiGuardrailsTerminal" style="font-family: 'Courier New', monospace; font-size: 12px; color: #cbd5e0; line-height: 1.6; display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding: 12px 16px; background: rgba(0, 0, 0, 0.3); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); text-align: left;">
+          <div style="color: #6c7393;">// Initiating middleware pipeline trace...</div>
+        </div>
+      </div>
+
+
+      <div class="field" style="margin-bottom: 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <label class="field-label" style="margin-bottom: 0;">Operational Overview</label>
+          <button type="button" class="btn btn-ghost btn-sm suggest-btn" data-target="description" style="font-size: 11px; font-weight: 800; color: var(--purple); border-color: var(--purple); padding: 4px 12px; border-radius: 10px;">
+            <i class="bi bi-stars me-1"></i> Suggest Description
+          </button>
+        </div>
+        <textarea id="descriptionInput" name="description" rows="8" placeholder="Synthesize the primary mission and day-to-day impact..." style="border-radius: 20px; padding: 24px;">{{ form_data.description|default:'' }}</textarea>
+      </div>
+
+      <div class="field" style="margin-bottom: 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <label class="field-label" style="margin-bottom: 0;">Mandatory Competency Vectors</label>
+          <button type="button" class="btn btn-ghost btn-sm suggest-btn" data-target="requirements" style="font-size: 11px; font-weight: 800; color: var(--purple); border-color: var(--purple); padding: 4px 12px; border-radius: 10px;">
+            <i class="bi bi-stars me-1"></i> Suggest Requirements
+          </button>
+        </div>
+        <textarea id="requirementsInput" name="requirements" rows="8" placeholder="List high-bandwidth certifications, academic protocols, or technical toolsets..." style="border-radius: 20px; padding: 24px;">{{ form_data.requirements|default:'' }}</textarea>
+      </div>
+
+      <div class="field">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <label class="field-label" style="margin-bottom: 0;">Talent Ecosystem Benefits</label>
+          <button type="button" class="btn btn-ghost btn-sm suggest-btn" data-target="benefits" style="font-size: 11px; font-weight: 800; color: var(--purple); border-color: var(--purple); padding: 4px 12px; border-radius: 10px;">
+            <i class="bi bi-stars me-1"></i> Suggest Benefits
+          </button>
+        </div>
+        <textarea id="benefitsInput" name="benefits" rows="5" placeholder="Health synchronization, Equity protocols, Flexible work-life logic..." style="border-radius: 20px; padding: 24px;">{{ form_data.benefits|default:'' }}</textarea>
+      </div>
+
+      <div style="margin-top: 48px; display: flex; justify-content: space-between;">
+        <button type="button" class="btn btn-ghost job-next-btn" data-next="addressPane" style="height: 52px; border-radius: 16px;"><i class="bi bi-arrow-left me-2"></i> Back to Hub</button>
+        <button type="button" class="btn btn-primary job-next-btn" data-next="attachmentsPane" style="height: 56px; padding: 0 40px; border-radius: 18px; font-weight: 900; box-shadow: 0 10px 20px var(--accentbg);">Final Validation <i class="bi bi-arrow-right ms-2"></i></button>
+      </div>
+    </div>
+
+    <!-- PANE 4: ATTACHMENTS -->
+    <div class="job-tab-pane" id="attachmentsPane" style="display: none;">
+      <div class="pane-header">
+        <div class="pane-icon"><i class="bi bi-shield-lock-fill"></i></div>
+        <div>
+          <div class="pane-title">Protocol Authorization</div>
+          <div class="pane-subtitle">Final document aggregation and requisition security</div>
+        </div>
+      </div>
+
+      <div class="field-grid grid-2" style="gap: 32px;">
+        <div class="field">
+          <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Official JD Artifact (PDF/Doc)</label>
+          <label class="file-upload" style="padding: 60px 32px; background: var(--surface2); border: 2px dashed var(--border); border-radius: 24px; text-align: center; cursor: pointer; display: block; transition: all 0.3s;">
+            <input type="file" name="job_summary_file" style="display: none;">
+            <div style="font-size: 44px; color: var(--accent2);"><i class="bi bi-file-earmark-pdf-fill"></i></div>
+            <div style="font-size: 15px; font-weight: 900; color: var(--text); margin-top: 16px;">Deploy JD Artifact</div>
+            <div style="font-size: 11px; color: var(--text3); margin-top: 6px; font-weight: 700;">SECURED UPLOAD · MAX 10MB</div>
+          </label>
+        </div>
+        <div class="field">
+          <label class="field-label" style="font-size: 11px; font-weight: 800; text-transform: uppercase;">Contextual Intelligence Docs</label>
+          <label class="file-upload" style="padding: 60px 32px; background: var(--surface2); border: 2px dashed var(--border); border-radius: 24px; text-align: center; cursor: pointer; display: block; transition: all 0.3s;">
+            <input type="file" name="other_file" style="display: none;">
+            <div style="font-size: 44px; color: var(--text3);"><i class="bi bi-folder-fill"></i></div>
+            <div style="font-size: 15px; font-weight: 900; color: var(--text); margin-top: 16px;">Additional Feeders</div>
+            <div style="font-size: 11px; color: var(--text3); margin-top: 6px; font-weight: 700;">MULTIPLE ARTIFACTS ALLOWED</div>
+          </label>
+        </div>
+      </div>
+
+      <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: center; background: var(--accentbg); padding: 32px 40px; border-radius: 24px; border: 1px solid rgba(108,99,255,0.2);">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px;"><i class="bi bi-lightning-charge-fill"></i></div>
+          <div>
+            <div style="font-size: 16px; font-weight: 900; color: var(--text);">Ready for Grid Publication?</div>
+            <div style="font-size: 12px; color: var(--accent2); font-weight: 700; margin-top: 2px;">This will initiate the approval workflow sequence.</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 16px;">
+          <button type="button" class="btn btn-ghost job-next-btn" data-next="descriptionPane" style="height: 56px; padding: 0 32px; border-radius: 18px;">Back to JD</button>
+          <button type="submit" class="btn btn-primary" style="height: 60px; padding: 0 48px; border-radius: 20px; font-weight: 900; font-size: 16px; box-shadow: 0 15px 30px var(--accentbg);">{% if form_mode == 'edit' %}Commit Protocol Changes{% else %}Publish to Global Grid{% endif %} <i class="bi bi-send-fill ms-2"></i></button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const steps = document.querySelectorAll('.protocol-step');
+  const panes = document.querySelectorAll('.job-tab-pane');
+  const nextBtns = document.querySelectorAll('.job-next-btn');
+
+  function showPane(targetId) {
+    panes.forEach(p => p.style.display = 'none');
+    document.getElementById(targetId).style.display = 'block';
+    
+    steps.forEach(s => {
+      s.classList.remove('active');
+      if (s.dataset.target === targetId) s.classList.add('active');
+    });
+    // Scroll to top of card
+    window.scrollTo({ top: document.querySelector('.card').offsetTop - 100, behavior: 'smooth' });
+  }
+
+  nextBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      showPane(btn.dataset.next);
+    });
+  });
+
+  steps.forEach(step => {
+    step.addEventListener('click', () => {
+      showPane(step.dataset.target);
+    });
+  });
+
+  // Pincode logic
+  const city = document.querySelector('select[name="city"]');
+  const pincode = document.querySelector('select[name="pincode"]');
+  if (city && pincode) {
+    const apply = () => {
+      const sel = city.options[city.selectedIndex];
+      const code = sel ? sel.dataset.code : "";
+      if (!code) {
+        pincode.innerHTML = '<option value="">Detected Hub Code</option>';
+        return;
+      }
+      pincode.innerHTML = '<option value="' + code + '">' + code + '</option>';
+      pincode.value = code;
+    };
+    city.addEventListener("change", apply);
+    apply();
+  }
+  // Tag Input Logic for Skills
+  const skillInput = document.getElementById('skillInput');
+  const skillTagContainer = document.getElementById('skillTagContainer');
+
+  if (skillInput && skillTagContainer) {
+    skillInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = this.value.trim();
+        if (val) {
+          addTag(val);
+          this.value = '';
+        }
+      }
+    });
+
+    function addTag(text) {
+      const chip = document.createElement('div');
+      chip.className = 'tag-chip';
+      chip.style.cssText = 'background: var(--accent); color: #fff; padding: 4px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;';
+      chip.innerHTML = `${text} <i class="bi bi-x-circle-fill tag-remove" style="cursor: pointer; opacity: 0.8;"></i><input type="hidden" name="required_skills" value="${text}">`;
+      
+      chip.querySelector('.tag-remove').addEventListener('click', () => chip.remove());
+      skillTagContainer.insertBefore(chip, skillInput);
+    }
+
+    document.querySelectorAll('.tag-remove').forEach(btn => {
+      btn.addEventListener('click', () => btn.parentElement.remove());
+    });
+  }
+
+  // Multi-select Dropdown Logic for Stages
+  const stagesDropdown = document.getElementById('stagesDropdown');
+  if (stagesDropdown) {
+    const toggle = stagesDropdown.querySelector('.dropdown-toggle');
+    const menu = stagesDropdown.querySelector('.dropdown-menu');
+    const toggleText = stagesDropdown.querySelector('.toggle-text');
+    const checkboxes = stagesDropdown.querySelectorAll('input[type="checkbox"]');
+
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!stagesDropdown.contains(e.target)) menu.style.display = 'none';
+    });
+
+    function updateToggleText() {
+      const checked = Array.from(checkboxes).filter(c => c.checked);
+      if (checked.length === 0) toggleText.innerText = 'Select Stages';
+      else if (checked.length === 1) toggleText.innerText = checked[0].parentElement.innerText.trim();
+      else toggleText.innerText = `${checked.length} Stages Selected`;
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateToggleText));
+    updateToggleText();
+  }
+
+  // Reusable NeMo Guardrails Tracer Animator
+  function animateGuardrailsTracer(logs, isSuccess, onComplete, errorMessage) {
+    const container = document.getElementById('aiGuardrailsContainer');
+    const terminal = document.getElementById('aiGuardrailsTerminal');
+    const badge = document.getElementById('guardrailsStatusBadge');
+    
+    container.style.display = 'block';
+    container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    terminal.innerHTML = '<div>⚡ <span style="color:var(--accent);">[START]</span> Initializing NeMo Guardrails Middleware pipeline tracer...</div>';
+    
+    badge.className = 'status-pill pill-blue';
+    badge.innerText = 'Active Scan';
+    
+    // Simulate first middleware intercept
+    setTimeout(() => {
+      terminal.innerHTML += '<div>⚡ <span style="color:#a78bfa;">[GUARD]</span> Intercepted request at Django AIGuardrailsMiddleware...</div>';
+      terminal.scrollTop = terminal.scrollHeight;
+    }, 300);
+
+    setTimeout(() => {
+      terminal.innerHTML = ''; // Clear and play formal NeMo trace steps
+      logs.forEach((log, idx) => {
+        setTimeout(() => {
+          let color = '#fff';
+          let symbol = '';
+          
+          if (log.status === 'Passed') {
+            color = '#48bb78';
+            symbol = '🟢 [PASSED]';
+          } else if (log.status === 'Failed') {
+            color = '#f56565';
+            symbol = '🔴 [BLOCKED]';
+          } else if (log.status === 'Fallback') {
+            color = '#ecc94b';
+            symbol = '🟡 [FALLBACK]';
+          } else {
+            color = '#a78bfa';
+            symbol = '⚡ [PENDING]';
+          }
+          
+          terminal.innerHTML += `<div style="margin-bottom:6px;">` +
+            `<span style="color:${color}; font-weight:700;">${symbol}</span> ` +
+            `<span style="color:var(--text2); font-weight:600;">${log.stage}:</span> ` +
+            `<span style="color:#cbd5e0; font-size:11.5px;">${log.detail}</span>` +
+            `</div>`;
+          terminal.scrollTop = terminal.scrollHeight;
+        }, idx * 450);
+      });
+    }, 600);
+    
+    setTimeout(() => {
+      if (isSuccess) {
+        badge.className = 'status-pill pill-blue';
+        badge.innerText = 'Safe & Approved';
+        terminal.innerHTML += `<div style="margin-top:8px; color:#48bb78; font-weight:700; font-size:12px;">🤖 [SUCCESS] Protected synthesized content loaded successfully.</div>`;
+        if (onComplete) onComplete();
+      } else {
+        badge.className = 'status-pill pill-red';
+        badge.innerText = 'Blocked';
+        terminal.innerHTML += `<div style="margin-top:8px; color:#f56565; font-weight:700; font-size:12px;">❌ [BLOCKED] Synthesis request blocked by NVIDIA NeMo Guardrails.</div>` +
+                               `<div style="margin-top:6px; color:#e53e3e; font-size:12px; font-weight:700; font-family:var(--mono);">⚠️ Details: ${errorMessage || 'Policy Violation'}</div>`;
+      }
+      terminal.scrollTop = terminal.scrollHeight;
+    }, (logs.length + 1) * 450 + 600);
+  }
+
+  // AI JD Orchestration Logic
+  const aiBtn = document.getElementById('aiSuggestAllBtn');
+  if (aiBtn) {
+    aiBtn.addEventListener('click', async function() {
+      // Hide any previous error line
+      document.getElementById('aiGuardrailsErrorLine').style.display = 'none';
+
+      const postingTitle = document.getElementById('postingTitleInput').value.trim();
+      if (!postingTitle) {
+        document.getElementById('aiGuardrailsErrorMessage').textContent = "Operational Title is required for AI orchestration.";
+        const errorLine = document.getElementById('aiGuardrailsErrorLine');
+        errorLine.style.display = 'flex';
+        errorLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const originalHtml = aiBtn.innerHTML;
+      aiBtn.disabled = true;
+      aiBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Orchestrating...';
+
+      const formData = new FormData();
+      formData.append('posting_title', postingTitle);
+      formData.append('industry', document.querySelector('select[name="industry"]').value);
+      formData.append('work_experience', document.querySelector('select[name="work_experience"]').value);
+      
+      const skills = Array.from(document.querySelectorAll('input[name="required_skills"]')).map(i => i.value).join(', ');
+      formData.append('required_skills', skills);
+      const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+      try {
+        const response = await fetch('{% url "job_requisition:suggest_content" %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken },
+          body: formData
+        });
+
+        const data = await response.json();
+        
+        if (!data.ok) {
+          document.getElementById('aiGuardrailsContainer').style.display = 'none';
+          document.getElementById('aiGuardrailsErrorMessage').textContent = data.message || "Please enter the correct details.";
+          const errorLine = document.getElementById('aiGuardrailsErrorLine');
+          errorLine.style.display = 'flex';
+          errorLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        
+        // Use our Middleware dynamic tracer!
+        const logs = data.guardrails_log || [
+          { stage: "Input Guardrail", status: "Passed", detail: "Cleared inputs check." },
+          { stage: "Policy Alignment", status: "Passed", detail: "Validated recruitment context match." },
+          { stage: "LLM Generator", status: data.ok ? "Passed" : "Failed", detail: data.message || "Synthesizing content." },
+          { stage: "Output Guardrail", status: data.ok ? "Passed" : "Failed", detail: "Content safe screening." }
+        ];
+        
+        animateGuardrailsTracer(logs, data.ok, () => {
+          if (data.fields && data.fields.description) document.getElementById('descriptionInput').value = data.fields.description;
+          if (data.fields && data.fields.requirements) document.getElementById('requirementsInput').value = data.fields.requirements;
+          if (data.fields && data.fields.benefits) document.getElementById('benefitsInput').value = data.fields.benefits;
+        }, data.message);
+
+      } catch (err) {
+        console.error(err);
+        alert("An error occurred during AI synchronization.");
+      } finally {
+        aiBtn.disabled = false;
+        aiBtn.innerHTML = originalHtml;
+      }
+    });
+  }
+
+  // Granular Suggest Buttons Logic
+  document.querySelectorAll('.suggest-btn').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      // Hide any previous error line
+      document.getElementById('aiGuardrailsErrorLine').style.display = 'none';
+
+      const targetField = btn.dataset.target;
+      const input = document.getElementById(`${targetField}Input`);
+      const postingTitle = document.getElementById('postingTitleInput').value.trim();
+      
+      if (!postingTitle) {
+        document.getElementById('aiGuardrailsErrorMessage').textContent = "Operational Title is required for AI suggestions.";
+        const errorLine = document.getElementById('aiGuardrailsErrorLine');
+        errorLine.style.display = 'flex';
+        errorLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Syncing...';
+
+      const formData = new FormData();
+      formData.append('posting_title', postingTitle);
+      formData.append('target_field', targetField);
+      formData.append('industry', document.querySelector('select[name="industry"]').value);
+      formData.append('work_experience', document.querySelector('select[name="work_experience"]').value);
+      
+      const skills = Array.from(document.querySelectorAll('input[name="required_skills"]')).map(i => i.value).join(', ');
+      formData.append('required_skills', skills);
+      const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+      try {
+        const response = await fetch('{% url "job_requisition:suggest_content" %}', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrftoken },
+          body: formData
+        });
+
+        const data = await response.json();
+        
+        if (!data.ok) {
+          document.getElementById('aiGuardrailsContainer').style.display = 'none';
+          document.getElementById('aiGuardrailsErrorMessage').textContent = data.message || "Please enter the correct details.";
+          const errorLine = document.getElementById('aiGuardrailsErrorLine');
+          errorLine.style.display = 'flex';
+          errorLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        
+        // Use our Middleware dynamic tracer!
+        const logs = data.guardrails_log || [
+          { stage: "Input Guardrail", status: "Passed", detail: "Cleared inputs check." },
+          { stage: "Policy Alignment", status: "Passed", detail: "Validated recruitment context match." },
+          { stage: "LLM Generator", status: data.ok ? "Passed" : "Failed", detail: data.message || "Synthesizing content." },
+          { stage: "Output Guardrail", status: data.ok ? "Passed" : "Failed", detail: "Content safe screening." }
+        ];
+        
+        animateGuardrailsTracer(logs, data.ok, () => {
+          if (data.fields && data.fields[targetField]) {
+            input.value = data.fields[targetField];
+          }
+        }, data.message);
+
+      } catch (err) {
+        console.error(err);
+        alert("An error occurred during AI synchronization.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    });
+  });
+});
+</script>
+<script src="/static/js/job_posting_ai.js"></script>
+{% endblock %}

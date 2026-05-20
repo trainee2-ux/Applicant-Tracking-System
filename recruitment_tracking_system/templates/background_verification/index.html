@@ -1,0 +1,80 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Background Verification{% endblock %}
+{% block nav_background_verification %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .onboarding-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 24px; }
+  .module-card { 
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; 
+    padding: 24px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+    display: flex; flex-direction: column; gap: 16px; text-decoration: none; position: relative; overflow: hidden;
+  }
+  .module-card:hover { border-color: var(--accent); transform: translateY(-6px); box-shadow: var(--shadow); }
+  .module-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); opacity: 0; transition: opacity 0.2s; }
+  .module-card:hover::after { opacity: 1; }
+  
+  .module-icon { 
+    width: 56px; height: 56px; border-radius: 16px; background: var(--accentbg); color: var(--accent2); 
+    display: flex; align-items: center; justify-content: center; font-size: 24px; 
+  }
+  .module-title { font-size: 18px; font-weight: 800; color: var(--text); }
+  .module-desc { font-size: 13px; color: var(--text3); line-height: 1.5; }
+  
+  .stat-mini { font-size: 12px; font-weight: 700; color: var(--accent2); background: rgba(108,99,255,0.1); padding: 4px 10px; border-radius: 20px; width: fit-content; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Background Verification (BGV)</div>
+    <div class="page-subtitle">Ensuring integrity through rigorous candidate screening, document verification, and official records check.</div>
+  </div>
+</div>
+
+<div class="onboarding-grid">
+  <!-- BGV Dashboard -->
+  <a href="{% url 'background_verification:verification_dashboard' %}" class="module-card">
+    <div class="module-icon"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+    <div>
+      <div class="module-title">Operational Dashboard</div>
+      <div class="module-desc">Monitor real-time verification statuses, pending queues, and automated screening results.</div>
+    </div>
+    <div class="stat-mini">Live Analytics →</div>
+  </a>
+
+  <!-- BGV Submission -->
+  <a href="{% url 'background_verification:submission' %}" class="module-card">
+    <div class="module-icon"><i class="bi bi-file-earmark-arrow-up"></i></div>
+    <div>
+      <div class="module-title">Screening Requests</div>
+      <div class="module-desc">Initiate new verification sequences for candidates and manage digital submission portals.</div>
+    </div>
+    <div class="stat-mini">New Submission →</div>
+  </a>
+
+  <!-- BGV Report -->
+  <a href="{% url 'background_verification:report' %}" class="module-card">
+    <div class="module-icon"><i class="bi bi-shield-check"></i></div>
+    <div>
+      <div class="module-title">Compliance Reports</div>
+      <div class="module-desc">Generate finalized verification summaries, history logs, and executive compliance audits.</div>
+    </div>
+    <div class="stat-mini">View Audit Log →</div>
+  </a>
+</div>
+
+<!-- Information Card -->
+<div class="card" style="margin-top: 32px; border-style: dashed; background: var(--surface2);">
+  <div style="padding: 32px; text-align: center;">
+    <div style="font-size: 48px; color: var(--text3); opacity: 0.15; margin-bottom: 16px;"><i class="bi bi-lock-fill"></i></div>
+    <h4 style="color: var(--text); font-weight: 800; margin-bottom: 8px;">Secure Verification Layer</h4>
+    <p style="color: var(--text3); font-size: 14px; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+      The BGV module integrates with global screening providers to ensure every candidate meets your company's security and integrity standards. 
+      All data is encrypted and handled according to international privacy regulations.
+    </p>
+  </div>
+</div>
+{% endblock %}

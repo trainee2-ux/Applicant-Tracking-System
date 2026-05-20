@@ -1,0 +1,261 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - In Person Interview{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=4">{% endblock %}
+{% block nav_applicant_tracking %}active{% endblock %}
+{% block header %}Applicant Tracking &gt; Interview Scheduling &gt; In Person Interview{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="interview-wrap">
+  <section id="inPersonFormPanel" class="interview-form-panel" {% if not show_form %}style="display: none;"{% endif %}>
+    <div class="interview-panel-head mb-3">
+      <h3 class="applicant-panel-title m-0" style="color: #334155; font-size: 1.15rem; font-weight: 500;">In Person Interview Form</h3>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="interview-form-grid">
+      {% csrf_token %}
+      <input type="hidden" name="record_id" value="{{ form_data.record_id|default:'' }}">
+      <div class="field-wrap">
+        <label class="field-label">Manpower Requisition ID</label>
+        <input class="form-control custom-input" type="text" value="MPR0001" readonly placeholder="Enter Manpower Requisition ID">
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Interview Process Name</label>
+        <select class="form-select custom-input" name="interview_process_name">
+          <option value="">Select Interview Process Name</option>
+          {% for item in process_options %}
+          <option value="{{ item }}" {% if form_data.interview_process_name == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Candidate Name</label>
+        <select id="ipCandidateSelect" class="form-select custom-input" name="candidate_name" required>
+          <option value="">Select Candidate Name</option>
+          {% for item in candidate_options %}
+          <option value="{{ item.id }}" data-posting="{{ item.posting }}" {% if form_data.candidate_name == item.id %}selected{% endif %}>{{ item.id }} - {{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Posting Title</label>
+        <select id="ipPostingTitle" class="form-select custom-input" name="posting_title" required>
+          <option value="">Select Posting Title</option>
+          {% for item in posting_options %}
+          <option value="{{ item }}" {% if form_data.posting_title == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Client Name</label>
+        <select class="form-select custom-input" name="client_name">
+          <option value="">Select Client Name</option>
+          {% for item in client_options %}
+          <option value="{{ item }}" {% if form_data.client_name == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Date</label>
+        <input class="form-control custom-input" name="date" type="date" value="{{ form_data.date|default:'' }}" required>
+      </div>
+      <div class="field-wrap interview-time-range">
+        <label class="field-label">Time</label>
+        <div class="interview-time-grid">
+          <input class="form-control custom-input" name="from_time" type="time" value="{{ form_data.from_time|default:'' }}" aria-label="From time" required>
+          <input class="form-control custom-input" name="to_time" type="time" value="{{ form_data.to_time|default:'' }}" aria-label="To time" required>
+        </div>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Location</label>
+        <input class="form-control custom-input" name="location" type="text" value="{{ form_data.location|default:'' }}" placeholder="Enter Location">
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Interview Owner</label>
+        <select class="form-select custom-input" name="interview_owner">
+          <option value="">Select Interview Owner</option>
+          {% for item in owner_options %}
+          <option value="{{ item }}" {% if form_data.interview_owner == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Schedule Comments</label>
+        <input class="form-control custom-input" name="schedule_comments" type="text" value="{{ form_data.schedule_comments|default:'' }}" placeholder="Enter Schedule Comments">
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Assessment Name</label>
+        <select class="form-select custom-input" name="assessment_name">
+          <option value="">Select Assessment Name</option>
+          {% for item in assessment_options %}
+          <option value="{{ item }}" {% if form_data.assessment_name == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="field-wrap" style="grid-column: 1 / -1;">
+        <label class="field-label">Attachment</label>
+        <div class="d-flex align-items-center gap-3">
+          <input type="file" name="attachment" id="attachmentInput" class="d-none">
+          <label for="attachmentInput" class="btn btn-secondary btn-sm" style="background-color: #64748b; border: none; padding: 0.4rem 1rem; border-radius: 6px;">Choose File</label>
+          <span style="color: #94a3b8; font-size: 0.85rem;">No file chosen</span>
+        </div>
+      </div>
+
+      <div class="interview-form-actions mt-3" style="grid-column: 1 / -1; display: flex; justify-content: flex-start; gap: 1rem;">
+        <button type="button" id="hideFormBtn" class="btn" style="background-color: #f1f5f9; color: #0f172a; border: none; font-weight: 500; padding: 0.6rem 2.5rem; border-radius: 8px;">Cancel</button>
+        <button type="submit" class="btn" style="background-color: #3b82f6; color: #ffffff; border: none; font-weight: 500; padding: 0.6rem 2.5rem; border-radius: 8px;">Save</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="interview-card-panel">
+    <div class="interview-create-anchor" id="createAnchorDiv" {% if show_form %}style="display: none;"{% endif %}>
+      <button type="button" id="showFormBtn" class="btn btn-primary btn-sm interview-create-top">Create</button>
+    </div>
+    <div class="interview-panel-head">
+      <h3 class="applicant-panel-title mb-4">Interview Information</h3>
+    </div>
+    <div class="interview-table-container">
+      <table class="table table-sm align-middle mb-0 interview-data-table">
+        <thead>
+          <tr>
+            <th>Req ID</th>
+            <th>Candidate</th>
+            <th>Process</th>
+            <th>Posting Title</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Location</th>
+            <th>Client</th>
+            <th>Owner</th>
+            <th>Assessment</th>
+            <th>Attachment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ row.manpower_requisition_id }}</td>
+            <td>{{ row.candidate_name }}</td>
+            <td>
+              <form method="post" class="mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_interview_dropdown">
+                <input type="hidden" name="interview_id" value="{{ row.id }}">
+                <input type="hidden" name="field_name" value="interview_process_name">
+                <select name="field_value" class="form-select form-select-sm interview-inline-select">
+                  {% for item in process_options %}
+                  <option value="{{ item }}" {% if row.interview_process_name == item %}selected{% endif %}>{{ item }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+            <td>{{ row.posting_title }}</td>
+            <td>{{ row.date }}</td>
+            <td>{{ row.from_time }} - {{ row.to_time }}</td>
+            <td>{{ row.location|default:"-" }}</td>
+            <td>
+              <form method="post" class="mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_interview_dropdown">
+                <input type="hidden" name="interview_id" value="{{ row.id }}">
+                <input type="hidden" name="field_name" value="client_name">
+                <select name="field_value" class="form-select form-select-sm interview-inline-select">
+                  {% for item in client_options %}
+                  <option value="{{ item }}" {% if row.client_name == item %}selected{% endif %}>{{ item }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+            <td>
+              <form method="post" class="mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_interview_dropdown">
+                <input type="hidden" name="interview_id" value="{{ row.id }}">
+                <input type="hidden" name="field_name" value="interview_owner">
+                <select name="field_value" class="form-select form-select-sm interview-inline-select">
+                  {% for item in owner_options %}
+                  <option value="{{ item }}" {% if row.interview_owner == item %}selected{% endif %}>{{ item }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+            <td>
+              <form method="post" class="mb-0">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_interview_dropdown">
+                <input type="hidden" name="interview_id" value="{{ row.id }}">
+                <input type="hidden" name="field_name" value="assessment_name">
+                <select name="field_value" class="form-select form-select-sm interview-inline-select">
+                  {% for item in assessment_options %}
+                  <option value="{{ item }}" {% if row.assessment_name == item %}selected{% endif %}>{{ item }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </td>
+            <td>{{ row.attachment_name|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="11" class="text-center text-muted py-3">No interview records available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".interview-inline-select").forEach(function (dropdown) {
+      dropdown.addEventListener("change", function () {
+        const form = dropdown.closest("form");
+        if (form) form.submit();
+      });
+    });
+
+    const candidateSelect = document.getElementById("ipCandidateSelect");
+    const postingSelect = document.getElementById("ipPostingTitle");
+    if (candidateSelect && postingSelect) {
+      candidateSelect.addEventListener("change", function () {
+        const selected = candidateSelect.options[candidateSelect.selectedIndex];
+        const posting = selected && selected.dataset ? selected.dataset.posting : "";
+        if (!posting) return;
+        let matched = Array.from(postingSelect.options).find(function (opt) {
+          return opt.value === posting || opt.text === posting;
+        });
+        if (!matched) {
+          matched = document.createElement("option");
+          matched.value = posting;
+          matched.textContent = posting;
+          postingSelect.appendChild(matched);
+        }
+        postingSelect.value = matched.value;
+      });
+    }
+
+    const showFormBtn = document.getElementById("showFormBtn");
+    const hideFormBtn = document.getElementById("hideFormBtn");
+    const inPersonFormPanel = document.getElementById("inPersonFormPanel");
+    const createAnchorDiv = document.getElementById("createAnchorDiv");
+
+    if (showFormBtn && inPersonFormPanel && hideFormBtn && createAnchorDiv) {
+      showFormBtn.addEventListener("click", function () {
+        inPersonFormPanel.style.display = "block";
+        createAnchorDiv.style.display = "none";
+      });
+      
+      hideFormBtn.addEventListener("click", function () {
+        inPersonFormPanel.style.display = "none";
+        createAnchorDiv.style.display = "block";
+      });
+    }
+  });
+</script>
+{% endblock %}

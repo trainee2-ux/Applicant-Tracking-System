@@ -1,0 +1,172 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Integration Settings{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=23">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Integrations{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+{% include "app_settings/_settings_menu.html" %}
+<div class="settings-main">
+<div class="page-header">
+  <div>
+    <div class="page-title">External Integrations</div>
+    <div class="page-subtitle">Configure video conferencing providers, SMTP servers, and calendar synchronization.</div>
+  </div>
+  <div class="header-actions">
+     <button type="submit" form="integrationForm" class="btn btn-primary btn-sm"><i class="bi bi-cloud-check"></i> Save Global Settings</button>
+  </div>
+</div>
+
+<form method="post" id="integrationForm" style="display: flex; flex-direction: column; gap: 32px; padding-bottom: 60px;">
+  {% csrf_token %}
+  
+  <!-- Video Interview Providers -->
+  <div class="card" style="padding: 0; overflow: hidden;">
+    <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+      <div class="card-title"><i class="bi bi-camera-video"></i> Video Meeting Providers</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Provider Service</th>
+            <th>Operational</th>
+            <th>Default Meeting ID</th>
+            <th>Organizer Identity</th>
+            <th>API Authentication</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in provider_rows %}
+          <tr>
+            <td class="primary">
+              <div style="font-weight: 700; color: var(--text);">{{ row.provider_label }}</div>
+            </td>
+            <td>
+              <div class="form-check form-switch m-0">
+                <input class="form-check-input" type="checkbox" name="{{ row.provider_key }}_enabled" {% if row.is_enabled %}checked{% endif %}>
+              </div>
+            </td>
+            <td>
+              <input class="form-control form-control-sm" type="text" name="{{ row.provider_key }}_meeting_url" value="{{ row.meeting_url }}" placeholder="ID or URL" style="font-size: 11px;">
+            </td>
+            <td>
+              <input class="form-control form-control-sm" type="text" name="{{ row.provider_key }}_organizer_email" value="{{ row.organizer_email }}" placeholder="identity@domain.com" style="font-size: 11px;">
+            </td>
+            <td>
+              {% if row.provider_key == "google_meet" %}
+                <div style="font-size: 11px; color: var(--text3); font-style: italic;"><i class="bi bi-info-circle"></i> Use OAuth panel below</div>
+              {% else %}
+                <textarea class="form-control form-control-sm" name="{{ row.provider_key }}_credential_json" rows="1" style="font-family: var(--mono); font-size: 10px; min-height: 32px;">{{ row.credential_json }}</textarea>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Google Cloud OAuth (Conditional) -->
+  {% if provider_rows %}
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><i class="bi bi-google"></i> Google Cloud OAuth Configuration</div>
+    </div>
+    <div style="padding: 24px;">
+      <div class="field-grid grid-2" style="gap: 20px;">
+        <div class="field">
+          <label class="field-label">Client Identifier</label>
+          <input type="text" name="google_client_id" value="{{ google_oauth_prefill.client_id }}" placeholder="x-google-apps-id.apps.googleusercontent.com">
+        </div>
+        <div class="field">
+          <label class="field-label">Secret Key</label>
+          <input type="password" name="google_client_secret" value="{{ google_oauth_prefill.client_secret }}" placeholder="••••••••••••">
+        </div>
+        <div class="field">
+          <label class="field-label">Authorization Gateway</label>
+          <input type="text" name="google_auth_uri" value="{{ google_oauth_prefill.auth_uri|default:'https://accounts.google.com/o/oauth2/auth' }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Token Exchange Gateway</label>
+          <input type="text" name="google_token_uri" value="{{ google_oauth_prefill.token_uri|default:'https://oauth2.googleapis.com/token' }}">
+        </div>
+        <div class="field col-span-2">
+          <label class="field-label">White-listed Redirect URIs</label>
+          <input type="text" name="google_redirect_uris" value="{{ google_oauth_prefill.redirect_uris }}" placeholder="https://domain.com/auth/callback, ...">
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Multi-Module Layout: Calendar & SMTP -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+    
+    <!-- Calendar Sync -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-calendar-check"></i> Personal Calendar Sync</div>
+      </div>
+      <div style="padding: 24px;">
+        <p style="font-size: 13px; color: var(--text3); line-height: 1.6; margin-bottom: 20px;">
+          Synchronize your individual recruitment schedule with your external Google Calendar for seamless availability tracking.
+        </p>
+        {% if not session_has_login %}
+          <div class="status-pill pill-amber" style="width: 100%; justify-content: center; padding: 12px; font-weight: 700;">Login required for synchronization</div>
+        {% elif user_missing %}
+          <div class="status-pill pill-red" style="width: 100%; justify-content: center; padding: 12px; font-weight: 700;">Identity profile mismatch</div>
+        {% elif calendar_token %}
+          <div style="background: var(--greenbg); padding: 16px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 13px; font-weight: 800; color: var(--green);">Synchronized</div>
+              <div style="font-size: 11px; color: var(--green); opacity: 0.8;">{{ current_user.email_id }}</div>
+            </div>
+            <a class="btn btn-ghost btn-sm" style="color: var(--red); border-color: rgba(239,68,68,0.2);" href="{% url 'app_settings:google_calendar_disconnect' %}"><i class="bi bi-x-circle"></i> Disconnect</a>
+          </div>
+        {% else %}
+          <a class="btn btn-secondary w-100" href="{% url 'app_settings:google_calendar_connect' %}" style="height: 48px;"><i class="bi bi-google"></i> Connect Google Calendar</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- SMTP Configuration -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><i class="bi bi-send-check"></i> Outbound Communication (SMTP)</div>
+      </div>
+      <div style="padding: 24px;">
+        <div class="field-grid grid-2" style="gap: 16px;">
+          <div class="field">
+            <label class="field-label" style="display: flex; justify-content: space-between;">Enabled <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" name="smtp_enabled" {% if email_config.smtp_enabled %}checked{% endif %}></div></label>
+          </div>
+          <div class="field">
+            <label class="field-label" style="display: flex; justify-content: space-between;">TLS Auth <div class="form-check form-switch m-0"><input class="form-check-input" type="checkbox" name="smtp_use_tls" {% if email_config.use_tls %}checked{% endif %}></div></label>
+          </div>
+          <div class="field">
+            <label class="field-label">Server Host</label>
+            <input type="text" name="smtp_host" value="{{ email_config.host }}" placeholder="smtp.domain.com">
+          </div>
+          <div class="field">
+            <label class="field-label">Port</label>
+            <input type="number" name="smtp_port" value="{{ email_config.port }}" placeholder="587">
+          </div>
+          <div class="field col-span-2">
+            <label class="field-label">Authentication Username</label>
+            <input type="text" name="smtp_username" value="{{ email_config.username }}" placeholder="notifications@domain.com">
+          </div>
+          <div class="field col-span-2">
+            <label class="field-label">Access Token / Password</label>
+            <input type="password" name="smtp_password" value="{{ email_config.password }}" placeholder="••••••••••••">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>
+</div>
+</div>
+{% endblock %}

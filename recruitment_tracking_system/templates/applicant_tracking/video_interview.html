@@ -1,0 +1,287 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Video Interview{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=5">{% endblock %}
+{% block nav_applicant_tracking %}active{% endblock %}
+{% block header %}Applicant Tracking &gt; Interview Scheduling &gt; Video Interview{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="interview-wrap">
+  <section id="videoFormPanel" class="interview-form-panel" {% if not show_form %}style="display: none;"{% endif %}>
+    <div class="interview-panel-head mb-3">
+      <h3 class="applicant-panel-title m-0" style="color: #334155; font-size: 1.15rem; font-weight: 500;">Video Interview Form</h3>
+    </div>
+    <form method="post" class="interview-form-grid">
+      {% csrf_token %}
+      {% if form_data.record_id %}
+      <input type="hidden" name="record_id" value="{{ form_data.record_id }}">
+      {% endif %}
+      <div class="field-wrap">
+        <label class="field-label">Manpower Requisition ID</label>
+        <input class="form-control custom-input" type="text" value="MPR0001" readonly>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Candidate Name</label>
+        <select id="videoCandidateSelect" class="form-select custom-input" name="candidate_name" required>
+          <option value="">Select Candidate</option>
+          {% for item in candidate_options %}
+          <option value="{{ item.id }}" data-posting="{{ item.posting }}" {% if form_data.candidate_name == item.id %}selected{% endif %}>{{ item.id }} - {{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Posting Title</label>
+        <select id="videoPostingTitle" class="form-select custom-input" name="posting_title" required>
+          <option value="">Select Posting Title</option>
+          {% for item in posting_options %}
+          <option value="{{ item }}" {% if form_data.posting_title == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Interviewer Name</label>
+        <select class="form-select custom-input" name="interviewer_name" required>
+          <option value="">Select Interviewer</option>
+          {% for item in interviewer_options %}
+          <option value="{{ item }}" {% if form_data.interviewer_name == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Meeting Provider</label>
+        <select class="form-select custom-input" name="provider" required>
+          <option value="">Select Provider</option>
+          {% for row in enabled_integrations %}
+          <option value="{{ row.provider_key }}" {% if form_data.provider == row.provider_key %}selected{% endif %}>{{ row.provider_label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Meeting Link (Browser URL)</label>
+        <input
+          class="form-control custom-input"
+          name="manual_meeting_link"
+          type="url"
+          placeholder="https://meet.google.com/xxx-xxxx-xxx or Teams/Zoom invite link"
+          value="{{ form_data.manual_meeting_link|default:'' }}"
+        >
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Date</label>
+        <input class="form-control custom-input" name="date" type="date" value="{{ form_data.date|default:'' }}" required>
+      </div>
+      <div class="field-wrap interview-time-range">
+        <label class="field-label">Time</label>
+        <div class="interview-time-grid">
+          <input class="form-control custom-input" name="from_time" type="time" value="{{ form_data.from_time|default:'' }}" aria-label="From time" required>
+          <input class="form-control custom-input" name="to_time" type="time" value="{{ form_data.to_time|default:'' }}" aria-label="To time" required>
+        </div>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Interview Owner</label>
+        <select class="form-select custom-input" name="interview_owner">
+          <option value="">Select Owner</option>
+          {% for item in owner_options %}
+          <option value="{{ item }}" {% if form_data.interview_owner == item %}selected{% endif %}>{{ item }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label class="field-label">Schedule Comments</label>
+        <input class="form-control custom-input" name="schedule_comments" type="text" value="{{ form_data.schedule_comments|default:'' }}">
+      </div>
+      <div class="interview-form-actions mt-3" style="grid-column: 1 / -1; display: flex; justify-content: flex-start; gap: 1rem;">
+        <button type="submit" class="btn" style="background-color: #3b82f6; color: #ffffff; border: none; font-weight: 500; padding: 0.6rem 2.5rem; border-radius: 8px;">
+          {% if form_data.record_id %}Update{% else %}Save{% endif %}
+        </button>
+        <button type="button" id="hideVideoFormBtn" class="btn" style="background-color: #f1f5f9; color: #0f172a; border: none; font-weight: 500; padding: 0.6rem 2.5rem; border-radius: 8px;">Cancel</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="interview-form-panel">
+    <div class="interview-create-anchor" id="videoCreateAnchor" {% if show_form %}style="display: none;"{% endif %}>
+      <button type="button" id="showVideoFormBtn" class="btn btn-primary btn-sm interview-create-top">Create</button>
+    </div>
+    <div class="interview-panel-head">
+      <h3 class="applicant-panel-title mb-4">Video Interview Information</h3>
+    </div>
+    {% if not enabled_integrations %}
+      <div class="alert alert-warning py-2 mb-3">No video provider is enabled. Go to Settings &gt; Integration and enable Google Meet, Microsoft Teams, or Zoom.</div>
+    {% endif %}
+    <div class="interview-table-container">
+      <table class="table table-sm align-middle mb-0 interview-data-table video-data-table">
+        <thead>
+          <tr>
+            <th>Req ID</th>
+            <th>Candidate</th>
+            <th>Posting</th>
+            <th>Interviewer</th>
+            <th>Provider</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Owner</th>
+            <th>External ID</th>
+            <th>Email Status</th>
+            <th>Meeting Link</th>
+            <th>Host Link</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr>
+            <td>{{ row.manpower_requisition_id }}</td>
+            <td>{{ row.candidate_name }}</td>
+            <td>{{ row.posting_title }}</td>
+            <td>{{ row.interviewer_name }}</td>
+            <td>{{ row.provider }}</td>
+            <td>{{ row.date }}</td>
+            <td>{{ row.from_time }} - {{ row.to_time }}</td>
+            <td>{{ row.interview_owner|default:"-" }}</td>
+            <td>{{ row.external_meeting_id|default:"-" }}</td>
+            <td title="{{ row.email_delivery_error|default:'' }}">{{ row.email_delivery_status|default:"Pending" }}</td>
+            <td>
+              <a
+                href="{{ row.meeting_link }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn btn-outline-primary btn-sm py-0 px-2 auto-recording-link"
+                data-interview-id="{{ row.id }}"
+                data-candidate-pk="{{ row.candidate_db_id }}"
+                data-candidate-id="{{ row.candidate_id }}"
+                data-candidate-name="{{ row.candidate_name }}"
+                data-interviewer="{{ row.interviewer_name }}"
+                data-date="{{ row.date|date:'Y-m-d' }}"
+                data-from-time="{{ row.from_time|time:'H:i' }}"
+                data-to-time="{{ row.to_time|time:'H:i' }}"
+                data-meeting-link="{{ row.meeting_link }}"
+                data-host-link="{{ row.host_link|default:'' }}"
+              >Open Link</a>
+            </td>
+            <td>
+              {% if row.host_link %}
+              <a
+                href="{{ row.host_link }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="btn btn-outline-secondary btn-sm py-0 px-2 auto-recording-link"
+                data-interview-id="{{ row.id }}"
+                data-candidate-pk="{{ row.candidate_db_id }}"
+                data-candidate-id="{{ row.candidate_id }}"
+                data-candidate-name="{{ row.candidate_name }}"
+                data-interviewer="{{ row.interviewer_name }}"
+                data-date="{{ row.date|date:'Y-m-d' }}"
+                data-from-time="{{ row.from_time|time:'H:i' }}"
+                data-to-time="{{ row.to_time|time:'H:i' }}"
+                data-meeting-link="{{ row.meeting_link }}"
+                data-host-link="{{ row.host_link|default:'' }}"
+              >Open Host</a>
+              {% else %}
+              -
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'applicant_tracking:video_interview' %}?edit_id={{ row.id }}" class="btn btn-outline-primary btn-sm py-0 px-2">Modify</a>
+              <a href="{% url 'applicant_tracking:video_interview_delete_confirm' row.id %}" class="btn btn-outline-danger btn-sm py-0 px-2">Delete</a>
+              <div class="small text-muted mt-1 recording-status" id="recording-status-{{ row.id }}"></div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="13" class="text-center text-muted py-3">No video interview records available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const candidateSelect = document.getElementById("videoCandidateSelect");
+    const postingSelect = document.getElementById("videoPostingTitle");
+    if (candidateSelect && postingSelect) {
+      candidateSelect.addEventListener("change", function () {
+        const selected = candidateSelect.options[candidateSelect.selectedIndex];
+        const posting = selected && selected.dataset ? selected.dataset.posting : "";
+        if (!posting) return;
+        let matched = Array.from(postingSelect.options).find(function (opt) {
+          return opt.value === posting || opt.text === posting;
+        });
+        if (!matched) {
+          matched = document.createElement("option");
+          matched.value = posting;
+          matched.textContent = posting;
+          postingSelect.appendChild(matched);
+        }
+        postingSelect.value = matched.value;
+      });
+    }
+
+    function setStatus(interviewId, message, isError) {
+      const node = document.getElementById("recording-status-" + interviewId);
+      if (!node) return;
+      node.textContent = message;
+      node.style.color = isError ? "#c62828" : "";
+    }
+
+    async function startRecording(btn) {
+      if (!window.api || !window.api.startInterviewRecording) {
+        return { ok: false, error: "Desktop bridge is not available. Use ATS desktop app." };
+      }
+      return window.api.startInterviewRecording({
+        interviewId: btn.dataset.interviewId,
+        candidatePk: btn.dataset.candidatePk,
+        candidateId: btn.dataset.candidateId,
+        candidateName: btn.dataset.candidateName,
+        interviewer: btn.dataset.interviewer,
+        date: btn.dataset.date,
+        fromTime: btn.dataset.fromTime,
+        toTime: btn.dataset.toTime,
+        meetingLink: btn.dataset.meetingLink,
+        hostLink: btn.dataset.hostLink
+      });
+    }
+
+    document.querySelectorAll(".auto-recording-link").forEach(function (link) {
+      link.addEventListener("click", async function (event) {
+        if (!window.api || !window.api.startInterviewRecording) {
+          return;
+        }
+        event.preventDefault();
+        setStatus(link.dataset.interviewId, "Starting meeting and OBS recording...", false);
+        const result = await startRecording(link);
+        if (result && result.ok) {
+          setStatus(link.dataset.interviewId, "Recording started. It will auto-stop at interview end time.", false);
+          return;
+        }
+        setStatus(link.dataset.interviewId, (result && result.error) || "Failed to start recording.", true);
+      });
+    });
+
+    const showFormBtn = document.getElementById("showVideoFormBtn");
+    const hideFormBtn = document.getElementById("hideVideoFormBtn");
+    const formPanel = document.getElementById("videoFormPanel");
+    const createAnchor = document.getElementById("videoCreateAnchor");
+
+    if (showFormBtn && hideFormBtn && formPanel && createAnchor) {
+      showFormBtn.addEventListener("click", function () {
+        formPanel.style.display = "block";
+        createAnchor.style.display = "none";
+      });
+
+      hideFormBtn.addEventListener("click", function () {
+        formPanel.style.display = "none";
+        createAnchor.style.display = "block";
+      });
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - My Profile{% endblock %}
+{% block header %}My Profile{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="form-shell">
+  <div class="section profile-section">
+    <div class="section-header profile-head">
+      <div class="section-icon"><i class="bi bi-person-badge"></i></div>
+      <div>
+        <div class="section-title">My Profile</div>
+        <div class="section-sub">Keep your information up to date.</div>
+      </div>
+
+      <label id="myProfileAvatarCircle" for="profilePhotoInput" class="profile-avatar-uploader" title="Upload profile photo">
+        <img id="myProfilePreview" src="" alt="Profile Photo Preview" class="profile-avatar-img d-none">
+        <span id="myProfileAvatarIcon" class="profile-avatar-icon"><i class="bi bi-camera"></i></span>
+      </label>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="field-grid grid-2 profile-form">
+    {% csrf_token %}
+    <input id="profilePhotoInput" class="d-none" type="file" name="profile_photo" accept="image/*">
+    <div>
+      <label class="field-label">Name</label>
+      <input type="text" name="name" value="{{ profile_name }}">
+    </div>
+    <div>
+      <label class="field-label">Email</label>
+      <input type="email" name="email" value="{{ profile_email }}" readonly>
+    </div>
+    <div>
+      <label class="field-label">Mobile</label>
+      <input type="number" name="mobile" value="{{ profile_mobile }}">
+    </div>
+    <div>
+      <label class="field-label">Department</label>
+      <select name="department" disabled>
+        <option selected>{{ profile_department }}</option>
+      </select>
+    </div>
+    <div>
+      <label class="field-label">Role</label>
+      <input type="text" name="role" value="{{ profile_role }}" readonly>
+    </div>
+
+    <div class="col-span-2 profile-notification-group">
+      <label class="field-label">Notification Preferences</label>
+      <div class="profile-notify-row">
+        <label class="profile-check"><input class="form-check-input" type="checkbox" name="notify_email" checked> <span>Email</span></label>
+        <label class="profile-check"><input class="form-check-input" type="checkbox" name="notify_sms"> <span>SMS</span></label>
+        <label class="profile-check"><input class="form-check-input" type="checkbox" name="notify_whatsapp"> <span>WhatsApp</span></label>
+      </div>
+    </div>
+
+    <div class="col-span-2 profile-action-row">
+      <a href="{% url 'accounts:forgot_password' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-shield-lock me-1"></i> Change Password
+      </a>
+      <button type="submit" class="btn btn-primary btn-sm">
+        <i class="bi bi-check2-circle me-1"></i> Save Changes
+      </button>
+    </div>
+  </form>
+</div>
+  </div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("profilePhotoInput");
+    const preview = document.getElementById("myProfilePreview");
+    const icon = document.getElementById("myProfileAvatarIcon");
+    const avatarCircle = document.getElementById("myProfileAvatarCircle");
+    if (!input || !preview || !icon || !avatarCircle) return;
+
+    const existingPhoto = "{{ profile_photo_url|default:''|escapejs }}";
+    if (existingPhoto) {
+      preview.src = existingPhoto;
+      preview.classList.remove("d-none");
+      avatarCircle.classList.add("has-photo");
+    }
+
+    input.addEventListener("change", function () {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+        preview.classList.remove("d-none");
+        avatarCircle.classList.add("has-photo");
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+</script>
+{% endblock %}

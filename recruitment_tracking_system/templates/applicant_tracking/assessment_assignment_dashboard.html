@@ -1,0 +1,129 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Assessment Assignments{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=5">{% endblock %}
+{% block nav_interviews %}active{% endblock %}
+{% block header %}Interviews &gt; Assessments{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="page-header mb-4">
+  <div>
+    <h2 class="page-title">Assessment Assignments</h2>
+    <p class="page-subtitle">Assign assessment forms to candidates and track completion status and score.</p>
+  </div>
+  <a href="{% url 'applicant_tracking:assessment_assignments' %}?create=1" class="btn btn-primary" style="padding: 10px 24px; border-radius: 10px;">
+    <i class="bi bi-plus-lg me-2"></i> Assign Assessment
+  </a>
+</div>
+
+<div class="card shadow-sm" style="overflow: hidden; border-radius: 16px;">
+  <div class="card-header bg-transparent border-bottom p-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <h3 class="card-title m-0">Assignment Directory</h3>
+    <div class="text-muted small">{{ rows|length }} records</div>
+  </div>
+  <div class="table-wrap">
+    <table class="table-premium">
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Assessment Form</th>
+          <th>Status</th>
+          <th>Assigned</th>
+          <th>Due</th>
+          <th>Score</th>
+          <th>Score %</th>
+          <th>Result</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if rows %}
+          {% for row in rows %}
+          <tr>
+            <td>
+              <div style="font-weight: 800;">{{ row.candidate_name }}</div>
+              <div class="text-muted small">{{ row.candidate_id }}{% if row.candidate_email %} • {{ row.candidate_email }}{% endif %}</div>
+            </td>
+            <td>
+              <div style="font-weight: 800;">{{ row.assessment_name }}</div>
+              <div class="text-muted small">Assigned by: {{ row.assigned_by|default:"-" }}</div>
+              {% if row.assessment_published %}
+                <span class="badge bg-success-subtle text-success border border-success-subtle mt-1">PUBLISHED</span>
+              {% else %}
+                <span class="badge bg-light text-muted border mt-1">DRAFT</span>
+              {% endif %}
+            </td>
+            <td><span class="badge {% if row.status == 'Completed' %}bg-success{% elif row.status == 'Expired' %}bg-danger{% else %}bg-warning text-dark{% endif %}">{{ row.status }}</span></td>
+            <td class="text-muted small">{{ row.assigned_at }}</td>
+            <td class="text-muted small">{% if row.due_at %}{{ row.due_at }}{% else %}-{% endif %}</td>
+            <td>
+              {% if row.score != None %}
+                <span style="font-weight: 800;">{{ row.score|floatformat:0 }}</span>
+                {% if row.max_score != None %}<span class="text-muted">/ {{ row.max_score|floatformat:0 }}</span>{% endif %}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if row.score_percent != None %}
+                <span style="font-weight: 800;">{{ row.score_percent|floatformat:0 }}%</span>
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if row.pass_fail %}
+                {% if row.pass_fail == "Pass" %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">PASS</span>
+                {% else %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle">FAIL</span>
+                {% endif %}
+                {% if row.passing_score_percent != None %}
+                  <div class="text-muted small mt-1">Passing: {{ row.passing_score_percent }}%</div>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">-</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <button type="button" class="btn btn-light btn-sm" data-copy-url="{{ row.assignment_url }}">
+                <i class="bi bi-link-45deg"></i>
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="9" class="text-center text-muted py-4">No assignments yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  (function () {
+    const buttons = document.querySelectorAll('[data-copy-url]');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const url = btn.getAttribute('data-copy-url') || '';
+        try {
+          await navigator.clipboard.writeText(url);
+          btn.classList.remove('btn-light');
+          btn.classList.add('btn-success');
+          setTimeout(() => { btn.classList.remove('btn-success'); btn.classList.add('btn-light'); }, 1200);
+        } catch (e) {
+          window.prompt('Copy link:', url);
+        }
+      });
+    });
+  })();
+</script>
+{% endblock %}

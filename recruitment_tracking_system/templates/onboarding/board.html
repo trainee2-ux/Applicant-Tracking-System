@@ -1,0 +1,288 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Strategic Onboarding Pipeline{% endblock %}
+{% block nav_onboarding %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .onboarding-pipeline { display: flex; gap: 24px; padding-bottom: 24px; overflow-x: auto; min-height: calc(100vh - 200px); }
+  .pipeline-col { 
+    min-width: 340px; background: rgba(255,255,255,0.01); border: 1px solid var(--border); 
+    border-radius: 20px; display: flex; flex-direction: column; max-height: calc(100vh - 220px);
+    transition: all 0.2s;
+  }
+  .pipeline-header { 
+    padding: 20px 24px; border-bottom: 3px solid var(--accent); 
+    display: flex; justify-content: space-between; align-items: center; 
+    background: rgba(255,255,255,0.02); border-radius: 20px 20px 0 0;
+  }
+  .pipeline-name { font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--text); }
+  .pipeline-count { background: var(--surface3); padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; color: var(--accent2); }
+  
+  .pipeline-body { padding: 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  
+  .onboarding-card { 
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; 
+    padding: 20px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: var(--shadow-sm);
+    cursor: grab;
+  }
+  .onboarding-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: var(--shadow); }
+  
+  .card-top { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .card-avatar { width: 40px; height: 40px; border-radius: 12px; background: var(--surface2); color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+  .card-name { font-weight: 800; font-size: 15px; color: var(--text); }
+  .card-meta { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: 0.5px; }
+  
+  .card-job { font-size: 12px; font-weight: 700; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+  .card-job i { color: var(--accent2); }
+
+  .card-footer { 
+    display: flex; align-items: center; justify-content: space-between; margin-top: 16px; 
+    padding-top: 16px; border-top: 1px solid var(--border);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header" style="margin-bottom: 32px;">
+  <div>
+    <div class="page-title">Strategic Onboarding Pipeline</div>
+    <div class="page-subtitle">Coordinate high-bandwidth talent transitions and document finalization sequences.</div>
+  </div>
+  <div class="header-actions">
+    <a class="btn btn-ghost btn-sm" href="/onboarding/candidates/"><i class="bi bi-grid-3x3-gap-fill"></i> Directory View</a>
+    <a class="btn btn-secondary btn-sm" href="/onboarding/approvals/"><i class="bi bi-shield-lock-fill"></i> Security Cleared Approvals</a>
+  </div>
+</div>
+
+<div class="onboarding-pipeline">
+  {% for column in columns %}
+  <div class="pipeline-col">
+    <div class="pipeline-header" style="border-color: {% if column.name == 'Finalized' %}var(--green){% elif column.name == 'Offer' %}var(--amber){% else %}var(--accent){% endif %};">
+      <div class="pipeline-name">{{ column.name }}</div>
+      <div class="pipeline-count">{{ column.items|length }}</div>
+    </div>
+    <div class="pipeline-body">
+      {% for c in column.items %}
+      <div class="onboarding-card">
+        <div class="card-top">
+          <div class="card-avatar">{{ c.name|slice:":1" }}</div>
+          <div>
+            <div class="card-name">{{ c.name }}</div>
+            <div class="card-meta">ID: #{{ c.candidate_id }}</div>
+          </div>
+        </div>
+        
+        <div class="card-job">
+          <i class="bi bi-briefcase-fill"></i> {{ c.job_applied }}
+        </div>
+        
+        <div class="card-footer">
+          <div style="font-size: 10px; color: var(--text3); font-weight: 700;"><i class="bi bi-calendar3 me-1"></i> {{ c.last_updated|slice:":10" }}</div>
+          <span class="status-pill {% if column.name == 'Finalized' %}pill-green{% elif column.name == 'Offer' %}pill-amber{% else %}pill-blue{% endif %}" style="font-size: 9px; padding: 2px 8px; border-radius: 8px;">
+            <span class="dot"></span> {{ column.name }}
+          </span>
+        </div>
+        
+        <div style="margin-top: 16px;">
+          {% if c.submission_id %}
+            <a class="btn btn-primary btn-sm w-100" style="border-radius: 10px; height: 38px; justify-content: center;" href="/onboarding/approvals/{{ c.submission_id }}/"><i class="bi bi-clipboard2-check"></i> Execute Review</a>
+          {% elif column.name == "Offer Accepted" %}
+            <button type="button" class="btn btn-primary btn-sm w-100 js-doc-request-btn" style="border-radius: 10px; height: 38px; justify-content: center;" data-doc-url="/onboarding/request-documents/{{ c.candidate_id }}/"><i class="bi bi-folder-check"></i> Request Documents</button>
+          {% elif column.name == "Finalized" %}
+            <a class="btn btn-primary btn-sm w-100" style="background: var(--green); border-color: var(--green); border-radius: 10px; height: 38px; justify-content: center;" href="/onboarding/offers/create/{{ c.candidate_id }}/"><i class="bi bi-send-check"></i> Send Offer</a>
+          {% else %}
+            <button type="button" class="btn btn-secondary btn-sm w-100 js-offer-assign-btn" style="border-radius: 10px; height: 38px; justify-content: center;" data-candidate-id="{{ c.candidate_id }}" data-offer-url="/onboarding/offers/create/{{ c.candidate_id }}/"><i class="bi bi-file-earmark-plus"></i> Assign Offer</button>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div style="text-align: center; padding: 60px 20px; color: var(--text3); font-size: 12px; border: 2px dashed var(--border); border-radius: 16px; background: rgba(0,0,0,0.01);">
+        <i class="bi bi-database-slash" style="font-size: 32px; display: block; margin-bottom: 12px; opacity: 0.2;"></i>
+        No Talent Documented in Phase
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div id="docRequestModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1200; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+  <div class="card" style="width: min(980px, calc(100vw - 40px)); max-height: calc(100vh - 60px); overflow: auto; padding: 0; border-radius: 22px; border: 1px solid var(--border2); box-shadow: var(--shadow-lg);">
+    <div class="card-header" style="display:flex; align-items:center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border);">
+      <div>
+        <div class="card-title" style="font-size: 16px; font-weight: 900;"><i class="bi bi-folder-check"></i> Document Collection Request</div>
+        <div id="docRequestMeta" style="font-size: 12px; color: var(--text3); margin-top: 2px;">Loading…</div>
+      </div>
+      <button type="button" class="icon-btn" id="docRequestCloseBtn" title="Close"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div style="padding: 18px 20px;">
+      <div id="docRequestError" class="alert alert-danger py-2" style="display:none;"></div>
+
+      <div style="display:grid; grid-template-columns: 1fr 340px; gap: 18px; align-items: start;">
+          <div>
+            <div class="field" style="margin-bottom: 14px;">
+              <label class="field-label">Template</label>
+              <select id="docRequestTemplate" class="form-select"></select>
+            </div>
+
+            <div class="field" style="margin-bottom: 14px;">
+              <label class="field-label">Document Mode</label>
+              <div style="display:flex; gap: 14px; flex-wrap: wrap;">
+                <label style="display:flex; gap: 8px; align-items:center; font-size: 13px; font-weight: 700;">
+                  <input type="radio" name="docMode" id="docModeDefault" value="default" checked>
+                  Default Form
+                </label>
+                <label style="display:flex; gap: 8px; align-items:center; font-size: 13px; font-weight: 700;">
+                  <input type="radio" name="docMode" id="docModeManual" value="manual">
+                  Manual (Select Documents)
+                </label>
+              </div>
+              <div style="font-size: 11px; color: var(--text3); margin-top: 6px;">
+                Default uses the standard onboarding form. Manual lets you choose the exact documents to request for this candidate.
+              </div>
+            </div>
+
+            <div class="field" id="docManualBox" style="margin-bottom: 14px; display:none;">
+              <label class="field-label">Select Documents</label>
+              <div id="docManualList" style="display:grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface2);"></div>
+            </div>
+
+            <div class="field" style="margin-bottom: 14px;">
+              <label class="field-label">Subject</label>
+              <input id="docRequestSubject" type="text" value="">
+            </div>
+
+           <div class="field" style="margin-bottom: 14px;">
+             <label class="field-label">Body (HTML Supported)</label>
+             <textarea id="docRequestBody" rows="10" style="font-family: var(--font); line-height: 1.6; font-size: 14px;"></textarea>
+             <div style="font-size: 11px; color: var(--text3); margin-top: 10px; padding: 10px; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border);">
+               The email will include an <strong>Upload Documents</strong> link for the candidate.
+             </div>
+           </div>
+
+           <div class="card" style="margin: 0;">
+             <div class="card-header" style="display:flex; align-items:center; justify-content: space-between;">
+               <div class="card-title"><i class="bi bi-eye"></i> Preview</div>
+               <button type="button" id="docRequestPreviewBtn" class="btn btn-ghost btn-sm" style="height: 34px; justify-content:center;">
+                 <i class="bi bi-arrow-clockwise"></i> Refresh Preview
+               </button>
+             </div>
+             <div style="padding: 12px;">
+               <iframe id="docRequestPreviewFrame" title="Document Request Preview" style="width: 100%; height: 420px; border: 1px solid var(--border); border-radius: 12px; background: white;"></iframe>
+             </div>
+           </div>
+         </div>
+
+        <div class="card" style="margin:0;">
+          <div class="card-header">
+            <div class="card-title"><i class="bi bi-person-check"></i> Recipient</div>
+          </div>
+          <div style="padding: 16px 16px 18px;">
+            <div style="display:flex; flex-direction: column; gap: 10px;">
+              <div style="background: var(--surface2); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
+                <div style="font-size: 10px; font-weight: 800; color: var(--text3); text-transform: uppercase;">To</div>
+                <div id="docRequestTo" style="font-size: 13px; font-weight: 700; color: var(--text);">-</div>
+              </div>
+              <div style="background: var(--surface2); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
+                <div style="font-size: 10px; font-weight: 800; color: var(--text3); text-transform: uppercase;">From</div>
+                <div id="docRequestFrom" style="font-size: 13px; font-weight: 700; color: var(--text);">-</div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap: 10px; margin-top: 14px;">
+              <button type="button" id="docRequestSendBtn" class="btn btn-primary" style="flex:1; height: 42px; justify-content:center;"><i class="bi bi-send-check"></i> Send Request</button>
+              <button type="button" id="docRequestCancelBtn" class="btn btn-ghost" style="height: 42px; justify-content:center;">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="offerAssignModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1200; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+  <div class="card" style="width: min(980px, calc(100vw - 40px)); max-height: calc(100vh - 60px); overflow: auto; padding: 0; border-radius: 22px; border: 1px solid var(--border2); box-shadow: var(--shadow-lg);">
+    <div class="card-header" style="display:flex; align-items:center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid var(--border);">
+      <div>
+        <div class="card-title" style="font-size: 16px; font-weight: 900;"><i class="bi bi-envelope-paper"></i> Offer Email</div>
+        <div id="offerAssignMeta" style="font-size: 12px; color: var(--text3); margin-top: 2px;">Loading…</div>
+      </div>
+      <button type="button" class="icon-btn" id="offerAssignCloseBtn" title="Close"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div style="padding: 18px 20px;">
+      <div id="offerAssignError" class="alert alert-danger py-2" style="display:none;"></div>
+
+      <div style="display:grid; grid-template-columns: 1fr 340px; gap: 18px; align-items: start;">
+        <div>
+          <div class="field" style="margin-bottom: 14px;">
+            <label class="field-label">Template</label>
+            <select id="offerAssignTemplate" class="form-select"></select>
+          </div>
+
+          <div class="field" style="margin-bottom: 14px;">
+            <label class="field-label">Subject</label>
+            <input id="offerAssignSubject" type="text" value="">
+          </div>
+
+           <div class="field" style="margin-bottom: 14px;">
+             <label class="field-label">Body (HTML Supported)</label>
+             <textarea id="offerAssignBody" rows="10" style="font-family: var(--font); line-height: 1.6; font-size: 14px;"></textarea>
+             <div style="font-size: 11px; color: var(--text3); margin-top: 10px; padding: 10px; background: var(--surface2); border-radius: 10px; border: 1px solid var(--border);">
+               The email will include buttons: <strong>View Offer</strong>, <strong>Accept Offer</strong>, and <strong>Reject Offer</strong>.
+             </div>
+           </div>
+
+           <div class="card" style="margin: 0;">
+             <div class="card-header" style="display:flex; align-items:center; justify-content: space-between;">
+               <div class="card-title"><i class="bi bi-eye"></i> Preview</div>
+               <button type="button" id="offerAssignPreviewBtn" class="btn btn-ghost btn-sm" style="height: 34px; justify-content:center;">
+                 <i class="bi bi-arrow-clockwise"></i> Refresh Preview
+               </button>
+             </div>
+             <div style="padding: 12px;">
+               <iframe id="offerAssignPreviewFrame" title="Offer Email Preview" style="width: 100%; height: 420px; border: 1px solid var(--border); border-radius: 12px; background: white;"></iframe>
+               <div style="font-size: 11px; color: var(--text3); margin-top: 8px;">
+                 Preview uses sample links. Final email will contain the actual Accept/Reject links.
+               </div>
+             </div>
+           </div>
+         </div>
+
+        <div class="card" style="margin:0;">
+          <div class="card-header">
+            <div class="card-title"><i class="bi bi-person-check"></i> Recipient</div>
+          </div>
+          <div style="padding: 16px 16px 18px;">
+            <div style="display:flex; flex-direction: column; gap: 10px;">
+              <div style="background: var(--surface2); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
+                <div style="font-size: 10px; font-weight: 800; color: var(--text3); text-transform: uppercase;">To</div>
+                <div id="offerAssignTo" style="font-size: 13px; font-weight: 700; color: var(--text);">-</div>
+              </div>
+              <div style="background: var(--surface2); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
+                <div style="font-size: 10px; font-weight: 800; color: var(--text3); text-transform: uppercase;">From</div>
+                <div id="offerAssignFrom" style="font-size: 13px; font-weight: 700; color: var(--text);">-</div>
+              </div>
+              <div style="background: var(--surface2); padding: 12px; border-radius: 10px; border: 1px solid var(--border);">
+                <div style="font-size: 10px; font-weight: 800; color: var(--text3); text-transform: uppercase;">Job</div>
+                <div id="offerAssignJob" style="font-size: 13px; font-weight: 700; color: var(--text);">-</div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap: 10px; margin-top: 14px;">
+              <button type="button" id="offerAssignSendBtn" class="btn btn-primary" style="flex:1; height: 42px; justify-content:center;"><i class="bi bi-send-check"></i> Send Offer</button>
+              <button type="button" id="offerAssignCancelBtn" class="btn btn-ghost" style="height: 42px; justify-content:center;">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="/static/js/onboarding_board.js?v=2"></script>
+{% endblock %}

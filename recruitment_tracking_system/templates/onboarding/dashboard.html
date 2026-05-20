@@ -1,0 +1,103 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Onboarding Dashboard{% endblock %}
+{% block nav_onboarding %}active{% endblock %}
+
+{% block page_css %}
+<style>
+  .onboarding-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 24px; }
+  .module-card { 
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px; 
+    padding: 24px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
+    display: flex; flex-direction: column; gap: 16px; text-decoration: none; position: relative; overflow: hidden;
+  }
+  .module-card:hover { border-color: var(--accent); transform: translateY(-6px); box-shadow: var(--shadow); }
+  .module-card::after { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); opacity: 0; transition: opacity 0.2s; }
+  .module-card:hover::after { opacity: 1; }
+  
+  .module-icon { 
+    width: 56px; height: 56px; border-radius: 16px; background: var(--accentbg); color: var(--accent2); 
+    display: flex; align-items: center; justify-content: center; font-size: 24px; 
+  }
+  .module-title { font-size: 18px; font-weight: 800; color: var(--text); }
+  .module-desc { font-size: 13px; color: var(--text3); line-height: 1.5; }
+  
+  .stat-mini { font-size: 12px; font-weight: 700; color: var(--accent2); background: rgba(108,99,255,0.1); padding: 4px 10px; border-radius: 20px; width: fit-content; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Onboarding Management</div>
+    <div class="page-subtitle">Centralized hub for offer issuance, document collection, and new hire integration.</div>
+  </div>
+</div>
+
+<div class="onboarding-grid">
+  <!-- Workflow Board -->
+  <a href="/onboarding/board/" class="module-card">
+    <div class="module-icon"><i class="bi bi-kanban"></i></div>
+    <div>
+      <div class="module-title">Workflow Pipeline</div>
+      <div class="module-desc">Visualize the entire onboarding journey from offer to finalized boarding in a Kanban board.</div>
+    </div>
+    <div class="stat-mini">Track Progress →</div>
+  </a>
+
+  <!-- Candidate Directory -->
+  <a href="/onboarding/candidates/" class="module-card">
+    <div class="module-icon"><i class="bi bi-person-lines-fill"></i></div>
+    <div>
+      <div class="module-title">Candidate Directory</div>
+      <div class="module-desc">Access complete candidate profiles, contact history, and specific job requisition links.</div>
+    </div>
+    <div class="stat-mini">Search Directory →</div>
+  </a>
+
+  <!-- Approvals -->
+  <a href="/onboarding/approvals/" class="module-card">
+    <div class="module-icon"><i class="bi bi-shield-check"></i></div>
+    <div>
+      <div class="module-title">Document Approvals</div>
+      <div class="module-desc">Review submitted documents, verify signature requests, and approve finalized paperwork.</div>
+    </div>
+    <div class="stat-mini">Review Pending →</div>
+  </a>
+
+  <!-- Offer Management -->
+  <a href="/onboarding/reports/offers/" class="module-card">
+    <div class="module-icon"><i class="bi bi-file-earmark-text"></i></div>
+    <div>
+      <div class="module-title">Offer Reports</div>
+      <div class="module-desc">Generate reports on offer status, acceptance rates, and scheduled start dates for new hires.</div>
+    </div>
+    <div class="stat-mini">View Reports →</div>
+  </a>
+</div>
+
+<!-- Quick Activity / Stats -->
+<div class="card" style="margin-top: 32px;">
+  <div class="card-header">
+    <div class="card-title">Onboarding Health</div>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; padding: 24px;">
+    <div style="text-align: center;">
+      <div style="font-size: 28px; font-weight: 800; color: var(--text);">{{ finalized_count|default:"0" }}</div>
+      <div style="font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; margin-top: 4px;">Finalized</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="font-size: 28px; font-weight: 800; color: var(--amber);">{{ pending_offer_count|default:"0" }}</div>
+      <div style="font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; margin-top: 4px;">Pending Offers</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="font-size: 28px; font-weight: 800; color: var(--blue);">{{ pending_doc_count|default:"0" }}</div>
+      <div style="font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; margin-top: 4px;">Awaiting Docs</div>
+    </div>
+    <div style="text-align: center;">
+      <div style="font-size: 28px; font-weight: 800; color: var(--green);">{{ onboarded_today|default:"0" }}</div>
+      <div style="font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; margin-top: 4px;">Onboarded Today</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

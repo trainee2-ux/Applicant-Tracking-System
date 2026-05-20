@@ -1,0 +1,162 @@
+{% extends "layouts/app_shell.html" %}
+{% load static %}
+
+{% block title %}Ultimatix ATS - Master Data Management{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/app_settings.css?v=16">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Master Data{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+  {% include "app_settings/_settings_menu.html" %}
+  
+  <div class="settings-main">
+    <div class="mb-4">
+      <h2 class="h4 fw-800 text-main mb-1">Master Data Management</h2>
+      <p class="text-muted small">Configure global entities, geographical data, and organizational standards.</p>
+    </div>
+
+    <div class="masters-premium-grid">
+      <!-- City Master -->
+      <div class="master-card" onclick="location.href='{% url 'app_settings:masters_form' 'city' %}'">
+        <div class="master-icon-wrap grad-blue">
+          <i class="bi bi-signpost-2"></i>
+        </div>
+        <div class="master-body">
+          <h5 class="master-title">City Master</h5>
+          <p class="master-desc">Manage urban locations and regional boundaries.</p>
+        </div>
+        <div class="master-arrow">
+          <i class="bi bi-chevron-right"></i>
+        </div>
+      </div>
+
+      <!-- State Master -->
+      <div class="master-card" onclick="location.href='{% url 'app_settings:masters_form' 'state' %}'">
+        <div class="master-icon-wrap grad-purple">
+          <i class="bi bi-geo"></i>
+        </div>
+        <div class="master-body">
+          <h5 class="master-title">State Master</h5>
+          <p class="master-desc">Define provinces, states, and administrative areas.</p>
+        </div>
+        <div class="master-arrow">
+          <i class="bi bi-chevron-right"></i>
+        </div>
+      </div>
+
+      <!-- Country Master -->
+      <div class="master-card" onclick="location.href='{% url 'app_settings:masters_form' 'country' %}'">
+        <div class="master-icon-wrap grad-green">
+          <i class="bi bi-globe2"></i>
+        </div>
+        <div class="master-body">
+          <h5 class="master-title">Country Master</h5>
+          <p class="master-desc">Global country codes and nationality definitions.</p>
+        </div>
+        <div class="master-arrow">
+          <i class="bi bi-chevron-right"></i>
+        </div>
+      </div>
+
+      <!-- Education Master -->
+      <div class="master-card" onclick="location.href='{% url 'app_settings:masters_form' 'education-level' %}'">
+        <div class="master-icon-wrap grad-amber">
+          <i class="bi bi-journal-bookmark"></i>
+        </div>
+        <div class="master-body">
+          <h5 class="master-title">Education Master</h5>
+          <p class="master-desc">Degrees, certifications, and academic standards.</p>
+        </div>
+        <div class="master-arrow">
+          <i class="bi bi-chevron-right"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .masters-premium-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+  
+  .master-card {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .master-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 10px 30px -10px rgba(108, 99, 255, 0.2);
+    background: var(--surface2);
+  }
+  
+  .master-icon-wrap {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  
+  .master-body {
+    flex-grow: 1;
+  }
+  
+  .master-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: var(--text);
+  }
+  
+  .master-desc {
+    font-size: 0.8rem;
+    color: var(--text3);
+    margin: 0;
+    line-height: 1.4;
+  }
+  
+  .master-arrow {
+    font-size: 18px;
+    color: var(--text3);
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s;
+  }
+  
+  .master-card:hover .master-arrow {
+    opacity: 1;
+    transform: translateX(0);
+    color: var(--accent);
+  }
+  
+  .grad-blue { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+  .grad-purple { background: linear-gradient(135deg, #6c63ff, #a78bfa); }
+  .grad-green { background: linear-gradient(135deg, #10b981, #34d399); }
+  .grad-amber { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+
+  @media (max-width: 991px) {
+    .masters-premium-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}

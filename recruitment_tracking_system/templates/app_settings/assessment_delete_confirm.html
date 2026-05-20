@@ -1,0 +1,42 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - Confirm Assessment Form Delete{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/delete_confirm.css">{% endblock %}
+{% block nav_settings %}active{% endblock %}
+{% block header %}Settings &gt; Assessment Form &gt; Delete Confirmation{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="delete-confirm-wrap">
+  <div class="delete-confirm-card">
+    <div class="delete-confirm-badge"><i class="bi bi-exclamation-triangle-fill"></i></div>
+    <h2 class="delete-confirm-title">Delete Assessment Form?</h2>
+    <p class="delete-confirm-subtitle">
+      You are about to remove this form and its saved entries.
+    </p>
+
+    <div class="delete-confirm-details">
+      <div><strong>Form Name:</strong> {{ form_obj.name }}</div>
+      <div><strong>Form Type:</strong> {{ form_obj.get_form_type_display }}</div>
+      <div><strong>Created:</strong> {{ form_obj.created_at|date:"Y-m-d H:i" }}</div>
+      <div><strong>Total Fields:</strong> {{ form_obj.fields.count }}</div>
+    </div>
+
+    <p class="delete-confirm-warning">This action cannot be undone.</p>
+
+    <div class="delete-confirm-actions">
+      <a href="{% url 'app_settings:assessment_builder' %}" class="btn btn-outline-secondary">Cancel</a>
+      <form method="post" class="m-0">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="confirm_delete">
+        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

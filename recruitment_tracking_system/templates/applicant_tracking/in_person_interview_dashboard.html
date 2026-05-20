@@ -1,0 +1,186 @@
+{% extends "layouts/app_shell.html" %}
+
+{% block title %}Ultimatix ATS - In Person Interview{% endblock %}
+{% block page_css %}<link rel="stylesheet" href="/static/css/applicant_tracking.css?v=4">{% endblock %}
+{% block nav_interviews %}active{% endblock %}
+{% block header %}Interviews &gt; In Person Interview{% endblock %}
+
+{% block content %}
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} py-2">{{ message }}</div>
+  {% endfor %}
+{% endif %}
+<div class="page-header mb-4">
+  <div>
+    <h2 class="page-title">In-Person Interview Dashboard</h2>
+    <p class="page-subtitle">Manage and track all physical evaluation protocols.</p>
+  </div>
+  <a href="{% url 'applicant_tracking:in_person_interview' %}?create=1" class="btn btn-primary" style="padding: 10px 24px; border-radius: 10px;">
+    <i class="bi bi-plus-lg me-2"></i> Schedule New Interview
+  </a>
+</div>
+
+<!-- Stats Row -->
+<div class="stat-grid mb-4">
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="bi bi-people"></i></div>
+    <div class="stat-value">{{ rows|length }}</div>
+    <div class="stat-label">Total Interviews</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="bi bi-calendar-check"></i></div>
+    <div class="stat-value">{% if rows %}{{ rows|length }}{% else %}0{% endif %}</div>
+    <div class="stat-label">Today's Sessions</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="bi bi-geo-alt"></i></div>
+    <div class="stat-value">{% if rows %}Active{% else %}None{% endif %}</div>
+    <div class="stat-label">Primary Location</div>
+  </div>
+</div>
+
+<div class="card shadow-sm" style="overflow: hidden; border-radius: 16px;">
+  <div class="card-header bg-transparent border-bottom p-4">
+    <h3 class="card-title m-0">Protocol History</h3>
+  </div>
+  <div class="table-wrap">
+    <table class="table-premium">
+      <thead>
+        <tr>
+          <th>Req ID</th>
+          <th>Candidate</th>
+          <th>Protocol Round</th>
+          <th>Position</th>
+          <th>Schedule</th>
+          <th>Location</th>
+          <th>Ownership</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td class="font-mono text-xs">{{ row.manpower_requisition_id }}</td>
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="avatar-sm">{{ row.candidate_name|slice:":1" }}</div>
+              <div>
+                <div class="fw-bold text-dark">{{ row.candidate_name }}</div>
+                <div class="text-muted text-xs">{{ row.client_name }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <form method="post" class="m-0">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_interview_dropdown">
+              <input type="hidden" name="interview_id" value="{{ row.id }}">
+              <input type="hidden" name="field_name" value="interview_process_name">
+              <select name="field_value" class="table-select-v2">
+                {% for item in process_options %}
+                <option value="{{ item }}" {% if row.interview_process_name == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td class="text-sm fw-medium">{{ row.posting_title }}</td>
+          <td>
+            <div class="text-dark fw-semibold text-xs">{{ row.date }}</div>
+            <div class="text-muted text-xs">{{ row.from_time }} - {{ row.to_time }}</div>
+          </td>
+          <td class="text-sm"><i class="bi bi-geo-alt me-1 text-muted"></i> {{ row.location|default:"-" }}</td>
+          <td>
+            <form method="post" class="m-0">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_interview_dropdown">
+              <input type="hidden" name="interview_id" value="{{ row.id }}">
+              <input type="hidden" name="field_name" value="interview_owner">
+              <select name="field_value" class="table-select-v2">
+                {% for item in owner_options %}
+                <option value="{{ item }}" {% if row.interview_owner == item %}selected{% endif %}>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </td>
+          <td>
+            <div class="d-flex justify-content-end gap-2">
+              <a href="{% url 'applicant_tracking:in_person_interview' %}?edit_id={{ row.id }}" class="icon-btn-sm" title="Modify Protocol"><i class="bi bi-pencil-square"></i></a>
+              {% if request.session.login_user_role|lower == "admin" or request.session.login_user_role|lower == "super admin" or request.session.login_user_role|lower == "administrator" %}
+              <a href="{% url 'applicant_tracking:in_person_interview_delete_confirm' row.id %}" class="icon-btn-sm text-danger" title="Abort Protocol"><i class="bi bi-trash3"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="text-center py-5">
+            <div class="py-4">
+              <i class="bi bi-calendar-x text-muted mb-3" style="font-size: 3rem;"></i>
+              <h4 class="text-muted fw-bold">No Protocols Detected</h4>
+              <p class="text-muted text-sm">Your physical evaluation queue is currently clear.</p>
+              <a href="{% url 'applicant_tracking:in_person_interview' %}?create=1" class="btn btn-outline-primary btn-sm mt-2">Initialize Sequence</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .table-premium { width: 100%; border-collapse: separate; border-spacing: 0; }
+  .table-premium th { 
+    background: var(--surface2); 
+    padding: 16px 20px; 
+    font-size: 11px; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+    color: var(--text3); 
+    border-bottom: 1px solid var(--border);
+  }
+  .table-premium td { 
+    padding: 16px 20px; 
+    border-bottom: 1px solid var(--border); 
+    vertical-align: middle;
+    transition: all 0.2s;
+  }
+  .table-premium tr:hover td { background: var(--surface2); }
+  
+  .avatar-sm { 
+    width: 32px; height: 32px; border-radius: 8px; background: var(--accentbg); color: var(--accent); 
+    display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+  }
+  
+  .table-select-v2 {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px;
+    font-size: 12px; color: var(--text2); outline: none; cursor: pointer; transition: all 0.2s;
+  }
+  .table-select-v2:hover { border-color: var(--accent); }
+  
+  .icon-btn-sm {
+    width: 32px; height: 32px; border-radius: 8px; background: var(--surface2); color: var(--text2);
+    display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.2s;
+  }
+  .icon-btn-sm:hover { background: var(--surface3); color: var(--text); transform: scale(1.1); }
+  .icon-btn-sm.text-danger:hover { background: var(--redbg); color: var(--red); }
+  
+  .text-xs { font-size: 0.75rem; }
+  .font-mono { font-family: var(--mono); }
+</style>
+{% endblock %}
+
+{% block page_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".interview-inline-select").forEach(function (dropdown) {
+      dropdown.addEventListener("change", function () {
+        const form = dropdown.closest("form");
+        if (form) form.submit();
+      });
+    });
+  });
+</script>
+{% endblock %}
