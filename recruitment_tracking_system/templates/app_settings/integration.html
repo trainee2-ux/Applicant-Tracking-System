@@ -76,26 +76,36 @@
       <div class="card-title"><i class="bi bi-google"></i> Google Cloud OAuth Configuration</div>
     </div>
     <div style="padding: 24px;">
+           <div style="font-size: 12px; color: var(--text3); margin-bottom: 18px; line-height: 1.6;">
+        Set these environment variables:
+        <span style="font-family: var(--mono);">GOOGLE_OAUTH_CLIENT_ID</span>,
+        <span style="font-family: var(--mono);">GOOGLE_OAUTH_CLIENT_SECRET</span>,
+        <span style="font-family: var(--mono);">GOOGLE_OAUTH_REDIRECT_URIS</span>
+        (comma-separated). Optional:
+        <span style="font-family: var(--mono);">GOOGLE_OAUTH_AUTH_URI</span>,
+        <span style="font-family: var(--mono);">GOOGLE_OAUTH_TOKEN_URI</span>,
+        <span style="font-family: var(--mono);">GOOGLE_OAUTH_CERT_URL</span>.
+      </div>
       <div class="field-grid grid-2" style="gap: 20px;">
         <div class="field">
           <label class="field-label">Client Identifier</label>
-          <input type="text" name="google_client_id" value="{{ google_oauth_prefill.client_id }}" placeholder="x-google-apps-id.apps.googleusercontent.com">
+          <input type="text" value="{{ google_oauth_prefill.client_id }}" placeholder="x-google-apps-id.apps.googleusercontent.com" disabled>
         </div>
         <div class="field">
           <label class="field-label">Secret Key</label>
-          <input type="password" name="google_client_secret" value="{{ google_oauth_prefill.client_secret }}" placeholder="••••••••••••">
+          <input type="password" value="" placeholder="{% if google_oauth_prefill.secret_configured %}Configured in .env{% else %}Not set in .env{% endif %}" disabled>
         </div>
         <div class="field">
           <label class="field-label">Authorization Gateway</label>
-          <input type="text" name="google_auth_uri" value="{{ google_oauth_prefill.auth_uri|default:'https://accounts.google.com/o/oauth2/auth' }}">
+          <input type="text" value="{{ google_oauth_prefill.auth_uri|default:'https://accounts.google.com/o/oauth2/auth' }}" disabled>
         </div>
         <div class="field">
           <label class="field-label">Token Exchange Gateway</label>
-          <input type="text" name="google_token_uri" value="{{ google_oauth_prefill.token_uri|default:'https://oauth2.googleapis.com/token' }}">
+          <input type="text" value="{{ google_oauth_prefill.token_uri|default:'https://oauth2.googleapis.com/token' }}" disabled>
         </div>
         <div class="field col-span-2">
           <label class="field-label">White-listed Redirect URIs</label>
-          <input type="text" name="google_redirect_uris" value="{{ google_oauth_prefill.redirect_uris }}" placeholder="https://domain.com/auth/callback, ...">
+          <input type="text" value="{{ google_oauth_prefill.redirect_uris }}" placeholder="https://domain.com/auth/callback, ..." disabled>
         </div>
       </div>
     </div>

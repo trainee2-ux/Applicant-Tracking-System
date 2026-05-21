@@ -4,11 +4,15 @@ from django.contrib import admin
 from django.urls import include, path
 
 from accounts.views import global_search_view
+from candidate_portal.views import public_careers_view, public_job_detail_view
 
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("search/", global_search_view, name="global_search"),
+    # Public candidate-facing pages (also linked from login screens / emails)
+    path("careers/", public_careers_view, name="public_careers"),
+    path("jobs/<str:job_id>/", public_job_detail_view, name="public_job_detail"),
     path("", include("accounts.urls")),
     path("dashboard/", include("dashboard.urls")),
     path("candidate-management/", include("candidate_management.urls")),

@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - recruitment_tracking_system/.env.docker
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build:
+      context: recruitment_tracking_system
+    restart: unless-stopped
+    env_file:
+      - recruitment_tracking_system/.env.docker
+    depends_on:
+      - db
+    volumes:
+      - static_data:/app/staticfiles
+      - media_data:/app/media
+    command: >
+      bash -lc "
+      if [ -n \"$${POSTGRES_HOST:-}\" ]; then
+        echo 'Waiting for Postgres...' &&
+        until python -c \"import os,socket; h=os.environ.get('POSTGRES_HOST','db'); p=int(os.environ.get('POSTGRES_PORT','5432')); s=socket.create_connection((h,p),2); s.close()\"; do
+          sleep 2;
+        done;
+      fi &&
+      python manage.py migrate --noinput &&
+      python manage.py collectstatic --noinput &&
+      gunicorn recruitment_tracking_system.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120
+      "
+
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "8087:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_data:/static:ro
+      - media_data:/media:ro
+
+volumes:
+  postgres_data:
+  static_data:
+  media_data:

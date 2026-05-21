@@ -63,6 +63,26 @@ ONBOARDING_DOCUMENT_EXTERNAL_FORM_URL = os.environ.get(
     "https://forms.gle/U3J5hSrVxPxmxwnH8",
 ).strip()
 
+# Google OAuth (used for Google Calendar / Meet integrations)
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "").strip()
+GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
+GOOGLE_OAUTH_AUTH_URI = os.environ.get(
+    "GOOGLE_OAUTH_AUTH_URI",
+    "https://accounts.google.com/o/oauth2/auth",
+).strip() or "https://accounts.google.com/o/oauth2/auth"
+GOOGLE_OAUTH_TOKEN_URI = os.environ.get(
+    "GOOGLE_OAUTH_TOKEN_URI",
+    "https://oauth2.googleapis.com/token",
+).strip() or "https://oauth2.googleapis.com/token"
+GOOGLE_OAUTH_CERT_URL = os.environ.get(
+    "GOOGLE_OAUTH_CERT_URL",
+    "https://www.googleapis.com/oauth2/v1/certs",
+).strip() or "https://www.googleapis.com/oauth2/v1/certs"
+GOOGLE_OAUTH_REDIRECT_URIS_RAW = os.environ.get("GOOGLE_OAUTH_REDIRECT_URIS", "").strip()
+GOOGLE_OAUTH_REDIRECT_URIS = [
+    item.strip() for item in GOOGLE_OAUTH_REDIRECT_URIS_RAW.split(",") if item.strip()
+]
+
 # Gemini (Generative Language API)
 # Note: This project uses separate keys for different features/areas when desired.
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
@@ -144,12 +164,29 @@ WSGI_APPLICATION = "recruitment_tracking_system.wsgi.application"
 
 
 # Database
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+_postgres_host = (os.environ.get("POSTGRES_HOST", "") or "").strip()
+if _postgres_host:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("POSTGRES_DB", "ats"),
+            "USER": os.environ.get("POSTGRES_USER", "ats"),
+            "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+            "HOST": _postgres_host,
+            "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+_csrf_origins_raw = os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").strip()
+if _csrf_origins_raw:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins_raw.split(",") if o.strip()]
 
 
 # Password validation

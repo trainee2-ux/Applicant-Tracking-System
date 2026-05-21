@@ -19,4 +19,5 @@ runtime.old.*/
 db.sqlite3
 
 media/
-static/
+# Do not ignore `static/` because Django needs source static files during image build
+# so `collectstatic` can populate STATIC_ROOT for Nginx.
