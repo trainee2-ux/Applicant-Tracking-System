@@ -2146,32 +2146,26 @@ def integration_view(request):
     )
 
     if request.method == "POST":
+        posted_google_oauth_fields = any(
+            (request.POST.get(name, "") or "").strip()
+            for name in (
+                "google_client_id",
+                "google_client_secret",
+                "google_auth_uri",
+                "google_token_uri",
+                "google_cert_url",
+                "google_redirect_uris",
+            )
+        )
         for row in settings_rows:
             row.is_enabled = request.POST.get(f"{row.provider_key}_enabled") == "on"
             row.meeting_url = request.POST.get(f"{row.provider_key}_meeting_url", "").strip()
             row.organizer_email = request.POST.get(f"{row.provider_key}_organizer_email", "").strip()
             credential_value = request.POST.get(f"{row.provider_key}_credential_json", "").strip()
             if row.provider_key == "google_meet":
-                client_id = request.POST.get("google_client_id", "").strip()
-                client_secret = request.POST.get("google_client_secret", "").strip()
-                auth_uri = request.POST.get("google_auth_uri", "").strip() or "https://accounts.google.com/o/oauth2/auth"
-                token_uri = request.POST.get("google_token_uri", "").strip() or "https://oauth2.googleapis.com/token"
-                cert_url = request.POST.get("google_cert_url", "").strip() or "https://www.googleapis.com/oauth2/v1/certs"
-                redirect_uris_raw = request.POST.get("google_redirect_uris", "").strip()
-                redirect_uris = [item.strip() for item in redirect_uris_raw.split(",") if item.strip()]
-                if client_id and client_secret:
-                    credential_value = json.dumps(
-                        {
-                            "web": {
-                                "client_id": client_id,
-                                "client_secret": client_secret,
-                                "auth_uri": auth_uri,
-                                "token_uri": token_uri,
-                                "auth_provider_x509_cert_url": cert_url,
-                                "redirect_uris": redirect_uris,
-                            }
-                        }
-                    )
+                # Google OAuth credentials are loaded from environment variables
+                # (see GOOGLE_OAUTH_* in `.env`). Avoid persisting client secrets to DB.
+                credential_value = ""
             row.credential_json = credential_value
             row.save(update_fields=["is_enabled", "meeting_url", "organizer_email", "credential_json", "updated_at"])
 
@@ -2186,22 +2180,49 @@ def integration_view(request):
         email_config.use_tls = request.POST.get("smtp_use_tls") == "on"
         email_config.from_email = request.POST.get("smtp_from_email", "").strip()
         email_config.save()
+        if posted_google_oauth_fields:
+            messages.info(
+                request,
+                "Google OAuth credentials are now read from `.env` (GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REDIRECT_URIS).",
+            )
         messages.success(request, "Integration settings updated.")
         return redirect("app_settings:integration")
 
     google_oauth_prefill = {}
     google_row = next((item for item in settings_rows if item.provider_key == "google_meet"), None)
-    if google_row and (google_row.credential_json or "").strip():
+    env_client_id = (getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "") or "").strip()
+    env_client_secret = (getattr(settings, "GOOGLE_OAUTH_CLIENT_SECRET", "") or "").strip()
+    env_auth_uri = (getattr(settings, "GOOGLE_OAUTH_AUTH_URI", "") or "").strip() or "https://accounts.google.com/o/oauth2/auth"
+    env_token_uri = (getattr(settings, "GOOGLE_OAUTH_TOKEN_URI", "") or "").strip() or "https://oauth2.googleapis.com/token"
+    env_cert_url = (getattr(settings, "GOOGLE_OAUTH_CERT_URL", "") or "").strip() or "https://www.googleapis.com/oauth2/v1/certs"
+    env_redirect_uris = getattr(settings, "GOOGLE_OAUTH_REDIRECT_URIS", []) or []
+
+    if env_client_id or env_client_secret or env_redirect_uris:
+        # Prefer env values; do not send the secret back to the template.
+        google_oauth_prefill = {
+            "client_id": env_client_id,
+            "client_secret": "",
+            "secret_configured": bool(env_client_secret),
+            "auth_uri": env_auth_uri,
+            "token_uri": env_token_uri,
+            "cert_url": env_cert_url,
+            "redirect_uris": ", ".join(env_redirect_uris),
+            "source": "env",
+        }
+    elif google_row and (google_row.credential_json or "").strip():
+        # Backward-compatible fallback: legacy DB-stored config.
         try:
             payload = json.loads(google_row.credential_json)
             client = payload.get("web") or payload.get("installed") or payload
             google_oauth_prefill = {
                 "client_id": client.get("client_id", ""),
-                "client_secret": client.get("client_secret", ""),
+                "client_secret": "",
+                "secret_configured": bool(client.get("client_secret", "")),
                 "auth_uri": client.get("auth_uri", "https://accounts.google.com/o/oauth2/auth"),
                 "token_uri": client.get("token_uri", "https://oauth2.googleapis.com/token"),
                 "cert_url": client.get("auth_provider_x509_cert_url", "https://www.googleapis.com/oauth2/v1/certs"),
                 "redirect_uris": ", ".join(client.get("redirect_uris", []) or []),
+                "source": "db",
             }
         except Exception:
             google_oauth_prefill = {}
@@ -2241,6 +2262,33 @@ def integration_view(request):
 
 
 def _get_google_oauth_client_config(setting):
+    env_client_id = (getattr(settings, "GOOGLE_OAUTH_CLIENT_ID", "") or "").strip()
+    env_client_secret = (getattr(settings, "GOOGLE_OAUTH_CLIENT_SECRET", "") or "").strip()
+    if env_client_id and env_client_secret:
+        config = {
+            "web": {
+                "client_id": env_client_id,
+                "client_secret": env_client_secret,
+                "auth_uri": getattr(
+                    settings,
+                    "GOOGLE_OAUTH_AUTH_URI",
+                    "https://accounts.google.com/o/oauth2/auth",
+                ),
+                "token_uri": getattr(
+                    settings,
+                    "GOOGLE_OAUTH_TOKEN_URI",
+                    "https://oauth2.googleapis.com/token",
+                ),
+                "auth_provider_x509_cert_url": getattr(
+                    settings,
+                    "GOOGLE_OAUTH_CERT_URL",
+                    "https://www.googleapis.com/oauth2/v1/certs",
+                ),
+                "redirect_uris": getattr(settings, "GOOGLE_OAUTH_REDIRECT_URIS", []) or [],
+            }
+        }
+        return config, ""
+
     if not setting or not (setting.credential_json or "").strip():
         return None, "Google OAuth client JSON is empty."
     try:
@@ -3351,8 +3399,9 @@ def permission_management_view(request):
 
 
 def global_audit_logs_view(request):
+    import json
     # pyrefly: ignore [missing-import]
-    from .models import GlobalAuditLog
+    from .models import GlobalAuditLog, UserMasterAudit
     query = (request.GET.get("q") or "").strip()
     module_filter = (request.GET.get("module") or "").strip()
     
@@ -3368,13 +3417,83 @@ def global_audit_logs_view(request):
             Q(action__icontains=query) |
             Q(performed_by__full_name__icontains=query)
         )
-    
-    rows = list(logs[:1000])
-    for log in rows:
-        log.formatted_action = log.action.replace("_", " ").title()
-        
+
+    # Include legacy "Settings Activity" audit logs (UserMasterAudit) in the global view so
+    # the Global Audit Logs page truly reflects create/update/delete admin actions.
+    user_audits = UserMasterAudit.objects.select_related("user").order_by("-changed_at")
+    if module_filter and module_filter != "app_settings":
+        user_audits = user_audits.none()
+    if query:
+        user_audits = user_audits.filter(
+            Q(user__full_name__icontains=query)
+            | Q(user__email_id__icontains=query)
+            | Q(action__icontains=query)
+            | Q(changed_by__icontains=query)
+            | Q(details__icontains=query)
+        )
+
+    rows = []
+    for log in logs[:1000]:
+        rows.append(
+            {
+                "id": f"g-{log.id}",
+                "module": log.module,
+                "module_display": log.get_module_display(),
+                "action": log.action or "",
+                "formatted_action": (log.action or "").replace("_", " ").title(),
+                "performed_by_name": getattr(log.performed_by, "full_name", None) or "System",
+                "performed_by_role": getattr(log.performed_by, "role", None) or "",
+                "entity_name": getattr(log.candidate, "full_name", None) or "",
+                "entity_sub": getattr(log.candidate, "email", None) or "",
+                "timestamp": log.timestamp,
+                "details_json": json.dumps(
+                    {
+                        "module": log.module,
+                        "action": log.action,
+                        "performed_by": getattr(log.performed_by, "full_name", None),
+                        "candidate": getattr(log.candidate, "full_name", None),
+                        "ip_address": log.ip_address,
+                        "user_agent": log.user_agent,
+                        "details": log.details or {},
+                    },
+                    ensure_ascii=False,
+                ),
+            }
+        )
+
+    for audit in user_audits[:1000]:
+        rows.append(
+            {
+                "id": f"u-{audit.id}",
+                "module": "app_settings",
+                "module_display": "Settings",
+                "action": audit.action or "",
+                "formatted_action": (audit.action or "").replace("_", " ").title(),
+                "performed_by_name": audit.changed_by or "System",
+                "performed_by_role": "",
+                "entity_name": getattr(audit.user, "full_name", None) or "",
+                "entity_sub": getattr(audit.user, "email_id", None) or "",
+                "timestamp": audit.changed_at,
+                "details_json": json.dumps(
+                    {
+                        "module": "app_settings",
+                        "action": audit.action,
+                        "changed_by": audit.changed_by,
+                        "target_user": getattr(audit.user, "user_id", None),
+                        "details": audit.details or "",
+                    },
+                    ensure_ascii=False,
+                ),
+            }
+        )
+
+    rows.sort(key=lambda r: r["timestamp"], reverse=True)
+    rows = rows[:1000]
+    for row in rows:
+        row["detail_url"] = reverse("app_settings:audit_log_entry", kwargs={"log_key": row["id"]})
+
     modules = GlobalAuditLog.MODULE_CHOICES
-    
+
     return render(request, "app_settings/global_audit_logs.html", {
         "logs": rows,
         "query": query,
@@ -3383,6 +3502,73 @@ def global_audit_logs_view(request):
         "settings_menu_active": "global_audit_logs"
     })
 
+
+def audit_log_entry_view(request, log_key):
+    import json
+    # pyrefly: ignore [missing-import]
+    from .models import GlobalAuditLog, UserMasterAudit
+
+    log_key = (log_key or "").strip()
+    entry = None
+    entry_type = None
+
+    if log_key.startswith("g-"):
+        entry_type = "global"
+        pk = log_key.split("-", 1)[1]
+        entry = get_object_or_404(
+            GlobalAuditLog.objects.select_related("candidate", "performed_by"),
+            pk=pk,
+        )
+        details_obj = {
+            "module": entry.module,
+            "action": entry.action,
+            "performed_by": getattr(entry.performed_by, "full_name", None),
+            "performed_by_role": getattr(entry.performed_by, "role", None),
+            "candidate": getattr(entry.candidate, "full_name", None),
+            "candidate_email": getattr(entry.candidate, "email", None),
+            "ip_address": entry.ip_address,
+            "user_agent": entry.user_agent,
+            "details": entry.details or {},
+            "timestamp": entry.timestamp.isoformat() if entry.timestamp else None,
+        }
+        title = "Audit Entry"
+        subtitle = f"{entry.get_module_display()} • {(entry.action or '').replace('_', ' ').title()}"
+
+    elif log_key.startswith("u-"):
+        entry_type = "user_audit"
+        pk = log_key.split("-", 1)[1]
+        entry = get_object_or_404(
+            UserMasterAudit.objects.select_related("user"),
+            pk=pk,
+        )
+        details_obj = {
+            "module": "app_settings",
+            "action": entry.action,
+            "changed_by": entry.changed_by,
+            "target_user_id": getattr(entry.user, "user_id", None),
+            "target_user_name": getattr(entry.user, "full_name", None),
+            "target_user_email": getattr(entry.user, "email_id", None),
+            "details": entry.details or "",
+            "timestamp": entry.changed_at.isoformat() if entry.changed_at else None,
+        }
+        title = "Settings Activity"
+        subtitle = f"Settings • {(entry.action or '').replace('_', ' ').title()}"
+
+    else:
+        raise Http404("Invalid audit entry key.")
+
+    return render(
+        request,
+        "app_settings/audit_log_entry.html",
+        {
+            "settings_menu_active": "global_audit_logs",
+            "log_key": log_key,
+            "entry_type": entry_type,
+            "title": title,
+            "subtitle": subtitle,
+            "details_pretty": json.dumps(details_obj, indent=2, ensure_ascii=False),
+        },
+    )
 
 def onboarding_audit_logs_view(request):
     # pyrefly: ignore [missing-import]

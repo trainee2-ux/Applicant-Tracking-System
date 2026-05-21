@@ -32,6 +32,7 @@ from .views import (
     subscription_billing_view,
     user_master_view,
     global_audit_logs_view,
+    audit_log_entry_view,
     onboarding_audit_logs_view,
     workflow_view,
     task_sla_settings_view,
@@ -43,6 +44,7 @@ app_name = "app_settings"
 urlpatterns = [
     path("", app_settings_view, name="index"),
     path("audit-logs/", global_audit_logs_view, name="global_audit_logs"),
+    path("audit-logs/entry/<str:log_key>/", audit_log_entry_view, name="audit_log_entry"),
     path("onboarding-audit-logs/", onboarding_audit_logs_view, name="onboarding_audit_logs"),
     path("assessment-form/", assessment_form_builder_view, name="assessment_builder"),
     path("assessment-form/<int:form_id>/", assessment_form_builder_view, name="assessment_builder"),

@@ -59,22 +59,22 @@
             <tr>
               <td>
                 <span class="settings-chip {% if log.module == 'onboarding' %}settings-chip-accent{% else %}settings-chip-light{% endif %}">
-                  {{ log.get_module_display }}
+                  {{ log.module_display }}
                 </span>
               </td>
               <td><span class="fw-bold">{{ log.formatted_action }}</span></td>
               <td>
-                {% if log.performed_by %}
-                  <div class="small fw-bold">{{ log.performed_by.full_name }}</div>
-                  <div class="text-muted small">{{ log.performed_by.role }}</div>
-                {% else %}
-                  <span class="text-muted small">System</span>
+                <div class="small fw-bold">{{ log.performed_by_name }}</div>
+                {% if log.performed_by_role %}
+                  <div class="text-muted small">{{ log.performed_by_role }}</div>
                 {% endif %}
               </td>
               <td>
-                {% if log.candidate %}
-                  <div class="small fw-bold">{{ log.candidate.full_name }}</div>
-                  <div class="text-muted small">{{ log.candidate.email }}</div>
+                {% if log.entity_name %}
+                  <div class="small fw-bold">{{ log.entity_name }}</div>
+                  {% if log.entity_sub %}
+                    <div class="text-muted small">{{ log.entity_sub }}</div>
+                  {% endif %}
                 {% else %}
                   <span class="text-muted small">N/A</span>
                 {% endif %}
@@ -84,9 +84,9 @@
                 <div class="text-muted small">{{ log.timestamp|date:"H:i" }}</div>
               </td>
               <td class="text-end">
-                <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2" onclick="showLogDetails('{{ log.id }}')">
+                <a class="btn btn-outline-primary btn-sm py-0 px-2" href="{{ log.detail_url }}">
                   View
-                </button>
+                </a>
               </td>
             </tr>
             {% empty %}
@@ -98,40 +98,4 @@
     </div>
   </div>
 </div>
-
-<!-- Modal for details -->
-<div class="modal fade" id="logDetailsModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content bg-dark text-white border-secondary">
-      <div class="modal-header border-secondary">
-        <h6 class="modal-title"><i class="bi bi-info-circle me-2"></i>Audit Entry Details</h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div id="logDetailsContent" class="settings-mono p-3 rounded" style="background: rgba(0,0,0,0.3); max-height: 300px; overflow: auto;"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  function showLogDetails(logId) {
-    // In a real implementation, you'd fetch this via AJAX or from a hidden data attribute
-    // Here we show a summary for demonstration
-    const content = document.getElementById('logDetailsContent');
-    content.textContent = "Loading record #" + logId + " metadata...";
-    
-    const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
-    modal.show();
-    
-    setTimeout(() => {
-        content.textContent = JSON.stringify({
-            "log_id": logId,
-            "status": "Archived",
-            "performer_meta": "Authenticated Session",
-            "request_trace": "SRV-LOG-" + logId
-        }, null, 2);
-    }, 300);
-  }
-</script>
 {% endblock %}
