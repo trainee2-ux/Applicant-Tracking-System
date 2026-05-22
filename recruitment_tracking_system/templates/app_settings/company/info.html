@@ -28,7 +28,7 @@
       </div>
       <button id="openCompanyCreateBtn" type="button" class="ci-btn-primary">
         <i class="bi bi-{% if selected_company %}pencil{% else %}plus-lg{% endif %}"></i>
-        {% if selected_company %}Edit Company{% else %}Create Company{% endif %}
+        {% if selected_company %}Edit Company{% else %}Create Sub Company{% endif %}
       </button>
     </div>
 
@@ -108,7 +108,7 @@
     <!-- Records Table -->
     <div class="ci-table-card">
       <div class="ci-table-header">
-        <span class="ci-table-title"><i class="bi bi-buildings"></i> Registered Companies</span>
+        <span class="ci-table-title"><i class="bi bi-buildings"></i> Main &amp; Sub Companies</span>
         <span class="ci-count">{{ records|length }} record{% if records|length != 1 %}s{% endif %}</span>
       </div>
       <div class="ci-table-wrap">
@@ -145,11 +145,13 @@
               <td class="text-end">
                 <div class="ci-actions">
                   <a href="/settings/company/info/?edit={{ item.id }}" class="ci-act-btn edit" title="Edit"><i class="bi bi-pencil"></i></a>
+                  {% if item.parent_company_id %}
                   <form method="post" class="d-inline" onsubmit="return confirm('Delete {{ item.company_name }}?');">
                     {% csrf_token %}
                     <input type="hidden" name="company_id" value="{{ item.id }}">
                     <button type="submit" name="action" value="delete" class="ci-act-btn del" title="Delete"><i class="bi bi-trash3"></i></button>
                   </form>
+                  {% endif %}
                 </div>
               </td>
             </tr>
@@ -158,7 +160,7 @@
               <td colspan="6" class="ci-empty">
                 <i class="bi bi-building-slash"></i>
                 <p>No company records yet</p>
-                <span>Click "Create Company" to add your organization</span>
+                <span>Click "Create Sub Company" to add a sub company</span>
               </td>
             </tr>
             {% endfor %}

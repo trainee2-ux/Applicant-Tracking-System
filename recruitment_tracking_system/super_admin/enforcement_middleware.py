@@ -80,9 +80,10 @@ class CompanyEnforcementMiddleware:
             request.session.flush()
             return redirect("/login/")
 
-        company = user.company or CompanyInfo.objects.order_by("id").first()
+        company = user.company or CompanyInfo.objects.filter(parent_company__isnull=True).order_by("id").first()
         if not company:
             return self._block(request, "Company inactive", "No company configured for this account.")
+        company = company.get_root_company()
 
         today = timezone.localdate()
 

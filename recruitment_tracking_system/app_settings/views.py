@@ -2952,11 +2952,24 @@ def company_view(request):
 
 
 def company_info_view(request):
+    from super_admin.utils import current_context_from_request, is_platform_superadmin
+
+    if is_platform_superadmin(request):
+        return redirect("/super-admin/dashboard/")
+
+    ctx = current_context_from_request(request)
+    root_company = ctx.company
+    if not root_company:
+        messages.error(request, "No main company configured. Please contact platform Super Admin.")
+        return redirect("/dashboard/")
+
     preview_data = None
     selected_company = None
     edit_id = (request.GET.get("edit") or "").strip()
     if edit_id:
         selected_company = CompanyInfo.objects.filter(id=edit_id).first()
+        if selected_company and selected_company.get_root_company().id != root_company.id:
+            selected_company = None
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -2975,6 +2988,12 @@ def company_info_view(request):
         if action == "delete" and company_id:
             company = CompanyInfo.objects.filter(id=company_id).first()
             if company:
+                if company.id == root_company.id:
+                    messages.error(request, "Main company cannot be deleted from settings.")
+                    return redirect("app_settings:company_info")
+                if company.get_root_company().id != root_company.id:
+                    messages.error(request, "Company not found.")
+                    return redirect("app_settings:company_info")
                 company.delete()
                 messages.success(request, "Company deleted.")
             else:
@@ -2991,6 +3010,9 @@ def company_info_view(request):
                 if not company:
                     messages.error(request, "Company not found.")
                     return redirect("app_settings:company_info")
+                if company.get_root_company().id != root_company.id:
+                    messages.error(request, "Company not found.")
+                    return redirect("app_settings:company_info")
                 for key, value in payload.items():
                     setattr(company, key, value)
                 if request.FILES.get("logo"):
@@ -2999,6 +3021,8 @@ def company_info_view(request):
                 messages.success(request, "Company information updated.")
             else:
                 company = CompanyInfo(**payload)
+                # Settings-side create = sub company under the current main company.
+                company.parent_company = root_company
                 if request.FILES.get("logo"):
                     company.logo = request.FILES["logo"]
                 company.save()
@@ -3014,7 +3038,9 @@ def company_info_view(request):
             messages.success(request, "Share action triggered.")
             return redirect("app_settings:company_info")
 
-    records = list(CompanyInfo.objects.all())
+    records = list(
+        CompanyInfo.objects.filter(Q(id=root_company.id) | Q(parent_company=root_company)).order_by("company_name")
+    )
 
     return render(
         request,

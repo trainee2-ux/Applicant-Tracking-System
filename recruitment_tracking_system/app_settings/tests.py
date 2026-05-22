@@ -130,7 +130,7 @@ class CompanyInfoCrudTests(TestCase):
         session.save()
 
     def test_can_edit_company_info(self):
-        target = CompanyInfo.objects.create(company_name="Old Name")
+        target = CompanyInfo.objects.create(company_name="Old Name", parent_company=self.company)
         resp = self.client.post(
             "/settings/company/info/",
             data={
@@ -153,7 +153,7 @@ class CompanyInfoCrudTests(TestCase):
         self.assertEqual(target.domain, "example.com")
 
     def test_can_delete_company_info(self):
-        target = CompanyInfo.objects.create(company_name="To Delete")
+        target = CompanyInfo.objects.create(company_name="To Delete", parent_company=self.company)
         resp = self.client.post(
             "/settings/company/info/",
             data={

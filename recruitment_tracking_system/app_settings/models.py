@@ -138,6 +138,13 @@ class CompanyInfo(models.Model):
     industry = models.CharField(max_length=120, blank=True)
     social_link = models.CharField(max_length=255, blank=True)
     company_description = models.TextField(blank=True)
+    parent_company = models.ForeignKey(
+        "self",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="sub_companies",
+    )
     agreement_status = models.CharField(
         max_length=20,
         choices=AGREEMENT_STATUS_CHOICES,
@@ -157,6 +164,15 @@ class CompanyInfo(models.Model):
 
     def __str__(self):
         return self.company_name
+
+    def get_root_company(self):
+        company = self
+        # Guard against accidental cycles by limiting hops.
+        for _ in range(20):
+            if not company.parent_company_id:
+                return company
+            company = company.parent_company
+        return self
 
     def mark_expired_if_needed(self, today=None):
         if today is None:

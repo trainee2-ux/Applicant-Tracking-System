@@ -43,6 +43,8 @@ def current_context_from_request(request) -> CurrentContext:
     if login_email:
         user = UserMaster.objects.select_related("company").filter(email_id__iexact=login_email).first()
     company = getattr(user, "company", None) if user else None
-    if not company:
-        company = CompanyInfo.objects.order_by("id").first()
+    if company:
+        company = company.get_root_company()
+    else:
+        company = CompanyInfo.objects.filter(parent_company__isnull=True).order_by("id").first()
     return CurrentContext(user=user, company=company, role_name=role_name)

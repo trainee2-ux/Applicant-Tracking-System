@@ -35,9 +35,9 @@ def dashboard_view(request):
         request,
         "super_admin/dashboard.html",
         {
-            "company_count": CompanyInfo.objects.count(),
-            "active_companies": CompanyInfo.objects.filter(status="active").count(),
-            "pending_agreements": CompanyInfo.objects.filter(agreement_status="pending").count(),
+            "company_count": CompanyInfo.objects.filter(parent_company__isnull=True).count(),
+            "active_companies": CompanyInfo.objects.filter(parent_company__isnull=True, status="active").count(),
+            "pending_agreements": CompanyInfo.objects.filter(parent_company__isnull=True, agreement_status="pending").count(),
             "active_subscriptions": CompanySubscription.objects.filter(status="active").count(),
         },
     )
@@ -78,7 +78,7 @@ def companies_view(request):
             messages.success(request, "Agreement reset to pending.")
             return redirect("super_admin:companies")
 
-    companies = CompanyInfo.objects.order_by("company_name")
+    companies = CompanyInfo.objects.filter(parent_company__isnull=True).order_by("company_name")
     return render(request, "super_admin/companies.html", {"companies": companies})
 
 
@@ -173,7 +173,7 @@ def subscriptions_view(request):
             messages.success(request, "Subscription assigned.")
             return redirect("super_admin:subscriptions")
 
-    companies = CompanyInfo.objects.order_by("company_name")
+    companies = CompanyInfo.objects.filter(parent_company__isnull=True).order_by("company_name")
     plans = Plan.objects.filter(is_active=True).order_by("name")
     subscriptions = CompanySubscription.objects.select_related("company", "plan").order_by("-created_at")[:200]
     return render(
@@ -299,8 +299,8 @@ def service_agreements_view(request):
             messages.success(request, "Service agreement completed.")
             return redirect("super_admin:service_agreements")
 
-    pending = CompanyInfo.objects.filter(agreement_status="pending").order_by("company_name")
-    completed = CompanyInfo.objects.filter(agreement_status="completed").order_by("company_name")[:200]
+    pending = CompanyInfo.objects.filter(parent_company__isnull=True, agreement_status="pending").order_by("company_name")
+    completed = CompanyInfo.objects.filter(parent_company__isnull=True, agreement_status="completed").order_by("company_name")[:200]
     return render(
         request,
         "super_admin/service_agreements.html",
