@@ -5,15 +5,22 @@ def _ensure_parent_company_column(apps, schema_editor):
     """
     table = "app_settings_companyinfo"
     with schema_editor.connection.cursor() as cursor:
-        cursor.execute(f"PRAGMA table_info({table})")
+        cursor.execute(f"PRAGMA table_info({schema_editor.quote_name(table)})")
         existing_cols = {row[1] for row in cursor.fetchall()}
 
     if "parent_company_id" in existing_cols:
         return
 
-    CompanyInfo = apps.get_model("app_settings", "CompanyInfo")
-    field = CompanyInfo._meta.get_field("parent_company")
-    schema_editor.add_field(CompanyInfo, field)
+    # Add a nullable integer column. (SQLite cannot easily add FK constraints
+    # with ALTER TABLE; Django will treat this as the FK column at runtime.)
+    schema_editor.execute(
+        f"ALTER TABLE {schema_editor.quote_name(table)} "
+        f"ADD COLUMN {schema_editor.quote_name('parent_company_id')} integer NULL"
+    )
+    schema_editor.execute(
+        f"CREATE INDEX IF NOT EXISTS {schema_editor.quote_name('app_settings_companyinfo_parent_company_id_idx')} "
+        f"ON {schema_editor.quote_name(table)} ({schema_editor.quote_name('parent_company_id')})"
+    )
 
 
 from django.db import migrations, models

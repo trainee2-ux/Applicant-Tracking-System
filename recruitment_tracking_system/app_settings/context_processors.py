@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.utils import timezone
 from app_settings.access_control import has_action_permission, nav_access_map
 from app_settings.models import UiNotification
 from task_management.models import TaskRecord
@@ -58,6 +59,14 @@ def role_access_context(request):
     role_name = request.session.get("login_user_role", "Admin")
     login_user_name = request.session.get("login_user_name", "")
     login_user_email = request.session.get("login_user_email", "")
+
+    now = timezone.localtime()
+    if now.hour < 12:
+        time_greeting = "Good Morning"
+    elif now.hour < 17:
+        time_greeting = "Good Afternoon"
+    else:
+        time_greeting = "Good Evening"
     permission_alert = request.session.pop("permission_alert", "")
     current_module_key = _module_from_path(getattr(request, "path", ""))
     module_action_access = {
@@ -112,6 +121,7 @@ def role_access_context(request):
     return {
         "login_user_role": role_name,
         "is_superadmin": is_superadmin_request(request),
+        "time_greeting": time_greeting,
         "company_summary": company_summary,
         "subscription_summary": subscription_summary,
         "nav_access": nav_access,

@@ -25,7 +25,7 @@
 {% block content %}
 <div class="hero-card">
   <div>
-    <div class="hero-title">Good Evening, {{ request.session.login_user_name|default:"Administrator" }} 👋</div>
+    <div class="hero-title">{{ time_greeting|default:"Hello" }}, {{ request.session.login_user_name|default:"Administrator" }} 👋</div>
     <div class="hero-sub">The hiring ecosystem is performing at optimal throughput today.</div>
   </div>
   <div style="display: flex; gap: 12px;">
